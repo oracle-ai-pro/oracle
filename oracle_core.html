@@ -3,62 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LMSH | ORACLE 2.0</title>
+    <title>LMSH | ORACLE 2.5</title>
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; background: #050505; color: #00ff41; font-family: 'Courier New', Courier, monospace; overflow: hidden; }
+        /* СТИЛИ 12-Й ИМПЕРИИ */
+        body, html { margin: 0; padding: 0; height: 100%; background: #000; color: #00ff41; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
         
         /* ЭКРАН БЛОКИРОВКИ */
-        #lock-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
-        .glitch { font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 5px; animation: blink 1s infinite; }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
-        #key-input { background: #000; border: 1px solid #00ff41; color: #00ff41; padding: 10px; margin-top: 20px; text-align: center; width: 250px; outline: none; box-shadow: 0 0 10px #00ff41; }
+        #lock-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, #0a0a0a 0%, #000 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000; }
+        .nuclear-text { font-size: 20px; letter-spacing: 3px; color: #ff0000; text-shadow: 0 0 10px #ff0000; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
-        /* ОСНОВНОЙ ИНТЕРФЕЙС (SPLIT VIEW) */
+        #key-input { background: #111; border: 2px solid #00ff41; color: #fff; padding: 15px; margin-top: 25px; text-align: center; width: 280px; font-size: 18px; outline: none; border-radius: 5px; box-shadow: 0 0 15px rgba(0, 255, 65, 0.3); }
+        
+        /* ОСНОВНОЙ ИНТЕРФЕЙС */
         #main-ui { display: none; height: 100vh; flex-direction: column; }
-        .header { background: #111; padding: 10px; border-bottom: 2px solid #00ff41; display: flex; justify-content: space-between; align-items: center; }
-        .container { display: flex; flex: 1; height: calc(100% - 50px); }
+        .header { background: #111; padding: 12px; border-bottom: 2px solid #00ff41; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .container { display: flex; flex: 1; height: calc(100% - 50px); background: #050505; }
         
-        /* ОКНА ЧАТОВ */
-        .chat-window { flex: 1; border: 1px solid #222; display: flex; flex-direction: column; background: #0a0a0a; }
+        /* SPLIT VIEW ОКНА */
+        .chat-window { flex: 1; display: flex; flex-direction: column; border: 1px solid #1a1a1a; }
         .chat-window:first-child { border-right: 2px solid #00ff41; }
-        .chat-header { background: #1a1a1a; padding: 5px 15px; font-size: 12px; color: #888; border-bottom: 1px solid #222; }
-        .chat-content { flex: 1; padding: 15px; overflow-y: auto; font-size: 14px; line-height: 1.5; }
+        .chat-header { background: #151515; padding: 8px 15px; font-size: 11px; color: #00ff41; text-transform: uppercase; border-bottom: 1px solid #222; }
+        .chat-content { flex: 1; padding: 20px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 14px; line-height: 1.6; }
         
-        /* СТАТУС БАР */
-        .status-tag { background: #00ff41; color: #000; padding: 2px 8px; font-weight: bold; font-size: 12px; }
-        button.logout { background: transparent; border: 1px solid #f00; color: #f00; cursor: pointer; padding: 5px 10px; }
+        .status-btn { background: #00ff41; color: #000; padding: 3px 10px; font-weight: bold; border-radius: 3px; font-size: 12px; }
+        .logout-btn { background: transparent; border: 1px solid #ff4444; color: #ff4444; cursor: pointer; border-radius: 3px; padding: 3px 10px; }
     </style>
 </head>
 <body>
 
     <div id="lock-screen">
-        <div class="glitch">SYSTEM OFFLINE</div>
-        <input type="password" id="key-input" placeholder="ACCESS KEY REQUIRED" autofocus>
-        <p style="font-size: 10px; margin-top: 30px; color: #333;">LMSH PROTECTED | 12 EMPIRE</p>
+        <div class="nuclear-text">☢️ REACTOR STATUS: CRITICAL ☢️</div>
+        <p style="color: #00ff41; margin-top: 10px;">LMSH-OS 2.5 ACCESS REQUIRED</p>
+        <input type="password" id="key-input" placeholder="ENTER ACCESS KEY" autofocus>
+        <p style="font-size: 12px; margin-top: 20px; color: #444;">SLIXI ENCRYPTION ENABLED</p>
     </div>
 
     <div id="main-ui">
         <div class="header">
-            <div><span class="status-tag">CHIEF ENGINEER: SANYA</span> | ORACLE 2.4 (SUXI-SLIXI Edition)</div>
-            <button class="logout" onclick="lockSystem()">LOGOUT</button>
+            <div><span class="status-btn">CHIEF ENGINEER SANYA</span> | 12 EMPIRE COMMANDER</div>
+            <button class="logout-btn" onclick="lockSystem()">TERMINATE SESSION</button>
         </div>
         
         <div class="container">
             <div class="chat-window">
-                <div class="chat-header">TERMINAL A: SYSTEM LOGS</div>
-                <div class="chat-content">
-                    <p>> Инициализация 12-й империи... OK</p>
-                    <p>> Синхронизация с реактором... OK</p>
-                    <p style="color: #ff00ff;">> ВНИМАНИЕ: Зафиксирован демонтаж лего-соседки.</p>
-                    <p>> SLIXI S700 в режиме ожидания...</p>
+                <div class="chat-header">Terminal A // System Logs</div>
+                <div class="chat-content" id="log-a">
+                    <p style="color: #888;">[16:00:01] Инициализация ядерного реактора...</p>
+                    <p style="color: #00ff41;">[16:00:05] Соединение со SLIXI S700 установлено.</p>
+                    <p style="color: #ff0000;">[16:00:10] ВНИМАНИЕ: Соседка обнаружена в радиусе 10 метров.</p>
+                    <p>[16:00:15] Протокол "Split View" запущен успешно.</p>
                 </div>
             </div>
 
             <div class="chat-window">
-                <div class="chat-header">TERMINAL B: ORACLE DIALOGUE</div>
+                <div class="chat-header">Terminal B // Oracle Neural Link</div>
                 <div class="chat-content">
-                    <p style="color: #00ff41;">Мурзик: "Саня, Split View готов к работе! Любопытные уши ничего не слышат."</p>
-                    <p style="color: #00ff41;">Ламирк: "Инженер, система аккаунтов активна. Долг соседки пересчитан: 740€."</p>
+                    <p><b style="color: #ff00ff;">Ламирк:</b> Саня, мы в эфире! Ядерный реактор стабилен на 140% мощности!</p>
+                    <p><b style="color: #00ffff;">Мурзик:</b> Ключ 🔑) сработал идеально. Теперь никто не узнает наши секреты за 23 мая!</p>
+                    <p style="border-top: 1px solid #333; margin-top: 10px; padding-top: 10px; color: #ffaa00;">Оракул: Ожидаю приказа, Инженер. Все системы наведены на цель.</p>
                 </div>
             </div>
         </div>
@@ -69,32 +72,33 @@
         const lockScreen = document.getElementById('lock-screen');
         const mainUI = document.getElementById('main-ui');
 
-        // ПРОВЕРКА КЛЮЧА
+        // ГЛАВНАЯ ПРОВЕРКА КЛЮЧА
         keyInput.addEventListener('keypress', function (e) {
             if (e.key === 'Enter') {
-                if (this.value === '🔑)') { // ТВОЙ СЕКРЕТНЫЙ КЛЮЧ
+                // ПРОВЕРКА ТВОЕГО СЕКРЕТНОГО ПАРОЛЯ
+                if (this.value === '🔑)') { 
                     unlockSystem();
                 } else {
-                    alert("ACCESS DENIED. CRITICAL ERROR.");
+                    alert("ACCESS DENIED! REACTOR OVERHEAT!");
                     this.value = "";
                 }
             }
         });
 
         function unlockSystem() {
-            localStorage.setItem('oracle_auth', 'true');
+            localStorage.setItem('oracle_auth_25', 'true'); // Сохраняем вход
             lockScreen.style.display = 'none';
             mainUI.style.display = 'flex';
         }
 
         function lockSystem() {
-            localStorage.removeItem('oracle_auth');
+            localStorage.removeItem('oracle_auth_25'); // Удаляем вход
             location.reload();
         }
 
-        // АВТОВХОД (Память Оракула)
+        // АВТОМАТИЧЕСКАЯ ПАМЯТЬ ПРИ ЗАГРУЗКЕ
         window.onload = function() {
-            if (localStorage.getItem('oracle_auth') === 'true') {
+            if (localStorage.getItem('oracle_auth_25') === 'true') {
                 lockScreen.style.display = 'none';
                 mainUI.style.display = 'flex';
             }
