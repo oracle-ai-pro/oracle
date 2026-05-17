@@ -1,233 +1,216 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oracle 2.0 | Панель Управления</title>
-    <style>
-        :root {
-            --neon-pink: #ff0055;
-            --neon-cyan: #00ffcc;
-            --bg-dark: #0a0a12;
-            --panel-bg: #121225;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Oracle AI 1.1 | Prestige HQ</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#010103">
+    <style>
+        :root {
+            --bg: #010103;
+            --card: rgba(10, 10, 15, 0.85);
+            --cyan: #02b6ed;
+            --purple: #e60ced;
+            --text: #ffffff;
+            --border: rgba(255, 255, 255, 0.1);
+            --grad: linear-gradient(90deg, #02b6ed 0%, #e60ced 100%);
+        }
 
-        body {
-            background-color: var(--bg-dark);
-            color: var(--neon-cyan);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 90vh;
-            margin: 0;
-        }
+        ::-webkit-scrollbar { width: 4px; background: transparent; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(255, 255, 255, 0.1); 
+            border-radius: 10px; 
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
 
-        .oracle-panel {
-            background: var(--panel-bg);
-            border: 2px solid var(--neon-pink);
-            border-radius: 16px;
-            padding: 30px;
-            box-shadow: 0 0 25px rgba(255, 0, 85, 0.3);
-            max-width: 550px;
-            width: 100%;
-            box-sizing: border-box;
-        }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: -apple-system, sans-serif; }
+        body { display: flex; justify-content: center; align-items: center; background: radial-gradient(circle at top right, rgba(230, 12, 237, 0.05), transparent), radial-gradient(circle at bottom left, rgba(2, 182, 237, 0.05), transparent); }
 
-        h2 {
-            color: #ffffff;
-            text-shadow: 0 0 15px var(--neon-pink);
-            margin-top: 0;
-            text-align: center;
-            letter-spacing: 2px;
-            border-bottom: 2px dashed var(--neon-pink);
-            padding-bottom: 15px;
-        }
+        .oracle-container { width: 95%; max-width: 450px; height: 90vh; background: var(--card); backdrop-filter: blur(25px); border: 1px solid var(--border); border-radius: 40px; display: flex; flex-direction: column; position: relative; overflow: hidden; animation: boot 0.6s ease-out; }
 
-        h3 {
-            color: #ffffff;
-            margin-top: 25px;
-            text-shadow: 0 0 8px var(--neon-cyan);
-            font-size: 1.1rem;
-        }
+        .top-nav { position: absolute; top: 20px; right: 20px; z-index: 10; }
+        .toggle-mode-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); color: var(--cyan); padding: 8px 12px; border-radius: 12px; font-size: 10px; font-weight: 900; cursor: pointer; text-transform: uppercase; }
 
-        .setting-item {
-            display: flex;
-            justify-content: space-between;
-            margin: 20px 0;
-            align-items: center;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px 15px;
-            border-radius: 8px;
-            border-left: 3px solid var(--neon-cyan);
-        }
+        .header { padding: 25px 20px 15px; text-align: center; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+        .logo { font-weight: 900; font-size: 18px; letter-spacing: 3px; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
 
-        .status-text {
-            font-weight: bold;
-            color: #ffffff;
-        }
+        #chat-mode, #direct-mode { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; }
+        #direct-mode { display: none; padding: 20px; overflow-y: auto; scrollbar-gutter: stable; }
 
-        .btn {
-            background: var(--neon-pink);
-            color: #ffffff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
-        }
+        .section-title { font-size: 11px; font-weight: 900; color: var(--cyan); text-transform: uppercase; margin: 20px 0 10px; letter-spacing: 1px; border-left: 3px solid var(--purple); padding-left: 10px; }
 
-        .btn:hover {
-            background: var(--neon-cyan);
-            color: #000000;
-            box-shadow: 0 0 15px var(--neon-cyan);
-        }
+        .packs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .item-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 12px; border-radius: 18px; transition: 0.3s; }
+        .item-card:hover { border-color: var(--cyan); background: rgba(2, 182, 237, 0.05); }
+        .item-name { font-size: 13px; font-weight: 700; margin-bottom: 8px; line-height: 1.2; }
 
-        .pack-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
+        .download-btn { display: inline-block; padding: 8px 12px; background: #fff; color: #000; text-decoration: none; border-radius: 8px; font-weight: 900; font-size: 9px; text-transform: uppercase; transition: 0.2s; text-align: center; width: calc(100% - 24px); cursor: pointer; border: none; }
+        .download-btn:active { transform: scale(0.9); }
 
-        .pack-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0, 255, 204, 0.05);
-            padding: 12px 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 255, 204, 0.2);
-        }
+        #chat-flow { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; scroll-behavior: smooth; }
+        .msg { padding: 14px 18px; border-radius: 20px; font-size: 14px; max-width: 85%; animation: slideIn 0.3s ease; line-height: 1.4; position: relative; }
+        .ai-msg { background: rgba(255, 255, 255, 0.05); align-self: flex-start; border: 1px solid var(--border); padding-right: 40px; }
+        .user-msg { background: var(--grad); align-self: flex-end; }
 
-        .pack-link {
-            background: #ffff00;
-            color: #000000;
-            text-decoration: none;
-            font-weight: bold;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
-        }
+        .speak-btn { position: absolute; right: 10px; top: 12px; background: none; border: none; color: var(--cyan); cursor: pointer; font-size: 16px; opacity: 0.6; transition: 0.3s; }
+        .speak-btn:hover { opacity: 1; color: var(--purple); transform: scale(1.1); }
 
-        .pack-link:hover {
-            background: #ffffff;
-            box-shadow: 0 0 10px #ffff00;
-            transform: scale(1.05);
-        }
+        .input-box { padding: 20px; display: flex; gap: 10px; background: rgba(0,0,0,0.2); }
+        input { flex: 1; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 15px; padding: 12px; color: white; outline: none; }
+        .send-btn { background: var(--grad); border: none; border-radius: 15px; width: 50px; color: white; cursor: pointer; font-size: 18px; }
 
-        #log-console {
-            background: #000000;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            padding: 10px;
-            border-radius: 6px;
-            margin-top: 20px;
-            height: 60px;
-            overflow-y: auto;
-            border: 1px solid #333;
-        }
-    </style>
+        #story-modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:1000; overflow-y:auto; padding:20px; box-sizing:border-box; backdrop-filter: blur(10px); }
+        .story-content { max-width:500px; margin: 40px auto; background:var(--card); border:1px solid var(--purple); border-radius:35px; padding:30px; position:relative; box-shadow: 0 0 30px rgba(230, 12, 237, 0.2); }
+        .close-story { position:absolute; top:20px; right:20px; background:none; border:none; color:var(--purple); font-size:24px; cursor:pointer; }
+
+        @keyframes boot { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
 </head>
 <body>
 
-<div class="oracle-panel">
-    <h2>⚙️ ЯДРО ORACLE v2.0</h2>
-    
-    <div class="setting-item">
-        <div>
-            <span class="status-text">🤖 Режим AI Reader:</span><br>
-            <small style="color: #888;">Превращение Microsoft в порошок</small>
-        </div>
-        <button class="btn" id="readerBtn" onclick="toggleReader()">ЗАГРУЗКА...</button>
-    </div>
+<div class="oracle-container">
+    <div class="top-nav"><button class="toggle-mode-btn" onclick="toggleMode()" id="mode-label">Режим: Паки</button></div>
+    <div class="header"><div class="logo">Oracle AI 1.1</div></div>
+    
+    <div id="chat-mode">
+        <div id="chat-flow">
+            <div class="msg ai-msg">
+                Оракул активен. Снежинка и Хахми в системе. Какую версию ищем?
+                <button class="speak-btn" onclick="speakText('Оракул активен. Снежинка и Хахми в системе. Какую версию ищем?')">🔊</button>
+            </div>
+        </div>
+        <div class="input-box">
+            <input type="text" id="user-in" placeholder="Спроси про 3.3 Beta или Люми..." onkeypress="if(event.key==='Enter') send()">
+            <button class="send-btn" onclick="send()">➔</button>
+        </div>
+    </div>
 
-    <h3>📦 АРХИВ ПАКОВ (ИМПОРТ ИЗ ORACLE 1.1)</h3>
-    <div class="pack-container">
-        <div class="pack-item">
-            <span>🪐 Космо-Пак v1.1</span>
-            <a href="https://raw.githubusercontent.com/ТВОЙ_ГИТХАБ_НИК/ТВОЙ_РЕПОЗИТОРИЙ/main/packs/kosmo_pack.mcpack" class="pack-link">УСТАНОВИТЬ</a>
-        </div>
-        <div class="pack-item">
-            <span>🛡️ Защитный Щит SUXI v1.1</span>
-            <a href="https://raw.githubusercontent.com/ТВОЙ_ГИТХАБ_НИК/ТВОЙ_РЕПОЗИТОРИЙ/main/packs/suxi_shield.mcpack" class="pack-link">УСТАНОВИТЬ</a>
-        </div>
-    </div>
+    <div id="direct-mode">
+        <div class="section-title">Игры</div>
+        <div class="item-card">
+            <div class="item-name">A Better Place 1.3.6</div>
+            <a href="https://drive.google.com/file/d/1U9Ok7ThAGnOsQ_IM3gTX-UmDNBJ2qBno/view?usp=sharing" class="download-btn" target="_blank">Скачать .xapk</a>
+        </div>
 
-    <div id="log-console">Initialization... Connecting to 12th Empire Net...</div>
+        <div class="section-title">Паки Kosmo Level</div>
+        <div class="packs-grid" id="packs-list"></div>
+
+        <div class="section-title">Preview & Beta</div>
+        <div class="packs-grid">
+            <div class="item-card"><div class="item-name">Kosmo Level 3.3 Beta</div><a href="packs/Kosmo_Level_3.3_Beta.worldpack" class="download-btn" download>Скачать</a></div>
+            <div class="item-card"><div class="item-name">KL Halloween Full</div><a href="packs/Kosmo_Level_Halloween_Full.worldpack" class="download-btn" download>Скачать</a></div>
+            <div class="item-card"><div class="item-name">Traitor Level 2.1</div><a href="packs/Traitor_Level_2.1.worldpack" class="download-btn" download>Скачать</a></div>
+        </div>
+
+        <div class="section-title">Архив Истории</div>
+        <div class="item-card">
+            <div class="item-name">Вторжение Люми (Глава 1)</div>
+            <button onclick="showStory()" class="download-btn" style="background: var(--purple); color: white;">Читать</button>
+        </div>
+    </div>
+</div>
+
+<div id="story-modal">
+    <div class="story-content">
+        <button class="close-story" onclick="closeStory()">✕</button>
+        <h2 style="color:var(--purple); text-transform:uppercase; letter-spacing:2px; font-size:18px;">Глава 1: Вторжение</h2>
+        <div id="story-text" style="line-height:1.6; font-size:14px; color:rgba(255,255,255,0.9); max-height:60vh; overflow-y:auto; padding-right:10px;"></div>
+        <div style="margin-top:20px; padding-top:10px; border-top:1px solid var(--border); font-size:11px; color:var(--cyan); text-transform:uppercase;">Продолжение следует...</div>
+    </div>
 </div>
 
 <script>
-    // ТВОЙ ДЕПЛОЙ-URL ИЗ GOOGLE APPS SCRIPT:
-    const ORACLE_API = "https://script.google.com/macros/s/AKfycbwh3dasXF3yxaF9ZrFnz15x1pXhMY4IAswpdI3reqvJ48AHqB2tBBuYa_U-huYbzustkg/exec";
-    const USER_ID = "Sam_Chief_Engineer"; // Твой ID аккаунта в системе
+    const versions = ["1.0", "2.0", "2.2", "2.5", "2.8", "2.9", "3.0", "3.1", "3.2", "3.3"];
+    let isChat = true;
 
-    let readerMode = true;
+    function toggleMode() {
+        isChat = !isChat;
+        document.getElementById('chat-mode').style.display = isChat ? 'flex' : 'none';
+        document.getElementById('direct-mode').style.display = isChat ? 'none' : 'block';
+        document.getElementById('mode-label').innerText = isChat ? 'Режим: Паки' : 'Режим: Оракул';
+        if(!isChat) renderPacks();
+    }
 
-    function printLog(text) {
-        const consoleEl = document.getElementById('log-console');
-        consoleEl.innerHTML += `<br>> ${text}`;
-        consoleEl.scrollTop = consoleEl.scrollHeight;
-    }
+    function renderPacks() {
+        const list = document.getElementById('packs-list');
+        list.innerHTML = "";
+        versions.forEach(v => {
+            const fileName = `Kosmo_Level_${v}.worldpack`;
+            list.innerHTML += `
+                <div class="item-card">
+                    <div class="item-name">Kosmo Level ${v}</div>
+                    <a href="packs/${fileName}" class="download-btn" download="${fileName}">Скачать</a>
+                </div>`;
+        });
+    }
 
-    // Подгрузка настроек из Google Script при старте
-    async function loadSettings() {
-        printLog("Запрос конфигурации к Google Apps Script...");
-        try {
-            let response = await fetch(`${ORACLE_API}?action=getSettings&userId=${USER_ID}`);
-            let data = await response.json();
-            
-            readerMode = data.readerMode;
-            updateUI();
-            printLog("Данные аккаунта синхронизированы! Ядро стабильно.");
-        } catch (err) {
-            printLog("Ошибка сети. Включен автономный режим ядра.");
-            // Если сеть легла, ставим дефолт, чтобы панель работала автономно
-            readerMode = true;
-            updateUI();
-        }
-    }
+    function send() {
+        const inp = document.getElementById('user-in');
+        const val = inp.value.trim(); if(!val) return;
+        addMsg(val, 'user-msg'); inp.value = "";
+        
+        setTimeout(() => {
+            const low = val.toLowerCase();
+            if(low === "3.3 beta") {
+                addMsg(`Билд 3.3 Beta найден. Последняя версия с квадратными щитами в 11 мире.`, 'ai-msg', "3.3_Beta");
+            } else if(versions.includes(val)) {
+                addMsg(`Билд ${val} найден в архивах Prestige HQ.`, 'ai-msg', val);
+            } else if(low.includes("люм") || low.includes("21 август")) {
+                addMsg(`Архив от 21.08.2024: Вторжение Люми. Она обожгла руку и думала, что это сон...`, 'ai-msg');
+            } else if(low.includes("снежин")) {
+                addMsg(`Снежинка — это женский вокал. Она в системе вместе с Хахми.`, 'ai-msg');
+            } else if(low.includes("Как Установить Kosmo Level")) {
+                addMsg("Все системы LMSH функционируют нормально. Снежинка и Хахми в сети.", "ai-msg");
+            } else if(low.includes("ламирк")) {
+    addMsg("Ламирк — главный инженер проекта LMSH. Его системы обеспечивают стабильность всей инфраструктуры Prestige HQ.", "ai-msg");
+            } else if(low.includes("мурзик")) {
+    addMsg("Мурзик — официальная помощница главного инженера. Она отвечает за координацию и поддержку систем Ламирка.", "ai-msg");
+            } else {
+                addMsg('К сожалению я не понимаю данный запрос. Я ещё учусь и не имею много команд.', 'ai-msg');
+            }
+        }, 400);
+    }
 
-    function updateUI() {
-        const btn = document.getElementById('readerBtn');
-        btn.innerText = readerMode ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН";
-        btn.style.background = readerMode ? "#ff0055" : "#555";
-        btn.style.boxShadow = readerMode ? "0 0 10px rgba(255, 0, 85, 0.5)" : "none";
-    }
+    function addMsg(text, type, ver = null) {
+        const chat = document.getElementById('chat-flow');
+        const d = document.createElement('div'); d.className = 'msg ' + type;
+        
+        let content = `<span>${text}</span>`;
+        if(type === 'ai-msg') {
+            // Очищаем текст от кавычек для корректной работы озвучки
+            const cleanText = text.replace(/'/g, "").replace(/"/g, "");
+            content += `<button class="speak-btn" onclick="speakText('${cleanText}')">🔊</button>`;
+        }
+        
+        d.innerHTML = content;
+        if(ver) {
+            const fileName = ver === "3.3_Beta" ? `Kosmo_Level_3.3_Beta.worldpack` : `Kosmo_Level_${ver}.worldpack`;
+            d.innerHTML += `<br><a href="packs/${fileName}" class="download-btn" style="margin-top:10px; width:auto;" download="${fileName}">Скачать ${ver.replace('_', ' ')}</a>`;
+        }
+        chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+    }
 
-    // Переключение режима и отправка POST-запроса в базу скрипта
-    async function toggleReader() {
-        readerMode = !readerMode;
-        updateUI();
-        printLog(`Режим Reader изменен на: ${readerMode ? "ВКЛ" : "ВЫКЛ"}`);
+    function speakText(text) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = text;
+        msg.lang = 'ru-RU';
+        msg.pitch = 1.3; // Высокий тон для Снежинки
+        msg.rate = 1.0;
+        window.speechSynthesis.speak(msg);
+    }
 
-        try {
-            printLog("Отправка пакета данных в ScriptProperties...");
-            await fetch(ORACLE_API, {
-                method: "POST",
-                mode: "no-cors", // Важно для работы с CORS политикой редиректов Google
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    userId: USER_ID,
-                    settings: {
-                        readerMode: readerMode,
-                        oracle11_packs: ["kosmo_pack_v1.1", "suxi_shield_v1.1"],
-                        status: "Synced_v2"
-                    }
-                })
-            });
-            printLog("Успешно записано в облако Оракула!");
-        } catch (err) {
-            printLog("Ошибка отправки! Запись сохранена локально.");
-        }
-    }
+    function showStory() {
+        const story = `Это было 21 Августа 2024 года. Люми спала, было 3:23. В 3:15 закончила Фиолетовая Кошка свою лабораторию... Она строила её 4 года на глубине 200 метров. <br><br>Люми проснулась в лабиринте, коснулась чего-то оранжевого и обожгла левую руку. Она шла дальше с мыслью, что это Сон! Но это не сон.`;
+        document.getElementById('story-text').innerHTML = story;
+        document.getElementById('story-modal').style.display = 'block';
+    }
 
-    // Старт системы
-    window.onload = loadSettings;
+    function closeStory() { document.getElementById('story-modal').style.display = 'none'; }
 </script>
 </body>
 </html>
