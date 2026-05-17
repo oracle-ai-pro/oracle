@@ -76,19 +76,32 @@
     <div class="top-nav"><button class="toggle-mode-btn" onclick="toggleMode()" id="mode-label">Режим: Паки</button></div>
     <div class="header"><div class="logo">Oracle AI 1.1</div></div>
     
-    <div id="chat-mode">
-        <div id="chat-flow">
-            <div class="msg ai-msg">
-                Оракул активен. Снежинка и Хахми в системе. Какую версию ищем?
-                <button class="speak-btn" onclick="speakText('Оракул активен. Снежинка и Хахми в системе. Какую версию ищем?')">🔊</button>
-            </div>
-        </div>
-        <div class="input-box">
-            <input type="text" id="user-in" placeholder="Спроси про 3.3 Beta или Люми..." onkeypress="if(event.key==='Enter') send()">
-            <button class="send-btn" onclick="send()">➔</button>
-        </div>
-    </div>
+<div id="chat-mode">
+    <!-- Обертка для двух чатов (в режиме ПК они встанут рядом) -->
+    <div class="chats-wrapper">
+        <!-- ЛЕВЫЙ ЧАТ (Основной) -->
+        <div class="chat-column" id="chat-left">
+            <div class="chat-column-header">Чат 1 (Снежинка)</div>
+            <div id="chat-flow" class="chat-flow-box">
+                <div class="msg ai-msg">Оракул активен. Поток Снежники готов.</div>
+            </div>
+        </div>
 
+        <!-- ПРАВЫЙ ЧАТ (Дополнительный из LocalStorage) -->
+        <div class="chat-column" id="chat-right">
+            <div class="chat-column-header">Чат 2 (Хахми)</div>
+            <div id="chat-flow-2" class="chat-flow-box">
+                <!-- Сюда скрипт загрузит историю из localStorage -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ОБЩЕЕ ПОЛЕ ВВОДА (Отправляет в оба чата сразу) -->
+    <div class="input-box">
+        <input type="text" id="user-in" placeholder="Отправить двум чатам сразу..." onkeypress="if(event.key==='Enter') sendDual()">
+        <button class="send-btn" onclick="sendDual()">➔</button>
+    </div>
+</div>
     <div id="direct-mode">
         <div class="section-title">Игры</div>
         <div class="item-card">
