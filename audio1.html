@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Oracle AI | Video</title>
+    <style>
+        :root {
+            --bg: #06070a;             
+            --card: #0d0e15;           
+            --text: #e2e2e9;           
+            --sub: #545766;            
+            --border: #1b1d2a;         
+            --neon-cyan: #0a84ff;
+            --neon-purple: #af52de;
+            --m3-primary: #adc6ff;
+            --glow: rgba(10, 132, 255, 0.2);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        body { background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+
+        /* ГЛАВНЫЙ МОДУЛЬ АУДИО-ШЛЮЗА */
+        .audio-pod {
+            background: var(--card); width: 100%; max-width: 600px;
+            border-radius: 28px; padding: 25px; border: 2px solid var(--border);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 30px var(--glow);
+            margin-top: 40px; position: relative; overflow: hidden;
+        }
+
+        /* Декоративная линия сверху */
+        .audio-pod::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+        }
+
+        .pod-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-family: monospace; }
+        .pod-status { font-size: 11px; background: #16192b; color: #34c759; padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(52, 199, 89, 0.2); font-weight: bold; letter-spacing: 1px; }
+        .pod-version { font-size: 11px; color: var(--sub); }
+
+        .pod-info { text-align: center; margin-bottom: 25px; }
+        .pod-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .pod-subtitle { font-size: 13px; color: var(--m3-primary); font-family: monospace; }
+
+        /* 🪐 АВТОНОМНЫЙ ПЛЕЕР (БЕЗ GOOGLE IFRAME!) */
+        .player-wrapper {
+            background: #131520; border: 1px solid var(--border);
+            border-radius: 20px; padding: 15px; margin-bottom: 20px;
+            transition: 0.3s;
+        }
+        .player-wrapper:hover { border-color: var(--neon-cyan); }
+        
+        .player-label { font-size: 11px; font-family: monospace; color: var(--sub); margin-bottom: 8px; text-align: left; }
+        
+        /* Стилизация HTML5 тега под неон */
+        audio { width: 100%; height: 36px; outline: none; }
+
+        /* ЛОГ ТЕРМИНАЛА (ДЛЯ ИСТОРИКОВ) */
+        .terminal-log {
+            background: #090a10; border-radius: 16px; padding: 15px;
+            border: 1px solid var(--border); font-family: monospace; font-size: 12px;
+            line-height: 1.6; color: #a5a7b4; text-align: left; max-height: 150px; overflow-y: auto;
+        }
+        .terminal-log::-webkit-scrollbar { width: 4px; }
+        .terminal-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .log-line { margin-bottom: 6px; }
+        .log-line b { color: var(--neon-purple); }
+
+        .footer-key { margin-top: 25px; font-family: monospace; font-size: 11px; color: var(--sub); text-align: center; }
+    </style>
+</head>
+<body>
+
+    <div class="audio-pod">
+        <div class="pod-header">
+            <div class="pod-status">● LIVE_RELEASE</div>
+            <div class="pod-version">SYS_BUILD: UI2.2_STABLE</div>
+        </div>
+
+        <div class="pod-info">
+            <h1 class="pod-title">LMSH AUDIO 1</h1>
+            <p class="pod-subtitle">🪐 ТИТАН_СИСТЕМА: РАСШИФРОВКА_АКТИВНА</p>
+        </div>
+
+        <div class="player-wrapper">
+            <div class="player-label">&gt;&gt; SOURCE: /ZAGRUZKI/PODCAST_34.MP3</div>
+            <audio controls>
+                <source src="podcast_34.mp3" type="audio/mpeg">
+                Критическая ошибка шлюза. Файл не найден в загрузках Оракула.
+            </audio>
+        </div>
+
+        <div class="terminal-log">
+            <div class="log-line"><b>[00:00]</b> Запуск шлюза на полной мощности...</div>
+            <div class="log-line"><b>[05:12]</b> Анализ слоя 1 NEON LEVEL. Люми адаптируется к полёту.</div>
+            <div class="log-line"><b>[18:40]</b> Фиолетовая Кошка зафиксирована в секторе головоломок.</div>
+            <div class="log-line"><b>[34:00]</b> Хроники Штаба ЛМСХ успешно закешированы Оракулом.</div>
+        </div>
+
+        <div class="footer-key">Kosmo Level 3.4</div>
+    </div>
+
+</body>
+</html>
