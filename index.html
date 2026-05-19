@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Oracle AI 2.1 | Prestige HQ</title>
+    <title>Oracle AI 2.2 | Prestige HQ</title>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#010103">
     <style>
@@ -22,21 +22,19 @@
             --grad: linear-gradient(90deg, #02b6ed 0%, #e60ced 100%);
         }
 
-        /* ЭКСПЕРИМЕНТАЛЬНАЯ НЕОНОВАЯ СВЕТЛАЯ ТЕМА */
         body.light-theme {
             --bg: #f4f5fa;
             --card: #ffffff;
             --text: #1c1b1f;
             --sub: #65666f;
             --border: #dcdde7;
-            background: radial-gradient(circle at top right, rgba(230, 12, 237, 0.08), transparent), radial-gradient(circle at bottom left, rgba(2, 182, 237, 0.08), transparent);
         }
 
         body.light-theme .oracle-container { background: rgba(255, 255, 255, 0.9); box-shadow: 0 12px 40px rgba(0,0,0,0.15); }
         body.light-theme .ai-msg { background: rgba(0, 0, 0, 0.03); color: #1c1b1f; }
         body.light-theme input { background: #f0f1f7; color: #1c1b1f; }
-        body.light-theme .reader-inner-card, body.light-theme .io-stream-container { background: #f0f1f7; }
-        body.light-theme .story-content { color: #1c1b1f; }
+        body.light-theme .reader-inner-card, body.light-theme .io-stream-container, body.light-theme .left-drawer { background: #f0f1f7; }
+        body.light-theme .story-content, body.light-theme .drawer-chat-item { color: #1c1b1f; }
 
         ::-webkit-scrollbar { width: 5px; background: transparent; }
         ::-webkit-scrollbar-track { background: transparent; }
@@ -63,19 +61,39 @@
             animation: boot 0.5s ease-out; 
         }
 
-        /* НАВИГАЦИЯ С ВСПЛЫВАЮЩИМ МЕНЮ */
-        .top-nav { padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); z-index: 10; }
-        .nav-logo-text { font-weight: 900; font-size: 14px; letter-spacing: 1.5px; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
-        .menu-trigger-btn { background: var(--border); border: 1px solid rgba(255,255,255,0.05); color: var(--cyan); padding: 8px 16px; border-radius: 14px; font-size: 11px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s; }
+        /* НАВИГАЦИЯ С ДВУМЯ КНОПКАМИ ПО КРАЯМ */
+        .top-nav { padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2); z-index: 10; }
+        .nav-logo-text { font-weight: 900; font-size: 13px; letter-spacing: 1.5px; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
+        .menu-trigger-btn { background: var(--border); border: 1px solid rgba(255,255,255,0.05); color: var(--cyan); padding: 8px 12px; border-radius: 14px; font-size: 11px; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; transition: 0.2s; }
         .menu-trigger-btn:hover { border-color: var(--cyan); box-shadow: 0 0 10px rgba(2, 182, 237, 0.2); }
+        .purple-trigger { color: var(--purple) !important; }
+        .purple-trigger:hover { border-color: var(--purple) !important; box-shadow: 0 0 10px rgba(230, 12, 237, 0.2) !important; }
 
-        /* ВСПЛЫВАЮЩИЙ СЛОЙ: ПАКИ, РИДЕР, НАСТРОЙКИ (DROP-DOWN OVERLAY) */
+        /* ВСПЛЫВАЮЩАЯ ШТОРКА ЧАТОВ СЛЕВА (LEFT POP-UP DRAWER) */
+        .left-drawer {
+            position: absolute;
+            top: 55px; left: 0; bottom: 0;
+            width: 260px;
+            background: rgba(13, 14, 17, 0.98);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--border);
+            z-index: 98;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            overflow-y: auto;
+            animation: slideLeftIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .drawer-chat-item { padding: 10px 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; font-size: 12px; margin-bottom: 8px; cursor: pointer; text-align: left; color: var(--text); font-weight: 600; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .drawer-chat-item:hover { border-color: var(--cyan); background: rgba(2, 182, 237, 0.05); }
+
+        /* ВСПЛЫВАЮЩИЙ СЛОЙ НАСТРОЕК СПРАВА (DROP-DOWN OVERLAY) */
         .dropdown-overlay {
             position: absolute;
             top: 55px; left: 0; right: 0; bottom: 0;
             background: rgba(13, 14, 17, 0.98);
             backdrop-filter: blur(20px);
-            z-index: 99;
+            z-index: 97;
             display: none;
             flex-direction: column;
             padding: 24px;
@@ -84,29 +102,10 @@
         }
 
         /* ДИНАМИЧЕСКАЯ СТАРТОВАЯ ЗОНА ПРИВЕТСТВИЯ */
-        .welcome-zone {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex-grow: 1;
-            gap: 16px;
-            padding: 20px;
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            opacity: 1;
-            transform: scale(1);
-        }
-        .welcome-zone.hidden {
-            opacity: 0;
-            transform: translateY(-50px) scale(0.9);
-            height: 0;
-            padding: 0;
-            margin: 0;
-            overflow: hidden;
-            flex-grow: 0;
-        }
+        .welcome-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; gap: 16px; padding: 20px; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); opacity: 1; transform: scale(1); }
+        .welcome-zone.hidden { opacity: 0; transform: translateY(-50px) scale(0.9); height: 0; padding: 0; margin: 0; overflow: hidden; flex-grow: 0; }
 
-        /* ЖИДКИЙ ЛОГОТИП */
+        /* ЛОГОТИП КАПЛЯ */
         .blob-container { position: relative; width: 120px; height: 40px; background: #010103; filter: blur(6px) contrast(20); overflow: hidden; display: flex; align-items: center; justify-content: center; border-radius: 20px; }
         .blob { position: absolute; width: 20px; height: 20px; border-radius: 50%; }
         .cyan-blob { background: #02b6ed; left: 25px; animation: mergeLeft 6s infinite ease-in-out; }
@@ -129,28 +128,10 @@
         input { flex: 1; background: #0d0e11; border: 1px solid var(--border); border-radius: 14px; padding: 12px; color: #fff; outline: none; font-size: 14px; transition: 0.2s; }
         input:focus { border-color: var(--cyan); }
         
-        .send-btn { 
-            background: var(--grad); 
-            border: none; 
-            border-radius: 14px; 
-            width: 48px; 
-            height: 43px;
-            color: white; 
-            cursor: pointer; 
-            font-size: 16px; 
-            transition: all 0.3s ease; 
-            opacity: 0; 
-            transform: scale(0.8); 
-            pointer-events: none;
-        }
-        .send-btn.active { 
-            opacity: 1; 
-            transform: scale(1); 
-            pointer-events: auto; 
-            animation: bluePulse 3s infinite ease-in-out;
-        }
+        .send-btn { background: var(--grad); border: none; border-radius: 14px; width: 48px; height: 43px; color: white; cursor: pointer; font-size: 16px; transition: all 0.3s ease; opacity: 0; transform: scale(0.8); pointer-events: none; }
+        .send-btn.active { opacity: 1; transform: scale(1); pointer-events: auto; animation: bluePulse 3s infinite ease-in-out; }
 
-        /* ЭЛЕМЕНТЫ СЕТКИ В ДРОПДАУНЕ */
+        /* СЕТКА И НАСТРОЙКИ */
         .section-title { font-size: 11px; font-weight: 900; color: var(--cyan); text-transform: uppercase; margin: 20px 0 12px; letter-spacing: 1px; border-left: 3px solid var(--purple); padding-left: 10px; }
         .packs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .item-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 14px; border-radius: 16px; }
@@ -158,9 +139,7 @@
 
         .download-btn { display: block; padding: 8px; background: var(--border); color: var(--text); text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 11px; text-transform: uppercase; text-align: center; transition: 0.2s; cursor: pointer; border: none; }
         .download-btn:hover { background: var(--cyan); color: #000; }
-        .steam-btn { background: var(--grad) !important; color: #fff !important; }
 
-        /* ИНЖЕНЕРНЫЙ ОТСЕК НАСТРОЕК */
         .settings-box { background: rgba(255,255,255,0.02); border: 1px solid var(--border); padding: 18px; border-radius: 20px; display: flex; flex-direction: column; gap: 14px; }
         .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .setting-label { font-size: 13px; font-weight: 600; }
@@ -171,31 +150,23 @@
         
         .warning-text { color: #ff4a4a; font-size: 11px; font-weight: bold; border-left: 2px solid #ff4a4a; padding-left: 8px; margin-top: 4px; display: none; animation: blink 1.5s infinite; }
 
-        /* КУРАТОР ИСТОРИЙ И РИДЕР В МЕНЮ */
+        /* РИДЕР */
         .story-selector { display: flex; gap: 8px; margin-bottom: 12px; }
         .story-tab-btn { flex: 1; background: var(--border); border: 1px solid transparent; color: var(--sub); padding: 10px; border-radius: 12px; font-size: 12px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         .story-tab-btn.active { background: rgba(2, 182, 237, 0.1); border-color: var(--cyan); color: var(--cyan); }
-
         .reader-inner-card { background: #0d0e11; border-radius: 20px; border: 1px solid var(--border); padding: 20px; position: relative; margin-bottom: 20px; }
         .story-container { max-height: 200px; overflow-y: auto; }
         .story-content { font-size: 14px; line-height: 1.6; outline: none; text-align: justify; color: var(--text); }
 
-        /* ПУЛЬТ ДЛЯ ПОДКАСТА С АНИМАЦИЕЙ ШЛЮЗА */
+        /* ПОДКАСТ ГЕЙТ */
         .io-stream-container { background: #0d0e11; border: 1px solid var(--purple); border-radius: 20px; overflow: hidden; display: flex; flex-direction: column; margin-bottom: 20px; }
         .io-stream-header { background: rgba(0,0,0,0.4); padding: 10px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
         .io-premiere-tag { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 12px; font-weight: 900; letter-spacing: 1.5px; }
         .audio-link-body { padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 12px; }
-        
-        .neon-gate-icon { 
-            width: 50px; height: 50px; border-radius: 50%; background: var(--bg); 
-            border: 1px solid var(--purple); display: flex; align-items: center; justify-content: center; 
-            font-size: 18px; cursor: pointer; transition: 0.2s; 
-            animation: purplePulse 4s infinite ease-in-out;
-        }
-        .neon-gate-icon:hover { transform: scale(1.08); border-color: var(--cyan); }
+        .neon-gate-icon { width: 50px; height: 50px; border-radius: 50%; background: var(--bg); border: 1px solid var(--purple); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; transition: 0.2s; animation: purplePulse 4s infinite ease-in-out; }
         .launch-btn { background: var(--grad); color: #fff; border: none; padding: 10px 20px; border-radius: 14px; font-weight: bold; font-size: 11px; cursor: pointer; }
 
-        /* МАТЕРИАЛЬНЫЙ ТУЛБАР ТЕКСТА РИДЕРА С ФИКСИРОВАННЫМИ ЦВЕТАМИ М3 */
+        /* ТУЛБАР */
         .bubble-toolbar { position: absolute; display: none; background: rgba(30, 31, 40, 0.98); backdrop-filter: blur(10px); border: 1px solid var(--m3-surface-variant); border-radius: 16px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 1000; flex-direction: column; gap: 6px; min-width: 220px; transform: translate(-50%, -105%); }
         .toolbar-row { display: flex; align-items: center; gap: 4px; width: 100%; justify-content: center; }
         .bubble-btn { background: transparent; border: none; color: #e2e2e9; width: 28px; height: 28px; border-radius: 8px; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
@@ -206,22 +177,14 @@
         .ai-menu-item:hover { background: var(--m3-surface-variant); color: var(--purple); }
         .ai-status { font-size: 11px; color: var(--purple); font-family: monospace; font-weight: bold; margin-top: 8px; display: none; text-align: center; animation: blink 1s infinite; }
 
-        /* PULSE ANIMATIONS ЧЕК-ЛИСТА */
-        @keyframes bluePulse {
-            0%, 100% { box-shadow: 0 0 12px rgba(2, 182, 237, 0.5); }
-            50% { box-shadow: 0 0 25px rgba(2, 182, 237, 0.8); }
-        }
-        @keyframes purplePulse {
-            0%, 100% { box-shadow: 0 0 12px rgba(230, 12, 237, 0.5); transform: scale(1); }
-            50% { box-shadow: 0 0 28px rgba(230, 12, 237, 0.8); transform: scale(1.03); }
-        }
-        @keyframes neonPulse {
-            0%, 100% { opacity: 0.95; text-shadow: 0 0 10px rgba(255,255,255,0.1); }
-            50% { opacity: 1; text-shadow: 0 0 20px rgba(2, 182, 237, 0.2); }
-        }
+        /* АНИМАЦИИ */
+        @keyframes bluePulse { 0%, 100% { box-shadow: 0 0 12px rgba(2, 182, 237, 0.5); } 50% { box-shadow: 0 0 25px rgba(2, 182, 237, 0.8); } }
+        @keyframes purplePulse { 0%, 100% { box-shadow: 0 0 12px rgba(230, 12, 237, 0.5); transform: scale(1); } 50% { box-shadow: 0 0 28px rgba(230, 12, 237, 0.8); transform: scale(1.03); } }
+        @keyframes neonPulse { 0%, 100% { opacity: 0.95; text-shadow: 0 0 10px rgba(255,255,255,0.1); } 50% { opacity: 1; text-shadow: 0 0 20px rgba(2, 182, 237, 0.2); } }
         @keyframes boot { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes slideDown { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes slideLeftIn { from { transform: translateX(-20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes blink { 50% { opacity: 0.3; } }
     </style>
 </head>
@@ -229,12 +192,19 @@
 
 <div class="oracle-container">
     <div class="top-nav">
-        <div class="nav-logo-text">Core Node v2.1</div>
-        <button class="menu-trigger-btn" onclick="toggleDropdown()" id="menu-btn">Паки & Ридер & Настройки 🌌</button>
+        <button class="menu-trigger-btn purple-trigger" onclick="toggleLeftDrawer()" id="drawer-btn">☰ Логи чатов</button>
+        <div class="nav-logo-text">Core Node v2.2</div>
+        <button class="menu-trigger-btn" onclick="toggleDropdown()" id="menu-btn">Паки & Настройки 🌌</button>
+    </div>
+
+    <div id="left-drawer-menu" class="left-drawer">
+        <div class="section-title" style="margin-top:0;">Архив сессий ядра</div>
+        <button class="download-btn" onclick="clearCurrentSession()" style="background:#ff4a4a; color:#fff; margin-bottom:14px;">⚡ Сбросить Текущий Чат</button>
+        <div id="saved-chats-list">
+            </div>
     </div>
 
     <div id="dropdown-menu" class="dropdown-overlay">
-        
         <div class="section-title">Инженерный Пульт Управления</div>
         <div class="settings-box">
             <div class="setting-row">
@@ -270,7 +240,7 @@
             </div>
         </div>
 
-        <div class="section-title">🔮 Kosmo Level AI Reader v2.1</div>
+        <div class="section-title">🔮 Kosmo Level AI Reader v2.2</div>
         <div class="story-selector">
             <button class="story-tab-btn active" id="tab-story1" onclick="loadStory(1)">Читать: Летание</button>
             <button class="story-tab-btn" id="tab-story2" onclick="loadStory(2)">Читать: Оракул Поток</button>
@@ -285,11 +255,9 @@
         <div class="io-stream-container">
             <div class="io-stream-header">
                 <div class="io-premiere-tag">⚡ LMSH I/O PODCAST LIVE ⚡</div>
-                <div style="font-family: monospace; font-size: 9px; color: #34c759;">ONLINE</div>
             </div>
             <div class="audio-link-body">
                 <div class="neon-gate-icon" onclick="openPodcast()" title="Повернуть Ключ">🔑)</div>
-                <p style="font-size: 11px; color: var(--sub); text-align: center; margin: 0;">Синхронизированный 12-минутный лог ИИ дешифрован.</p>
                 <button class="launch-btn" onclick="openPodcast()">Открыть Поток Оракула 🛸</button>
             </div>
         </div>
@@ -299,7 +267,6 @@
     </div>
 
     <div id="chat-screen">
-        
         <div id="welcome-block" class="welcome-zone">
             <div class="blob-container">
                 <div class="blob cyan-blob"></div>
@@ -307,9 +274,7 @@
             </div>
             <h1 class="derzky-title">Что делаешь?</h1>
         </div>
-
         <div id="chat-flow" class="chat-flow-box"></div>
-
         <div class="input-box">
             <input type="text" id="user-input" placeholder="Введите ваш запрос к ядру ЛМСХ..." oninput="checkInput()" onkeypress="handleKeyPress(event)">
             <button id="send-btn" class="send-btn" onclick="sendMsg()">➔</button>
@@ -338,12 +303,13 @@
     const versions = ["1.0", "2.0", "2.2", "2.5", "2.8", "2.9", "3.0", "3.1", "3.2", "3.3", "3.3.1", "3.4"];
     const stories = {
         1: `<p><b>Летание</b></p><p>Люми зашла в портал. И оказалась в других цветах. Затем зашла в портал и получила дополнительную способность, Летать. Она научилась летать и сильно удивилась. Во второй комнате. Она решала головоломки.</p><p>А в конце она услышала своих друзей, только странно было то, что между друзьями и ней был <span style="color: #adc6ff;"><b>1 NEON LEVEL!</b></span> И она сказала важную фразу: <b>«В любом случае я смогу себя контролировать»</b>, запомните эту фразу...</p>`,
-        2: `<p><b>Вторжение Люми</b></p><p>Это было 21 Августа 2024 года. Люми спала, было 3:23. В 3:15 закончила Фиолетовая Кошка свою лабораторию. И полетела искать 4 рандомных крепко спящих Котят. Это город Кошкин-Хвост и там обитают многие жильцы котята и коты и кошки. Фиолетовая кошка уже с 2020 года сбежала в свою подземную нору и начала глубоко строить её. Полиция забила на это дело, так как они искали Фиолетовая кошку почти 5 месяцев после того как она сбежала. И она начала строить глубоко, примерно 200 м под землёй. Она строила 4 года это. И в ночь 21.08 она искала 4 добычи Разных Цветов. Но именно Люме ничего не рассказали. А друзьям хоть что то. Люми крепко всегда спит. Обычно она активная и она должна что то делать с этим. Но тут она ничего не поняла, боялась всего что она видела и прочее. Когда Люми прошла Лабиринт, она показалась в мрачной комнате, но чуть по светлее, она этого тоже не ожидала и даже тихонько спросила: “Эта комната стала светлее, или мне кажется?”. Затем она увидела оранжевое что-то, она случайно его коснулась и обожгла свою левую руку. Но потом она пошла дальше с мыслью что это всё Сон! Но она прошла так все первые комнаты и это не сон.</p>`
+        2: `<p><b>Вторжение Люми</b></p><p>Это было 21 Августа 2024 года. Люми спала... Фиолетовая кошка уже с 2020 года сбежала в свою подземную нору, примерно 200 м под землёй...</p>`
     };
 
     let isFirstMessage = true;
     let currentSavedSelection = null;
     let isMemoryEnabled = true;
+    let currentChatSessionId = null;
 
     const editor = document.getElementById('editor');
     const toolbar = document.getElementById('bubble-toolbar');
@@ -351,63 +317,64 @@
     const scrollBox = document.getElementById('scroll-box');
 
     function toggleDropdown() {
+        document.getElementById('left-drawer-menu').style.display = "none";
+        document.getElementById('drawer-btn').innerText = "☰ Логи чатов";
         const menu = document.getElementById('dropdown-menu');
         const btn = document.getElementById('menu-btn');
         if(menu.style.display === "flex") {
             menu.style.display = "none";
-            btn.innerText = "Паки & Ридер & Настройки 🌌";
+            btn.innerText = "Паки & Настройки 🌌";
         } else {
             menu.style.display = "flex";
             btn.innerText = "Закрыть Меню ❌";
         }
     }
 
-    /* СКРИПТЫ НАСТРОЕК */
+    /* ФУНКЦИЯ ВСПЛЫВАЮЩЕЙ ШТОРКИ СЛЕВА */
+    function toggleLeftDrawer() {
+        document.getElementById('dropdown-menu').style.display = "none";
+        document.getElementById('menu-btn').innerText = "Паки & Настройки 🌌";
+        const drawer = document.getElementById('left-drawer-menu');
+        const btn = document.getElementById('drawer-btn');
+        if(drawer.style.display === "flex") {
+            drawer.style.display = "none";
+            btn.innerText = "☰ Логи чатов";
+        } else {
+            drawer.style.display = "flex";
+            btn.innerText = "Закрыть Логи ❌";
+            renderSavedChatsList();
+        }
+    }
+
     function toggleMemory() {
         const btn = document.getElementById('memory-btn');
         const warn = document.getElementById('cache-warn');
         isMemoryEnabled = !isMemoryEnabled;
         if(isMemoryEnabled) {
-            btn.innerText = "ВКЛЮЧЕНО";
-            btn.classList.add('active');
-            warn.style.display = "block";
+            btn.innerText = "ВКЛЮЧЕНО"; btn.classList.add('active'); warn.style.display = "block";
         } else {
-            btn.innerText = "ВЫКЛЮЧЕНО";
-            btn.classList.remove('active');
-            warn.style.display = "none";
+            btn.innerText = "ВЫКЛЮЧЕНО"; btn.classList.remove('active'); warn.style.display = "none";
         }
     }
 
     function toggleTheme() {
         const btn = document.getElementById('theme-btn');
         document.body.classList.toggle('light-theme');
-        if(document.body.classList.contains('light-theme')) {
-            btn.innerText = "НЕОНОВЫЙ ВЗРЫВ (LIGHT)";
-            btn.classList.add('active');
-        } else {
-            btn.innerText = "ГЛУБОКИЙ КОСМОС (DARK)";
-            btn.classList.remove('active');
-        }
+        btn.innerText = document.body.classList.contains('light-theme') ? "НЕОНОВЫЙ ВЗРЫВ (LIGHT)" : "ГЛУБОКИЙ КОСМОС (DARK)";
+        btn.classList.toggle('active', document.body.classList.contains('light-theme'));
     }
 
     function checkInput() {
         const inp = document.getElementById('user-input');
         const btn = document.getElementById('send-btn');
-        if(inp.value.trim().length > 0) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+        btn.classList.toggle('active', inp.value.trim().length > 0);
     }
 
     function handleKeyPress(event) {
         if(event.key === 'Enter') {
             const inp = document.getElementById('user-input');
-            if(inp.value.trim().length > 0) {
-                sendMsg();
-            } else {
-                event.preventDefault();
-            }
+            if(inp.value.trim().length > 0) sendMsg();
+            else event.preventDefault();
         }
     }
 
@@ -419,100 +386,114 @@
         if(isFirstMessage) {
             document.getElementById('welcome-block').classList.add('hidden');
             isFirstMessage = false;
+            if(isMemoryEnabled && !currentChatSessionId) {
+                currentChatSessionId = "session_" + Date.now();
+            }
         }
 
         appendMessage(val, 'user-msg');
-        inp.value = "";
-        checkInput();
+        inp.value = ""; checkInput();
 
         setTimeout(() => {
             const currentVoice = document.getElementById('voice-select').value;
             let replyPrefix = "🤖 Ядро:";
-            
             if(currentVoice === "murzik") replyPrefix = "🐾 Мурзик:";
             else if(currentVoice === "khakhmi") replyPrefix = "🎤 Хахми:";
             else if(currentVoice === "snezhinka") replyPrefix = "❄️ Снежинка:";
             else if(currentVoice === "lamirk") replyPrefix = "🛠️ Ламирк:";
 
-            let reply = `${replyPrefix} Лог обработан. Поток данных стабилен в памяти устройства.`;
-            if(val.toLowerCase().includes("3.4")) reply = `${replyPrefix} Мониторинг Космо 3.4 активен. Обнаружена секретная активность на глубине 200м.`;
-            
+            let reply = `${replyPrefix} Лог стабилен в памяти устройства.`;
             appendMessage(reply, 'ai-msg');
+
+            if(isMemoryEnabled && currentChatSessionId) {
+                const chatFlow = document.getElementById('chat-flow').innerHTML;
+                localStorage.setItem(currentChatSessionId, JSON.stringify({
+                    date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    html: chatFlow
+                }));
+            }
         }, 500);
     }
 
     function appendMessage(text, type) {
         const flow = document.getElementById('chat-flow');
         const d = document.createElement('div'); d.className = 'msg ' + type;
-        d.innerText = text; flow.appendChild(d); flow.scrollTop = flow.scrollHeight;
+        d.innerHTML = text; flow.appendChild(d); flow.scrollTop = flow.scrollHeight;
+    }
+
+    function renderSavedChatsList() {
+        const list = document.getElementById('saved-chats-list');
+        list.innerHTML = "";
+        let count = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if(key.startsWith("session_")) {
+                count++;
+                const data = JSON.parse(localStorage.getItem(key));
+                list.innerHTML += `<div class="drawer-chat-item" onclick="restoreSession('${key}')">📟 Лог от ${data.date} <span style="color:var(--cyan); font-size:10px;">➔</span></div>`;
+            }
+        }
+        if(count === 0) list.innerHTML = `<div style="font-size:11px; color:var(--sub); text-align:center; padding:10px;">Архив пуст</div>`;
+    }
+
+    function restoreSession(key) {
+        currentChatSessionId = key;
+        const data = JSON.parse(localStorage.getItem(key));
+        document.getElementById('welcome-block').classList.add('hidden');
+        isFirstMessage = false;
+        document.getElementById('chat-flow').innerHTML = data.html;
+        toggleLeftDrawer();
+    }
+
+    function clearCurrentSession() {
+        document.getElementById('chat-flow').innerHTML = "";
+        document.getElementById('welcome-block').classList.remove('hidden');
+        isFirstMessage = true;
+        currentChatSessionId = null;
+        toggleLeftDrawer();
     }
 
     function loadStory(id) {
         document.getElementById('tab-story1').classList.toggle('active', id === 1);
         document.getElementById('tab-story2').classList.toggle('active', id === 2);
-        editor.innerHTML = stories[id];
-        scrollBox.scrollTop = 0;
+        editor.innerHTML = stories[id]; scrollBox.scrollTop = 0;
     }
 
     function renderPacks() {
-        const list = document.getElementById('packs-list');
-        list.innerHTML = "";
+        const list = document.getElementById('packs-list'); list.innerHTML = "";
         versions.forEach(v => {
-            list.innerHTML += `<div class="item-card"><div class="item-name">Kosmo Level ${v}</div><a href="https://oracle-ai-pro.github.io/oracle/packs/Kosmo_Level_${v}.worldpack" class="download-btn" download>Скачать</a></div>`;
+            list.innerHTML += `<div class="item-card"><div class="item-name">Kosmo Level ${v}</div><a href="#" class="download-btn">Скачать</a></div>`;
         });
     }
 
-    function saveSelection() {
-        const sel = window.getSelection();
-        if (sel.rangeCount > 0) currentSavedSelection = sel.getRangeAt(0).cloneRange();
-    }
-
+    function saveSelection() { const sel = window.getSelection(); if (sel.rangeCount > 0) currentSavedSelection = sel.getRangeAt(0).cloneRange(); }
     document.addEventListener('selectionchange', () => {
         const selection = window.getSelection();
         if (!selection.isCollapsed && selection.toString().trim().length > 0 && editor.contains(selection.anchorNode)) {
-            saveSelection();
-            const range = selection.getRangeAt(0);
-            const rect = range.getBoundingClientRect();
-            toolbar.style.display = 'flex';
-            toolbar.style.top = `${rect.top + window.scrollY - 12}px`;
-            toolbar.style.left = `${rect.left + window.scrollX + (rect.width / 2)}px`;
-        } else {
-            if (selection.isCollapsed && !toolbar.contains(document.activeElement)) {
-                toolbar.style.display = 'none'; aiMenu.style.display = 'none';
-            }
-        }
+            saveSelection(); const range = selection.getRangeAt(0); const rect = range.getBoundingClientRect();
+            toolbar.style.display = 'flex'; toolbar.style.top = `${rect.top + window.scrollY - 12}px`; toolbar.style.left = `${rect.left + window.scrollX + (rect.width / 2)}px`;
+        } else { if (selection.isCollapsed && !toolbar.contains(document.activeElement)) { toolbar.style.display = 'none'; aiMenu.style.display = 'none'; } }
     });
 
     function format(command) { document.execCommand(command, false, null); editor.focus(); }
-    
     function setCustomColor(color) {
         if (!currentSavedSelection) return;
-        const selection = window.getSelection();
-        selection.removeAllRanges(); selection.addRange(currentSavedSelection);
-        document.execCommand('foreColor', false, color);
-        editor.focus();
+        const selection = window.getSelection(); selection.removeAllRanges(); selection.addRange(currentSavedSelection);
+        document.execCommand('foreColor', false, color); editor.focus();
     }
-    
     function toggleAiSubmenu(event) { event.stopPropagation(); aiMenu.style.display = aiMenu.style.display === 'flex' ? 'none' : 'flex'; }
-    
     function injectAI(mode) {
         aiMenu.style.display = 'none'; toolbar.style.display = 'none';
-        const loader = document.getElementById('ai-loading'); loader.style.display = 'block';
-        const mods = {
-            cinema: `<p><br><span style="color: var(--purple);"><b>[🚀 Кинематографичный Лор]:</b></span> Неоновые искры шлюзов поглотили Люми...</p>`,
-            madness: `<p><br><span style="color: #ff4a4a;"><b>[🔮 Generator Безумия]:</b></span> Система ЛМСХ взломана Фиолетовой Кошкой!</p>`
-        };
+        document.getElementById('ai-loading').style.display = 'block';
         setTimeout(() => {
-            loader.style.display = 'none';
-            editor.innerHTML += mods[mode];
+            document.getElementById('ai-loading').style.display = 'none';
+            editor.innerHTML += mode === 'cinema' ? `<p><br><span style="color: var(--purple);"><b>[🚀 Лор]:</b></span> Портал искрится...</p>` : `<p><br><span style="color: #ff4a4a;"><b>[🔮 Безумие]:</b></span> Взлом ядра!</p>`;
             scrollBox.scrollTop = scrollBox.scrollHeight;
         }, 800);
     }
-
     function openPodcast() { window.open("https://notebooklm.google.com/", '_blank'); }
 
-    loadStory(1);
-    renderPacks();
+    loadStory(1); renderPacks();
 </script>
 </body>
 </html>
