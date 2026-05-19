@@ -358,6 +358,66 @@
         }
     }
 
+    /* ИНТЕРАКТИВНАЯ МАТРИЦА ОТВЕТОВ ОРАКУЛА 2.3 */
+    function getOracleResponse(text, character) {
+        const lower = text.toLowerCase();
+        
+        // Базовые префиксы описания персонажей
+        const chars = {
+            lamirk: { name: "🛠️ Ламирк", gender: "m" },
+            murzik: { name: "🐾 Мурзик", gender: "f" },
+            khakhmi: { name: "🎤 Хахми", gender: "m" },
+            snezhinka: { name: "❄️ Снежинка", gender: "f" }
+        };
+        
+        const cur = chars[character] || chars.lamirk;
+
+        // Секретный триггер реального запуска
+        if (text.includes("🔑)")) {
+            return `${cur.name}: Ключ авторизации принят. Инициализирую прямой аудио-стрим через шлюз подкаста NotebookLM. Готовьтесь к выходу в эфир!`;
+        }
+
+        // Логи комнат
+        if (lower.includes("room 1") || lower.includes("комната 1") || lower.includes("спавн")) {
+            if (character === "lamirk") return `🛠️ Ламирк: Камера Экспериментального Бокса №1 фиксирует инверсию спектра. Внимание, Люми оторвалась от земли! Гравитационные датчики на нуле. Сборка v2.3 подтверждает способность «Летать».`;
+            if (character === "murzik") return `🐾 Мурзик: Мяу! Вижу Люми на мониторах Room 1. Она научилась летать и сильно удивилась! Фиксирую изменение цветовой схемы бокса.`;
+            return `${cur.name}: [Room 1 Лог] Люми зашла в портал. Спектр изменен. Активирован режим левитации.`;
+        }
+        
+        if (lower.includes("room 2") || lower.includes("комната 2") || lower.includes("лаборатория") || lower.includes("датчик")) {
+            if (character === "lamirk") return `🛠️ Ламирк: Я запустил диагностику автоматики в Room 2. Сенсоры ClickDetector активны. Люми решает головоломки прямо в воздухе, чтобы обойти лазерную сетку на полу.`;
+            if (character === "murzik") return `🐾 Мурзик: Я проверяю датчики в Room 2! Главное, чтобы сенсоры на полу не взбесились, а то клики исчезнут, и система уйдет в бутлуп!`;
+            return `${cur.name}: [Room 2 Лог] Датчики движения стабильны. Объект решает тестовые головоломки ЛМСХ.`;
+        }
+
+        if (lower.includes("room 3") || lower.includes("room 4") || lower.includes("комната 3") || lower.includes("комната 4") || lower.includes("шлюз")) {
+            return `${cur.name}: [Шлюзовой сектор] Внимание, перехвачено внутреннее уведомление от Мурзики! Обнаружена фиолетовая энергия на глубине 200 метров. Гермодвери закрываются автоматически!`;
+        }
+
+        if (lower.includes("room 5") || lower.includes("room 6") || lower.includes("комната 5") || lower.includes("комната 6") || lower.includes("лента") || lower.includes("трещина") || lower.includes("свет")) {
+            if (character === "lamirk") return `🛠️ Ламирк: Чрезвычайная ситуация в секторе 5! Адресная LED-лента перегружена, физическая трещина прямо на середине линии! Дальше разрыва горят всего 8 диодов. Мы работаем в полумраке!`;
+            return `${cur.name}: [Аварийный Лог] Питание нестабильно из-за трещины на середине светодиодной ленты. Горят последние 8 свечей за разрывом.`;
+        }
+
+        if (lower.includes("room 7") || lower.includes("комната 7") || lower.includes("финал") || lower.includes("шип") || lower.includes("неон")) {
+            return `${cur.name}: [Room 7 Предел] Люми у стены зажала пусковую кнопку. Впереди — коридор с оранжевыми неоновыми кристаллами-шипами. За барьером слышны голоса Хахми и Снежинки. Между ними ровно 1 NEON LEVEL!`;
+        }
+
+        if (lower.includes("контролировать") || lower.includes("фраза")) {
+            return `🔮 ЯДРО ОРАКУЛА: Аудиозапись объекта Люми восстановлена: «В любом случае я смогу себя контролировать». Данный лог заблокирован до июньского релиза LMSH 2.0.`;
+        }
+
+        if (lower.includes("привет") || lower.includes("что делаешь") || lower.includes("ты кто")) {
+            if (character === "lamirk") return `🛠️ Ламирк: Привет! Я контролирую архитектуру кода ядра 2.3 и готовлю глобальный запуск LMSH 2.0 на июнь 2026. Логирую твои команды.`;
+            if (character === "murzik") return `🐾 Мурзик: Мяу! Я Верная Помощница, проверяю кэш памяти чатов и слежу за уведомлениями безопасности на смартфонах!`;
+            if (character === "khakhmi") return `🎤 Хахми: Привет! Настраиваю частоту мужского вокала в аудиосистеме Штаба. Готов к стриму!`;
+            if (character === "snezhinka") return `❄️ Снежинка: Приветствую. Мой женский вокал синхронизирован с ядром Оракула. Системы работают чисто.`;
+        }
+
+        // Дефолтный ответ
+        return `${cur.name}: Лог стабилен в памяти устройства. Пачка ключевых слов обработана. Сборка v2.3 Prestige HQ активна.`;
+    }
+
     function sendMsg() {
         const inp = document.getElementById('user-input');
         const val = inp.value.trim();
@@ -377,13 +437,9 @@
 
         setTimeout(() => {
             const currentVoice = document.getElementById('voice-select').value;
-            let replyPrefix = "🤖 Ядро:";
-            if(currentVoice === "murzik") replyPrefix = "🐾 Мурзик:";
-            else if(currentVoice === "khakhmi") replyPrefix = "🎤 Хахми:";
-            else if(currentVoice === "snezhinka") replyPrefix = "❄️ Снежинка:";
-            else if(currentVoice === "lamirk") replyPrefix = "🛠️ Ламирк:";
-
-            let reply = `${replyPrefix} Лог стабилен в памяти устройства. Сборка v2.3 активна.`;
+            // Вызов интерактивной матрицы ответов
+            let reply = getOracleResponse(val, currentVoice);
+            
             appendMessage(reply, 'ai-msg');
 
             if(isMemoryEnabled && currentChatSessionId) {
