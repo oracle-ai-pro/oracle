@@ -2,48 +2,47 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Core Node 2.4 | Prestige HQ</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
     <style>
         :root {
             --bg: #0a0b10; --surface: #14151f; --border: #2d313e;
-            --primary: #adc6ff; --primary-container: #254487;
-            --on-surface: #e3e2e6; --on-surface-variant: #c7c6ca;
-            --grad-start: #02b6ed; --grad-end: #e60ced;
+            --primary: #adc6ff; --grad-start: #02b6ed; --grad-end: #e60ced;
         }
-        body { margin: 0; background: var(--bg); color: var(--on-surface); font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        body { margin: 0; background: var(--bg); color: #e3e2e6; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; }
 
-        .layout { display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
-        .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 20px; }
-        
-        /* Квантовый поток (Анимация) */
-        .quantum-stream { height: 3px; background: linear-gradient(90deg, var(--grad-start), var(--grad-end), var(--grad-start)); 
-            background-size: 200% 100%; animation: flow 2s linear infinite; opacity: 0; }
+        /* АДАПТИВНАЯ СЕТКА */
+        .app-container { display: flex; flex-grow: 1; overflow: hidden; }
+        .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px; display: none; }
+        @media (min-width: 768px) { .sidebar { display: block; } }
+
+        .chat-main { flex: 1; display: flex; flex-direction: column; padding: 20px; position: relative; }
+
+        /* КВАНТОВЫЙ ПОТОК */
+        .stream-line { height: 3px; background: linear-gradient(90deg, var(--grad-start), var(--grad-end), var(--grad-start)); 
+            background-size: 200% 100%; animation: flow 2s linear infinite; opacity: 0; transition: opacity 0.3s; }
         @keyframes flow { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 
-        .chat-area { display: flex; flex-direction: column; padding: 20px; }
-        .input-box { display: flex; gap: 12px; align-items: center; border: 1px solid var(--border); 
-            padding: 10px; border-radius: 30px; background: var(--surface); transition: all 0.3s; }
-        input { flex: 1; border: none; background: transparent; color: white; padding: 10px; font-size: 16px; outline: none; }
-        
-        .send-btn { width: 0; opacity: 0; transition: all 0.3s; border-radius: 50%; border: none; background: var(--primary); 
-            cursor: pointer; display: flex; align-items: center; justify-content: center; height: 40px; }
-        .input-box.active .send-btn { width: 40px; opacity: 1; }
-        
-        .welcome { text-align: center; margin-top: 20vh; }
-        .material-symbols-rounded { font-size: 24px; }
+        /* ИНПУТ И КНОПКА */
+        .input-box { display: flex; gap: 10px; align-items: center; background: var(--surface); padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); transition: all 0.3s; }
+        input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 16px; }
+        .send-btn { width: 0; opacity: 0; overflow: hidden; transition: all 0.3s; border: none; background: var(--primary); 
+            border-radius: 50%; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .input-box.has-content .send-btn { width: 40px; opacity: 1; }
+
+        #chat-flow { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg { padding: 12px 18px; border-radius: 15px; background: var(--surface); align-self: flex-start; max-width: 80%; }
+        button.download { background: var(--primary); border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; margin-top: 5px; }
     </style>
 </head>
 <body>
 
-<div class="layout">
+<div class="app-container">
     <div class="sidebar"><h3>Core Node 2.4</h3></div>
-    <div class="chat-area">
-        <div id="welcome-msg" class="welcome"><h1 id="rand-text"></h1></div>
-        <div id="chat-flow" style="flex-grow: 1;"></div>
-        
-        <div id="stream" class="quantum-stream"></div>
+    <div class="chat-main" id="main-area">
+        <div id="chat-flow"></div>
+        <div id="stream" class="stream-line"></div>
         <div class="input-box" id="box">
             <input type="text" id="user-input" placeholder="Введите команду..." oninput="check()">
             <button class="send-btn" onclick="send()"><span class="material-symbols-rounded">send</span></button>
@@ -53,32 +52,51 @@
 
 <script>
     const phrases = ["Ядро готово. Какой план?", "Система 2.4 онлайн.", "Оракул настроен. Жду команду."];
-    document.getElementById('rand-text').innerText = phrases[Math.floor(Math.random() * phrases.length)];
+    const flow = document.getElementById('chat-flow');
+    
+    // Приветствие
+    const welcome = document.createElement('div');
+    welcome.className = 'msg';
+    welcome.innerText = phrases[Math.floor(Math.random() * phrases.length)];
+    flow.appendChild(welcome);
 
     function check() {
         const inp = document.getElementById('user-input');
         const box = document.getElementById('box');
-        box.classList.toggle('active', inp.value.replace(/[\s\u00A0]+/g, '').length > 0);
+        const hasText = inp.value.replace(/[\s\u00A0]+/g, '').length > 0;
+        box.classList.toggle('has-content', hasText);
     }
 
     function send() {
         const inp = document.getElementById('user-input');
         const text = inp.value;
-        if (!text.trim()) return;
+        if (!text.replace(/[\s\u00A0]+/g, '')) return;
 
-        document.getElementById('welcome-msg').style.display = 'none';
+        // Добавляем сообщение пользователя
+        const uMsg = document.createElement('div');
+        uMsg.className = 'msg'; uMsg.style.alignSelf = 'flex-end'; uMsg.innerText = text;
+        flow.appendChild(uMsg);
+        
+        // Анимация потока
         document.getElementById('stream').style.opacity = '1';
-
-        // Эмуляция обработки команды
-        if (text.toLowerCase().includes("скачай")) {
-            setTimeout(() => {
-                const msg = document.createElement('div');
-                msg.innerHTML = `Архив готов: <button onclick="window.open('https://oracle-ai-pro.github.io/oracle/packs/Kosmo_Level_3_4.worldpack')">Скачать</button>`;
-                document.getElementById('chat-flow').appendChild(msg);
-                document.getElementById('stream').style.opacity = '0';
-            }, 1500);
-        }
         inp.value = ""; check();
+
+        // Логика ответов
+        setTimeout(() => {
+            const reply = document.createElement('div');
+            reply.className = 'msg';
+            
+            if (text.toLowerCase().includes("скачай")) {
+                const ver = text.match(/\d+(\.\d+)?/g) || "3.4";
+                reply.innerHTML = `Архив найден. Готовность 100%.<br><button class="download" onclick="alert('Скачивание...')">Скачать Kosmo Level ${ver}</button>`;
+            } else {
+                reply.innerText = "Команда принята. Оракул проанализировал запрос.";
+            }
+            
+            flow.appendChild(reply);
+            document.getElementById('stream').style.opacity = '0';
+            flow.scrollTop = flow.scrollHeight;
+        }, 1500);
     }
 </script>
 </body>
