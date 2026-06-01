@@ -2,483 +2,84 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Oracle AI 2.3 | Prestige HQ</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0a0b10">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Core Node 2.4 | Prestige HQ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
     <style>
-        /* MATERIAL YOU ДИНАМИЧЕСКАЯ ПАЛИТРА */
         :root {
-            --bg: #0a0b10;
-            --surface: #14151f;
-            --surface-variant: #1f202e;
-            --on-surface: #e3e2e6;
-            --on-surface-variant: #c7c6ca;
-            --primary: #adc6ff;
-            --primary-container: #254487;
-            --on-primary-container: #d9e2ff;
-            --secondary: #e8bbf1;
-            --border: #434753;
-            --grad: linear-gradient(90deg, #02b6ed 0%, #e60ced 100%);
-            
-            --radius-large: 28px;
-            --radius-medium: 16px;
-            --radius-small: 12px;
+            --bg: #0a0b10; --surface: #14151f; --border: #2d313e;
+            --primary: #adc6ff; --primary-container: #254487;
+            --on-surface: #e3e2e6; --on-surface-variant: #c7c6ca;
+            --grad-start: #02b6ed; --grad-end: #e60ced;
         }
+        body { margin: 0; background: var(--bg); color: var(--on-surface); font-family: 'Segoe UI', sans-serif; overflow: hidden; }
 
-        body.light-theme {
-            --bg: #f8f9ff;
-            --surface: #f0f1f9;
-            --surface-variant: #e1e2ec;
-            --on-surface: #1a1b20;
-            --on-surface-variant: #43474e;
-            --primary: #3b5ba9;
-            --primary-container: #d9e2ff;
-            --on-primary-container: #001947;
-            --secondary: #74547e;
-            --border: #c3c6cf;
-        }
-
-        body.light-theme .oracle-container { box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
-        body.light-theme .user-msg { color: #fff; }
-
-        ::-webkit-scrollbar { width: 6px; background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-
-        html, body { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: var(--bg); color: var(--on-surface); 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            transition: background 0.3s ease; 
-        }
+        .layout { display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
+        .sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 20px; }
         
-        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; box-sizing: border-box; }
+        /* Квантовый поток (Анимация) */
+        .quantum-stream { height: 3px; background: linear-gradient(90deg, var(--grad-start), var(--grad-end), var(--grad-start)); 
+            background-size: 200% 100%; animation: flow 2s linear infinite; opacity: 0; }
+        @keyframes flow { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
 
-        /* ГЛАВНЫЙ КОНТЕЙНЕР ОБОРУДОВАНИЯ ЛМСХ */
-        .oracle-container { 
-            width: 100%; max-width: 820px; height: 100%; max-height: 88vh;   
-            background: var(--surface); border: 1px solid var(--border); 
-            border-radius: var(--radius-large); display: flex; flex-direction: column; 
-            position: relative; overflow: hidden; box-shadow: 0 16px 48px rgba(0,0,0,0.5); 
-            animation: boot 0.4s cubic-bezier(0.2, 0, 0, 1); 
-        }
-
-        /* ОЧИЩЕННАЯ ВЕРХНЯЯ ПАНЕЛЬ */
-        .top-nav { 
-            height: 55px; padding: 0 20px; display: flex; 
-            justify-content: center; align-items: center; 
-            border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.15); 
-            z-index: 10; box-sizing: border-box; position: relative;
-        }
-        .nav-logo-text { font-weight: 800; font-size: 14px; letter-spacing: 1px; background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-transform: uppercase; }
-
-        /* ЭКРАНЫ СИСТЕМЫ (ВМЕСТО ВСПЛЫВАЮЩИХ ОКН) */
-        .app-screen {
-            display: none; flex-direction: column; flex-grow: 1; 
-            overflow-y: auto; padding: 20px; box-sizing: border-box;
-            height: calc(100% - 120px); /* Вычитаем высоту топ-бара и боттом-бара */
-        }
-        .app-screen.active-screen { display: flex; }
-
-        /* ЭКРАН 1: ЧАТ (СПЕЦИАЛЬНАЯ КОРРЕКЦИЯ) */
-        #screen-chat { padding: 0; overflow: hidden; display: none; flex-direction: column; }
-        #screen-chat.active-screen { display: flex; }
-        .chat-flow-box { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-
-        /* СООБЩЕНИЯ */
-        .msg { padding: 14px 18px; font-size: 14px; max-width: 80%; line-height: 1.5; animation: slideIn 0.2s cubic-bezier(0, 0, 0.2, 1); word-wrap: break-word; }
-        .ai-msg { background: var(--surface-variant); color: var(--on-surface); align-self: flex-start; border-radius: 4px 20px 20px 20px; border: 1px solid var(--border); }
-        .user-msg { background: var(--grad); color: #fff; align-self: flex-end; font-weight: 500; border-radius: 20px 4px 20px 20px; box-shadow: 0 4px 12px rgba(2, 182, 237, 0.15); }
-
-        /* ЗОНА ВВОДА */
-        .input-box { padding: 16px; display: flex; gap: 12px; background: rgba(0,0,0,0.1); border-top: 1px solid var(--border); align-items: center; box-sizing: border-box; }
-        input { flex: 1; background: var(--surface-variant); border: 1px solid var(--border); border-radius: var(--radius-medium); padding: 14px 18px; color: var(--on-surface); outline: none; font-size: 15px; transition: all 0.2s ease; }
-        input:focus { border-color: var(--primary); background: var(--surface); }
-        .send-btn { background: var(--grad); border: none; border-radius: var(--radius-medium); width: 52px; height: 46px; color: white; cursor: pointer; font-size: 18px; transition: all 0.3s ease; opacity: 0; transform: scale(0.85); pointer-events: none; display: flex; align-items: center; justify-content: center; shrink: 0; }
-        .send-btn.active { opacity: 1; transform: scale(1); pointer-events: auto; }
-
-        /* МОНОЛИТНАЯ НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ */
-        .bottom-nav-bar {
-            height: 65px; background: var(--surface-variant);
-            border-top: 1px solid var(--border); display: flex;
-            justify-content: space-around; align-items: center;
-            z-index: 10; box-sizing: border-box; padding: 0 10px;
-        }
-        .nav-tab-item {
-            flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: center; gap: 4px; color: var(--on-surface-variant);
-            background: none; border: none; cursor: pointer; font-size: 11px;
-            font-weight: 700; height: 100%; transition: all 0.2s ease;
-        }
-        .nav-tab-item .tab-icon {
-            padding: 4px 16px; border-radius: 16px; transition: background 0.2s;
-            font-size: 16px;
-        }
-        .nav-tab-item.active-tab { color: var(--primary); }
-        .nav-tab-item.active-tab .tab-icon { background: var(--primary-container); }
-
-        /* ПАНЕЛИ НАСТРОЕК И ПАКОВ */
-        .section-title { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 16px 0 12px; letter-spacing: 1px; border-left: 4px solid var(--secondary); padding-left: 10px; }
-        .settings-box { background: rgba(0,0,0,0.15); border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-large); display: flex; flex-direction: column; gap: 14px; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .setting-label { font-size: 14px; font-weight: 600; }
-        .setting-desc { font-size: 12px; color: var(--on-surface-variant); margin-top: 2px; }
+        .chat-area { display: flex; flex-direction: column; padding: 20px; }
+        .input-box { display: flex; gap: 12px; align-items: center; border: 1px solid var(--border); 
+            padding: 10px; border-radius: 30px; background: var(--surface); transition: all 0.3s; }
+        input { flex: 1; border: none; background: transparent; color: white; padding: 10px; font-size: 16px; outline: none; }
         
-        .core-select, .core-switch-btn { background: var(--surface-variant); border: 1px solid var(--border); color: var(--on-surface); padding: 10px 14px; border-radius: var(--radius-small); font-size: 13px; font-weight: bold; outline: none; cursor: pointer; }
-        .core-switch-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-container); }
-        .warning-text { color: #ff5252; font-size: 11px; font-weight: bold; margin-top: 4px; border-left: 3px solid #ff5252; padding-left: 8px; }
-
-        /* АДАПТИВНАЯ СЕТКА ПАКОВ */
-        .packs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; }
-        .item-card { background: var(--surface-variant); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-medium); display: flex; flex-direction: column; justify-content: space-between; }
-        .item-name { font-size: 13px; font-weight: 700; color: var(--on-surface); margin-bottom: 8px; text-align: center; }
-        .download-btn { display: block; padding: 8px; background: var(--surface); color: var(--primary); text-decoration: none; border-radius: var(--radius-small); font-weight: 700; font-size: 11px; text-transform: uppercase; text-align: center; border: 1px solid var(--border); }
-        .download-btn:hover { background: var(--primary); color: var(--bg); }
-
-        /* ТУЛБАРЫ РИДЕРА */
-        .story-selector { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
-        .story-tab-btn { flex: 1; min-width: 90px; background: var(--surface-variant); border: 1px solid var(--border); color: var(--on-surface-variant); padding: 10px 6px; border-radius: var(--radius-small); font-size: 12px; font-weight: bold; cursor: pointer; }
-        .story-tab-btn.active { background: var(--primary-container); border-color: var(--primary); color: var(--on-primary-container); }
-        .reader-inner-card { background: rgba(0,0,0,0.15); border-radius: var(--radius-medium); border: 1px solid var(--border); padding: 16px; }
-        .story-container { max-height: 260px; overflow-y: auto; }
-        .story-content { font-size: 14px; line-height: 1.6; color: var(--on-surface); text-align: justify; }
-
-        /* ПОДКАСТ КАНАЛ */
-        .io-stream-container { background: rgba(0,0,0,0.15); border: 2px solid var(--secondary); border-radius: var(--radius-medium); overflow: hidden; display: flex; flex-direction: column; margin: 15px 0; }
-        .io-stream-header { background: rgba(0,0,0,0.3); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-        .io-premiere-tag { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 12px; font-weight: 800; }
-        .audio-link-body { padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .neon-gate-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-variant); border: 1px solid var(--secondary); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
-        .launch-btn { background: var(--grad); color: #fff; border: none; padding: 10px 20px; border-radius: var(--radius-small); font-weight: bold; font-size: 11px; cursor: pointer; }
-
-        /* АРХИВ ЧАТОВ */
-        .drawer-chat-item { padding: 12px 16px; background: var(--surface-variant); border: 1px solid var(--border); border-radius: var(--radius-small); font-size: 13px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--on-surface); font-weight: 600; }
-
-        /* ДОБРО ПОЖАЛОВАТЬ БЛОК */
-        .welcome-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; gap: 16px; padding: 20px; }
-        .welcome-zone.hidden { display: none; }
-        .blob-container { position: relative; width: 130px; height: 46px; background: #000; filter: blur(5px) contrast(18); overflow: hidden; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-large); }
-        .blob { position: absolute; width: 22px; height: 22px; border-radius: 50%; }
-        .cyan-blob { background: #02b6ed; left: 28px; animation: mergeLeft 5s infinite ease-in-out; }
-        .purple-blob { background: #e60ced; right: 28px; animation: mergeRight 5s infinite ease-in-out; }
-        @keyframes mergeLeft { 0%, 100% { transform: translateX(0); } 30%, 70% { transform: translateX(22px); } }
-        @keyframes mergeRight { 0%, 100% { transform: translateX(0); } 30%, 70% { transform: translateX(-22px); } }
-        .derzky-title { font-size: 32px; font-weight: 900; color: var(--on-surface); text-align: center; margin: 0; animation: neonPulse 3s infinite ease-in-out; }
-
-        /* АНИМАЦИИ */
-        @keyframes boot { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes neonPulse { 0%, 100% { opacity: 0.95; } 50% { opacity: 1; } }
-
-        @media (max-width: 600px) {
-            body { padding: 0; }
-            .oracle-container { height: 100vh; max-height: 100vh; border-radius: 0; border: none; }
-        }
+        .send-btn { width: 0; opacity: 0; transition: all 0.3s; border-radius: 50%; border: none; background: var(--primary); 
+            cursor: pointer; display: flex; align-items: center; justify-content: center; height: 40px; }
+        .input-box.active .send-btn { width: 40px; opacity: 1; }
+        
+        .welcome { text-align: center; margin-top: 20vh; }
+        .material-symbols-rounded { font-size: 24px; }
     </style>
 </head>
 <body>
 
-<div class="oracle-container">
-    <div class="top-nav">
-        <div class="nav-logo-text" id="top-nav-title">Core Node v2.3</div>
-    </div>
-
-    <div id="screen-chat" class="app-screen active-screen">
-        <div id="welcome-block" class="welcome-zone">
-            <div class="blob-container">
-                <div class="blob cyan-blob"></div>
-                <div class="blob purple-blob"></div>
-            </div>
-            <h1 class="derzky-title">Что делаешь?</h1>
+<div class="layout">
+    <div class="sidebar"><h3>Core Node 2.4</h3></div>
+    <div class="chat-area">
+        <div id="welcome-msg" class="welcome"><h1 id="rand-text"></h1></div>
+        <div id="chat-flow" style="flex-grow: 1;"></div>
+        
+        <div id="stream" class="quantum-stream"></div>
+        <div class="input-box" id="box">
+            <input type="text" id="user-input" placeholder="Введите команду..." oninput="check()">
+            <button class="send-btn" onclick="send()"><span class="material-symbols-rounded">send</span></button>
         </div>
-        <div id="chat-flow" class="chat-flow-box"></div>
-        <div class="input-box">
-            <input type="text" id="user-input" placeholder="Введите ваш запрос к ядру ЛМСХ..." oninput="checkInput()" onkeypress="handleKeyPress(event)">
-            <button id="send-btn" class="send-btn" onclick="sendMsg()">➔</button>
-        </div>
-    </div>
-
-    <div id="screen-logs" class="app-screen">
-        <div class="section-title" style="margin-top:0;">Архив сессий ядра</div>
-        <button class="download-btn" onclick="clearCurrentSession()" style="background:#ff5252; color:#fff; margin-bottom:14px; border:none; width:100%;">⚡ Сбросить Текущий Чат</button>
-        <div id="saved-chats-list"></div>
-    </div>
-
-    <div id="screen-reader" class="app-screen">
-        <div class="section-title" style="margin-top: 0;">🔮 Kosmo Level AI Reader v2.3</div>
-        <div class="story-selector">
-            <button class="story-tab-btn active" id="tab-story1" onclick="loadStory(1)">Летание</button>
-            <button class="story-tab-btn" id="tab-story2" onclick="loadStory(2)">Оракул Поток</button>
-            <button class="story-tab-btn" id="tab-story3" onclick="loadStory(3)" style="border-color: var(--secondary); color: var(--secondary);">🔥 Побег от ЛМСХ</button>
-        </div>
-        <div class="reader-inner-card">
-            <div class="story-container" id="scroll-box">
-                <div class="story-content" id="editor" contenteditable="false"></div>
-            </div>
-        </div>
-
-        <div class="io-stream-container">
-            <div class="io-stream-header">
-                <div class="io-premiere-tag">⚡ LMSH I/O PODCAST LIVE ⚡</div>
-            </div>
-            <div class="audio-link-body">
-                <div class="neon-gate-icon" onclick="openPodcast()" title="Повернуть Ключ">🔑)</div>
-                <button class="launch-btn" onclick="openPodcast()">Открыть Поток Оракула 🛸</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="screen-settings" class="app-screen">
-        <div class="section-title" style="margin-top:0;">Инженерный Пульт Управления</div>
-        <div class="settings-box">
-            <div class="setting-row">
-                <div>
-                    <div class="setting-label">Голос Оракула</div>
-                    <div class="setting-desc">Кто модулирует частоту ответов</div>
-                </div>
-                <select id="voice-select" class="core-select">
-                    <option value="murzik">Мурзик (Помощница) 🐾</option>
-                    <option value="khakhmi">Хахми (Мужской вокал) 🎤</option>
-                    <option value="snezhinka">Снежинка (Женский вокал) ❄️</option>
-                    <option value="lamirk" selected>Ламирк (Главный Инженер) 🛠️</option>
-                </select>
-            </div>
-
-            <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                    <div>
-                        <div class="setting-label">Сохранять чаты in-memory</div>
-                        <div class="setting-desc">Резерв потоков в кэш</div>
-                    </div>
-                    <button id="memory-btn" class="core-switch-btn active" onclick="toggleMemory()">ВКЛЮЧЕНО</button>
-                </div>
-                <div id="cache-warn" class="warning-text" style="display: block;">⚠️ ВНИМАНИЕ: Если вы очистите кэш браузера, логи будут уничтожены!</div>
-            </div>
-
-            <div class="setting-row">
-                <div>
-                    <div class="setting-label">Цветовой Слой Ядра</div>
-                    <div class="setting-desc">По умолчанию Тёмная Тема ЛМСХ</div>
-                </div>
-                <button id="theme-btn" class="core-switch-btn" onclick="toggleTheme()">ГЛУБОКИЙ КОСМОС (DARK)</button>
-            </div>
-        </div>
-
-        <div class="section-title">Паки Kosmo Level (Fast Download)</div>
-        <div class="packs-grid" id="packs-list"></div>
-    </div>
-
-    <div class="bottom-nav-bar">
-        <button class="nav-tab-item active-tab" id="btn-tab-chat" onclick="switchScreen('chat')">
-            <span class="tab-icon">💬</span>
-            <span>Чат Node</span>
-        </button>
-        <button class="nav-tab-item" id="btn-tab-logs" onclick="switchScreen('logs')">
-            <span class="tab-icon">📟</span>
-            <span>Архив</span>
-        </button>
-        <button class="nav-tab-item" id="btn-tab-reader" onclick="switchScreen('reader')">
-            <span class="tab-icon">🔮</span>
-            <span>AI Ридер</span>
-        </button>
-        <button class="nav-tab-item" id="btn-tab-settings" onclick="switchScreen('settings')">
-            <span class="tab-icon">⚙️</span>
-            <span>Паки и Настройки</span>
-        </button>
     </div>
 </div>
 
 <script>
-    const versions = ["1.0", "2.0", "2.2", "2.3", "2.5", "2.8", "2.9", "3.0", "3.1", "3.2", "3.3", "3.4"];
-    const stories = {
-        1: `<p><b>Летание</b></p><p>Люми зашла в портал. И оказалась в других цветах. Затем зашла in портал и получила дополнительную способность, Летать. Она научилась летать и сильно удивилась. Во второй комнате. Она решала головоломки.</p><p>А в конце она услышала своих друзей, только странно было то, что между друзьями и ней был <span style="color: var(--primary);"><b>1 NEON LEVEL!</b></span> И она сказала важную фразу: <b>«В любом случае я смогу себя контролировать»</b>, запомните эту фразу...</p>`,
-        2: `<p><b>Вторжение Люми</b></p><p>Это было 21 Августа 2024 года. Люми спала... Фиолетовая кошка уже с 2020 года сбежала в свою подземную нору, примерно 200 м под землёй...</p>`,
-        3: `<p><b>🚨 Хроники Секретного Пака: Побег из Лаборатории ЛМСХ</b></p>
-            <p><b>Room 1 (Spawn):</b> Люми открывает глаза в экспериментальном боксе. Портал меняет цвета окружения, активируя инверсию спектра. Внезапно гравитационные датчики отключаются, и Люми получает способность летать!</p>
-            <p><b>Room 2 (Lab):</b> Главный инженер Ламирк запускает диагностику ядра. Комната забита датчиками движения и ClickDetector-ми автоматики. Чтобы пройти дальше, нужно маневрировать в воздухе, не касаясь сканирующих лазеров на полу.</p>
-            <p><b>Room 3 & Room 4:</b> Внутренние шлюзы безопасности. Перехвачено экстренное уведомление от Мурзики (Верной Помощницы): <i>«Внимание! Зафиксирован всплеск фиолетовой энергии на глубине 200 метров!»</i>. Тяжелые гермодвери начинают закрываться.</p>
-            <p><b>Room 5 & Room 6:</b> Аварийный сектор. Напряжение падает. Настенная адресная LED-лента перегружена, на середине цепи возникает физическая трещина! Дальше разрыва горят всего 8 светодиодов, погружая коридоры во мрак.</p>
-            <p><b>Room 7 (Финал):</b> Предел Лаборатории ЛМСХ. Люми оказывается перед гигантским оранжевым коридором, заполненным кристаллами-шипами. За звуковым барьером отчетливо слышны голоса Хахми и Снежинки. Путь назад отрезан. Зажав пусковую кнопку, Люми делает шаг навстречу 1 NEON LEVEL и твердо произносит: <b>«В любом случае я смогу себя контролировать»</b>...</p>
-            <p style="color: var(--secondary); font-weight: bold; text-align: center; margin-top: 15px;">🚀 АНОНС ЭКСКЛЮЗИВА К РЕЛИЗУ LMSH 2.0 (ИЮНЬ 2026)!</p>`
-    };
+    const phrases = ["Ядро готово. Какой план?", "Система 2.4 онлайн.", "Оракул настроен. Жду команду."];
+    document.getElementById('rand-text').innerText = phrases[Math.floor(Math.random() * phrases.length)];
 
-    let isFirstMessage = true;
-    let isMemoryEnabled = true;
-    let currentChatSessionId = null;
-
-    const editor = document.getElementById('editor');
-    const scrollBox = document.getElementById('scroll-box');
-
-    // ПЛАВНОЕ МОНОЛИТНОЕ ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
-    function switchScreen(screenName) {
-        // Убираем активность со всех экранов и табов
-        document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
-        document.querySelectorAll('.nav-tab-item').forEach(t => t.classList.remove('active-tab'));
-        
-        // Включаем нужный экран и таб
-        document.getElementById(`screen-${screenName}`).classList.add('active-screen');
-        document.getElementById(`btn-tab-${screenName}`).classList.add('active-tab');
-
-        // Меняем название в шапке для атмосферы
-        const title = document.getElementById('top-nav-title');
-        if (screenName === 'chat') title.innerText = "Core Node v2.3";
-        if (screenName === 'logs') { title.innerText = "Архив Ядра"; renderSavedChatsList(); }
-        if (screenName === 'reader') title.innerText = "Oracle AI Reader";
-        if (screenName === 'settings') title.innerText = "Инженерный Пульт";
-    }
-
-    function toggleMemory() {
-        const btn = document.getElementById('memory-btn');
-        const warn = document.getElementById('cache-warn');
-        isMemoryEnabled = !isMemoryEnabled;
-        if(isMemoryEnabled) {
-            btn.innerText = "ВКЛЮЧЕНО"; btn.classList.add('active'); warn.style.display = "block";
-        } else {
-            btn.innerText = "ВЫКЛЮЧЕНО"; btn.classList.remove('active'); warn.style.display = "none";
-        }
-    }
-
-    function toggleTheme() {
-        const btn = document.getElementById('theme-btn');
-        document.body.classList.toggle('light-theme');
-        btn.innerText = document.body.classList.contains('light-theme') ? "НЕОНОВЫЙ ВЗРЫВ (LIGHT)" : "ГЛУБОКИЙ КОСМОС (DARK)";
-        btn.classList.toggle('active', document.body.classList.contains('light-theme'));
-    }
-
-    function checkInput() {
+    function check() {
         const inp = document.getElementById('user-input');
-        const btn = document.getElementById('send-btn');
-        btn.classList.toggle('active', inp.value.trim().length > 0);
+        const box = document.getElementById('box');
+        box.classList.toggle('active', inp.value.replace(/[\s\u00A0]+/g, '').length > 0);
     }
 
-    function handleKeyPress(event) {
-        if (event.key === 'Enter') {
-            event.preventDefault(); 
-            const inp = document.getElementById('user-input');
-            if (inp.value.trim().length > 0) sendMsg();
-        }
-    }
-
-    function getOracleResponse(text, character) {
-        const lower = text.toLowerCase();
-        const chars = {
-            lamirk: { name: "🛠️ Ламирк" },
-            murzik: { name: "🐾 Мурзик" },
-            khakhmi: { name: "🎤 Хахми" },
-            snezhinka: { name: "❄️ Снежинка" }
-        };
-        const cur = chars[character] || chars.lamirk;
-
-        if (text.includes("🔑)")) {
-            return `${cur.name}: Ключ авторизации принят. Инициализирую прямой аудио-стрим через шлюз подкаста NotebookLM. Готовьтесь к выходу в эфир!`;
-        }
-        if (lower.includes("room 1") || lower.includes("комната 1") || lower.includes("спавн")) {
-            return `${cur.name}: [Room 1 Лог] Портал запущен. Изменена палитра. Люми получила способность «Летать».`;
-        }
-        if (lower.includes("room 2") || lower.includes("комната 2") || lower.includes("лаборатория") || lower.includes("датчик")) {
-            return `${cur.name}: [Room 2 Лог] Датчики движения и ClickDetector-ы активны. Ламирк ведет диагностику.`;
-        }
-        if (lower.includes("room 5") || lower.includes("комната 5") || lower.includes("лента") || lower.includes("трещина")) {
-            return `${cur.name}: [Авария!] Обнаружена физическая трещина на адресной LED-ленте в Секторе 5. Горят последние 8 диодов.`;
-        }
-        if (lower.includes("контролировать") || lower.includes("фраза")) {
-            return `🔮 ЯДРО ОРАКУЛА: Аудиозапись Люми: «В любом случае я смогу себя контролировать». Ждем релиз LMSH 2.0.`;
-        }
-        if (lower.includes("привет") || lower.includes("что делаешь")) {
-            if (character === "lamirk") return `🛠️ Ламирк: Привет! Настраиваю стабильность вкладок без всплывающего дизайна ядра. На планшете теперь всё работает монолитно!`;
-            if (character === "murzik") return `🐾 Мурзик: Мяу! Подчищаю старые шторки, проверяю кэш памяти!`;
-            return `${cur.name}: Ядро Оракула v2.3 на связи. Нажмите на нижнюю панель для навигации.`;
-        }
-        return `${cur.name}: Сборка v2.3 Prestige HQ стабильна. Лог записан.`;
-    }
-
-    function sendMsg() {
+    function send() {
         const inp = document.getElementById('user-input');
-        const val = inp.value.trim();
-        if(!val) return;
+        const text = inp.value;
+        if (!text.trim()) return;
 
-        if(isFirstMessage) {
-            document.getElementById('welcome-block').classList.add('hidden');
-            isFirstMessage = false;
-            if(isMemoryEnabled && !currentChatSessionId) {
-                currentChatSessionId = "session_" + Date.now();
-            }
+        document.getElementById('welcome-msg').style.display = 'none';
+        document.getElementById('stream').style.opacity = '1';
+
+        // Эмуляция обработки команды
+        if (text.toLowerCase().includes("скачай")) {
+            setTimeout(() => {
+                const msg = document.createElement('div');
+                msg.innerHTML = `Архив готов: <button onclick="window.open('https://oracle-ai-pro.github.io/oracle/packs/Kosmo_Level_3_4.worldpack')">Скачать</button>`;
+                document.getElementById('chat-flow').appendChild(msg);
+                document.getElementById('stream').style.opacity = '0';
+            }, 1500);
         }
-
-        appendMessage(val, 'user-msg');
-        inp.value = ""; 
-        checkInput();
-
-        setTimeout(() => {
-            const currentVoice = document.getElementById('voice-select').value;
-            let reply = getOracleResponse(val, currentVoice);
-            appendMessage(reply, 'ai-msg');
-
-            if(isMemoryEnabled && currentChatSessionId) {
-                const chatFlow = document.getElementById('chat-flow').innerHTML;
-                localStorage.setItem(currentChatSessionId, JSON.stringify({
-                    date: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                    html: chatFlow
-                }));
-            }
-        }, 450);
+        inp.value = ""; check();
     }
-
-    function appendMessage(text, type) {
-        const flow = document.getElementById('chat-flow');
-        const d = document.createElement('div'); d.className = 'msg ' + type;
-        d.innerHTML = text; flow.appendChild(d); flow.scrollTop = flow.scrollHeight;
-    }
-
-    function renderSavedChatsList() {
-        const list = document.getElementById('saved-chats-list');
-        list.innerHTML = "";
-        let count = 0;
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if(key.startsWith("session_")) {
-                count++;
-                const data = JSON.parse(localStorage.getItem(key));
-                list.innerHTML += `<div class="drawer-chat-item" onclick="restoreSession('${key}')">📟 Лог от ${data.date} <span style="color:var(--primary); font-size:10px;">Открыть ➔</span></div>`;
-            }
-        }
-        if(count === 0) list.innerHTML = `<div style="font-size:12px; color:var(--on-surface-variant); text-align:center; padding:20px;">Архив пуст</div>`;
-    }
-
-    function restoreSession(key) {
-        currentChatSessionId = key;
-        const data = JSON.parse(localStorage.getItem(key));
-        document.getElementById('welcome-block').classList.add('hidden');
-        isFirstMessage = false;
-        document.getElementById('chat-flow').innerHTML = data.html;
-        switchScreen('chat');
-    }
-
-    function clearCurrentSession() {
-        document.getElementById('chat-flow').innerHTML = "";
-        document.getElementById('welcome-block').classList.remove('hidden');
-        isFirstMessage = true;
-        currentChatSessionId = null;
-        switchScreen('chat');
-    }
-
-    function loadStory(id) {
-        document.getElementById('tab-story1').classList.toggle('active', id === 1);
-        document.getElementById('tab-story2').classList.toggle('active', id === 2);
-        document.getElementById('tab-story3').classList.toggle('active', id === 3);
-        editor.innerHTML = stories[id]; scrollBox.scrollTop = 0;
-    }
-
-    function renderPacks() {
-        const list = document.getElementById('packs-list'); list.innerHTML = "";
-        versions.forEach(v => {
-            list.innerHTML += `<div class="item-card"><div class="item-name">Kosmo Level ${v}</div><a href="packs/Kosmo_Level_x.x" class="download-btn">Скачать</a></div>`;
-        });
-    }
-
-    function openPodcast() { window.open("https://notebooklm.google.com/", '_blank'); }
-
-    loadStory(1); renderPacks();
 </script>
 </body>
 </html>
