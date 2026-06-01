@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Titan System | PRESTIGE HQ</title>
+    <title>LMSH TITAN | PRESTIGE 3.4</title>
     <style>
         :root {
-            --bg: #000000;
-            --card: #1c1c1e;
+            --bg: #1a0b3d;
+            --card: #251352;
             --accent: #bf5af2;
             --text: #ffffff;
-            --input: #2c2c2e;
+            --input: #311b6b;
             --danger: #ff453a;
             --shadow: rgba(191, 90, 242, 0.3);
+            --bg-blur: rgba(28, 28, 30, 0.85);
         }
 
         /* ЦВЕТОВЫЕ АКЦЕНТЫ */
@@ -22,10 +23,11 @@
         body.accent-red    { --accent: #ff375f; --shadow: rgba(255, 55, 95, 0.4); }
 
         /* ТЕМЫ ФОНА */
-        body.theme-kosmo { --bg: #1a0b3d; --card: #251352; --input: #311b6b; }
+        body.theme-kosmo { --bg: #1a0b3d; --card: #251352; --input: #311b6b; --bg-blur: rgba(37, 19, 82, 0.85); }
+        body.theme-dark { --bg: #000000; --card: #1c1c1e; --input: #2c2c2e; --bg-blur: rgba(28, 28, 30, 0.85); }
         body.theme-light { 
             --bg: #f2f2f7; --card: #ffffff; --text: #000000; 
-            --input: #e5e5ea; --shadow: rgba(0, 0, 0, 0.1); 
+            --input: #e5e5ea; --shadow: rgba(0, 0, 0, 0.1); --bg-blur: rgba(255, 255, 255, 0.85);
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; }
@@ -37,11 +39,6 @@
             background: var(--accent); border-radius: 10px; box-shadow: 0 0 8px var(--accent);
         }
 
-        .settings-btn { position: fixed; top: 25px; right: 25px; font-size: 24px; z-index: 1000; cursor: pointer; opacity: 0.6; transition: 0.3s; }
-        .settings-btn:hover { opacity: 1; transform: rotate(90deg); }
-
-        .setting-select { width: 100%; padding: 15px; border-radius: 12px; background: var(--input); color: var(--text); border: 1px solid rgba(255,255,255,0.1); outline: none; margin-bottom: 15px; }
-
         /* ЗАСТАВКА */
         #splash-screen { position: fixed; inset: 0; background: #000; z-index: 100000; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.8s; }
         .loader-lmsh { display: flex; gap: 15px; font-size: 50px; font-weight: 900; color: var(--accent); }
@@ -51,6 +48,7 @@
         /* ЭКРАНЫ */
         .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10; transition: 0.5s; }
         .hidden { opacity: 0; pointer-events: none; transform: scale(0.95); filter: blur(10px); }
+        
         .card {
             background: var(--card); width: 100%; max-width: 380px; padding: 30px;
             border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); text-align: center;
@@ -67,93 +65,160 @@
 
         .helper-info { background: rgba(255,255,255,0.05); border-left: 3px solid var(--accent); padding: 12px; border-radius: 10px; margin-bottom: 15px; font-size: 12px; text-align: left; }
 
-        /* ОРАКУЛ */
-        .oracle-bubble { position: fixed; top: 30px; left: 20px; right: 20px; max-width: 360px; margin: 0 auto; background: var(--card); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); z-index: 10000; padding: 15px; display: none; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-        .oracle-messages { max-height: 120px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; text-align: left; }
+        /* ==================== ЭКОСИСТЕМА MATERIAL YOU & ASSISTANT ==================== */
+        #titan-ecosystem { position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; align-items: flex-end; gap: 15px; }
+
+        /* Летающая FAB-кнопка (Ассистент) */
+        #assistant-fab {
+            width: 56px; height: 56px; background-color: var(--accent);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 8px 24px var(--shadow); cursor: pointer; font-size: 24px;
+            transition: transform 0.2s, background-color 0.4s, border-radius 0.3s;
+        }
+        #assistant-fab:hover { transform: scale(1.05) rotate(5deg); border-radius: 24px; }
+        #assistant-fab:active { transform: scale(0.95); }
+
+        /* Общие монолитные стили для выплывающих окон */
+        .titan-window {
+            position: absolute; bottom: 75px; right: 0; width: 300px;
+            background: var(--bg-blur); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 28px; padding: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: bottom right; text-align: left; color: var(--text);
+        }
+        .titan-window.window-hidden { transform: scale(0) translateY(40px); opacity: 0; pointer-events: none; }
+
+        .window-header { font-size: 16px; font-weight: 700; margin-bottom: 15px; color: var(--accent); letter-spacing: 0.5px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
+        .window-close { cursor: pointer; opacity: 0.5; font-size: 14px; }
+        .window-close:hover { opacity: 1; }
+
+        .status-badge { background: rgba(255, 255, 255, 0.08); padding: 6px 12px; border-radius: 12px; font-size: 11px; display: inline-block; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); font-weight: 600; }
+        .window-text { font-size: 13px; line-height: 1.4; opacity: 0.9; margin-bottom: 12px; }
+
+        /* Элементы управления внутри окон */
+        .setting-select { width: 100%; padding: 12px; border-radius: 14px; background: rgba(0,0,0,0.2); color: var(--text); border: 1px solid rgba(255,255,255,0.1); outline: none; margin-top: 5px; margin-bottom: 12px; font-size: 14px; }
+        .material-btn { background: var(--accent); border: none; color: #fff; padding: 12px; border-radius: 16px; font-weight: 600; cursor: pointer; width: 100%; transition: opacity 0.2s, transform 0.1s; font-size: 14px; }
+        .material-btn:active { transform: scale(0.98); }
+
+        .oracle-messages { max-height: 150px; overflow-y: auto; margin-bottom: 10px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+
+        /* ==================== PRESTIGE TOAST-УВЕДОМЛЕНИЕ ==================== */
+        #toast {
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            background: var(--bg-blur); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); padding: 14px 28px; border-radius: 25px;
+            display: flex; align-items: center; gap: 12px; z-index: 1000000;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.5); transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0;
+        }
+        #toast.toast-active { top: 30px; opacity: 1; }
+        #toast-icon { font-size: 18px; }
+        #toast-msg { font-weight: 600; font-size: 14px; color: var(--text); letter-spacing: -0.2px; }
     </style>
 </head>
 <body class="accent-purple theme-kosmo">
 
+    <!-- ЗАСТАВКА -->
     <div id="splash-screen">
         <div class="loader-lmsh"><span>Л</span><span>М</span><span>С</span><span>Х</span></div>
         <p style="font-size: 10px; opacity: 0.5; margin-top: 20px; letter-spacing: 3px;">TITAN OS 3.4</p>
     </div>
 
-    <div class="settings-btn" onclick="showScreen('screen-settings')">⚙️</div>
-
-    <div class="oracle-bubble" id="oracle-box">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:10px; opacity:0.5; font-weight:bold;">
-            <span>QUICK HELPER</span>
-            <span onclick="toggleOracle()" style="cursor:pointer;">✕</span>
-        </div>
-        <div class="oracle-messages" id="chat-flow">Система активна. 🔑)</div>
-        <div style="display:flex; gap:5px; background:rgba(0,0,0,0.2); padding:5px; border-radius:10px;">
-            <input type="text" id="oracle-typing" placeholder="Команда..." style="margin:0; padding:8px; font-size:13px; background:transparent;">
-            <button onclick="sendToOracle()" style="background:var(--accent); border:none; width:35px; border-radius:8px; color:white; cursor:pointer;">➔</button>
-        </div>
+    <!-- PRESTIGE TOAST-УВЕДОМЛЕНИЕ -->
+    <div id="toast">
+        <span id="toast-icon">✅</span>
+        <span id="toast-msg">ДОНЕСЕНИЕ ОТПРАВЛЕНО</span>
     </div>
 
+    <!-- ЛЕТАЮЩАЯ ЭКОСИСТЕМА: ASSISTANT & SETTINGS -->
+    <div id="titan-ecosystem">
+        
+        <!-- Кнопка вызова Ассистента -->
+        <div id="assistant-fab" onclick="toggleTitanWindow('assistant-window')">✨</div>
+
+        <!-- Окно Ассистента (Assistant) -->
+        <div id="assistant-window" class="titan-window window-hidden">
+            <div class="window-header">
+                <span>LMSH Assistant</span>
+                <span class="window-close" onclick="toggleTitanWindow('assistant-window')">✕</span>
+            </div>
+            <div class="status-badge">Cloud Sync Active</div>
+            <div class="oracle-messages" id="chat-flow">
+                <div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:10px;">Система активна. Лимиты синхронизированы. 🔑)</div>
+            </div>
+            <div style="display:flex; gap:6px; background:rgba(0,0,0,0.15); padding:6px; border-radius:14px; border:1px solid rgba(255,255,255,0.05);">
+                <input type="text" id="oracle-typing" placeholder="Команда ядра..." style="margin:0; padding:10px; font-size:13px; background:transparent; border:none; color:var(--text);">
+                <button onclick="sendToOracle()" style="background:var(--accent); border:none; width:40px; border-radius:10px; color:white; cursor:pointer; font-weight:bold;">➔</button>
+            </div>
+            <button class="material-btn" style="margin-top:10px; background:rgba(255,255,255,0.05); color:var(--accent); border:1px solid rgba(255,255,255,0.05);" onclick="toggleTitanWindow('settings-window')">⚙️ Открыть Engineering Bay</button>
+        </div>
+
+        <!-- Окно Настроек (Settings) -->
+        <div id="settings-window" class="titan-window window-hidden" style="bottom: 75px; right: 0;">
+            <div class="window-header">
+                <span>Engineering Bay</span>
+                <span class="window-close" onclick="toggleTitanWindow('settings-window')">✕</span>
+            </div>
+            <div>
+                <p style="font-size:11px; font-weight:bold; opacity:0.6;">ЦВЕТ АКЦЕНТА (MATERIAL YOU)</p>
+                <select id="acc-val" class="setting-select" onchange="applyStyles()">
+                    <option value="accent-purple">Electric Purple</option>
+                    <option value="accent-green">Matrix Green</option>
+                    <option value="accent-blue">Cyber Blue</option>
+                    <option value="accent-red">Red Alert</option>
+                </select>
+                <p style="font-size:11px; font-weight:bold; opacity:0.6;">ФОН СИСТЕМЫ</p>
+                <select id="bg-val" class="setting-select" onchange="applyStyles()">
+                    <option value="theme-kosmo">KOSMO VIBE</option>
+                    <option value="theme-dark">TITAN DARK</option>
+                    <option value="theme-light">LIGHT MODE</option>
+                </select>
+            </div>
+            <p class="window-text" style="font-size: 11px; opacity: 0.5; text-align: center; margin-top: 5px;">Сеть: Best_password (Защищено) 💀</p>
+            <button class="material-btn" onclick="toggleTitanWindow('settings-window')">СОХРАНИТЬ КОНФИГУРАЦИЮ</button>
+        </div>
+
+    </div>
+
+    <!-- ОСНОВНЫЕ ЭКРАНЫ -->
     <div id="screen-main" class="screen">
         <div class="card">
             <h1>TITAN SYSTEM</h1>
-            <button class="btn" onclick="showScreen('screen-form')">Отправить Запрос</button>
-            <button class="btn btn-text" onclick="toggleOracle()">Быстрый Помощник</button>
-            <button class="btn btn-text" onclick="showScreen('screen-search')">Поиск Ответов</button>
-        </div>
-    </div>
-
-    <div id="screen-settings" class="screen hidden">
-        <div class="card">
-            <h2>ENGINEERING BAY</h2>
-            <div style="text-align:left;">
-                <p style="font-size:11px; font-weight:bold; opacity:0.6; margin-bottom:5px;">Цвет Темы</p>
-                <select id="acc-val" class="setting-select" onchange="applyStyles()">
-                    <option value="accent-purple">Фиолетовый</option>
-                    <option value="accent-green">Зеленый</option>
-                    <option value="accent-blue">Синий</option>
-                    <option value="accent-red">Красный</option>
-                </select>
-                <p style="font-size:11px; font-weight:bold; opacity:0.6; margin-bottom:5px;">ФОН СИСТЕМЫ</p>
-                <select id="bg-val" class="setting-select" onchange="applyStyles()">
-                    <option value="theme-kosmo">Фиолетовая (новая)</option>
-                    <option value="theme-dark">Темная</option>
-                    <option value="theme-light">Светлая</option>
-                </select>
-            </div>
-            <button class="btn" onclick="showScreen('screen-main')">Применить Изменения</button>
+            <button class="btn" onclick="showScreen('screen-form')">ОТПРАВИТЬ ЗАПРОС</button>
+            <button class="btn btn-text" onclick="toggleTitanWindow('assistant-window')">🤖 ОТКРЫТЬ АССИСТЕНТ</button>
+            <button class="btn btn-text" onclick="showScreen('screen-search')">🔍 АРХИВ ОТВЕТОВ</button>
         </div>
     </div>
 
     <div id="screen-form" class="screen hidden">
         <div class="card">
-            <h2>Новый Запрос</h2>
-            <input type="email" id="f-email" placeholder="Введите ваш Email">
-            <input type="text" id="f-sub" placeholder="Заголовок">
+            <h2>НОВЫЙ ЗАПРОС</h2>
+            <input type="email" id="f-email" placeholder="Ваш Email">
+            <input type="text" id="f-sub" placeholder="Тема запроса">
             <textarea id="f-msg" placeholder="Сообщение..." rows="3"></textarea>
-            <input type="text" id="f-pin" placeholder="PIN (запомните)!" style="text-align:center;">
-            <button class="btn" onclick="startConfirm()">Дальше</button>
-            <button class="btn btn-text" onclick="showScreen('screen-main')">Назад</button>
+            <input type="text" id="f-pin" placeholder="PIN-КОД" style="text-align:center;">
+            <button class="btn" onclick="startConfirm()">ДАЛЕЕ</button>
+            <button class="btn btn-text" onclick="showScreen('screen-main')">ОТМЕНА</button>
         </div>
     </div>
 
     <div id="screen-confirm" class="screen hidden">
         <div class="card" style="border: 1px solid var(--danger);">
-            <h2 style="color:var(--danger);">Подверждение!</h2>
-            <div class="helper-info">Введите ваш PIN повторно. Чтобы вы могли получить ответ</div>
-            <input type="text" id="f-pin-confirm" placeholder="Повторите PIN" style="text-align:center;" oninput="checkPins()">
-            <button class="btn" id="final-btn" onclick="sendToSheet()" style="opacity:0.3; pointer-events:none;">Отправить</button>
-            <button class="btn btn-text" onclick="showScreen('screen-form')">Назад</button>
+            <h2 style="color:var(--danger);">CONFIRMATION</h2>
+            <div class="helper-info">Введите ваш PIN повторно. Данные будут переданы в Штаб.</div>
+            <input type="text" id="f-pin-confirm" placeholder="ПОВТОРИТЕ PIN" style="text-align:center;" oninput="checkPins()">
+            <button class="btn" id="final-btn" onclick="sendToSheet()" style="opacity:0.3; pointer-events:none;">ОТПРАВИТЬ</button>
+            <button class="btn btn-text" onclick="showScreen('screen-form')">НАЗАД</button>
         </div>
     </div>
 
     <div id="screen-search" class="screen hidden">
         <div class="card">
-            <h2>Поиск Ответа</h2>
-            <input type="email" id="s-email" placeholder="Ваш Email">
-            <input type="text" id="s-pin" placeholder="Ваш PIN">
-            <button class="btn" onclick="searchInSheet()">Найти</button>
+            <h2>АРХИВ ШТАБА</h2>
+            <input type="email" id="s-email" placeholder="Email">
+            <input type="text" id="s-pin" placeholder="PIN">
+            <button class="btn" onclick="searchInSheet()">НАЙТИ</button>
             <div id="search-results" style="margin-top:15px; text-align:left; font-size:12px; color:var(--accent);"></div>
-            <button class="btn btn-text" onclick="showScreen('screen-main')">Назад</button>
+            <button class="btn btn-text" onclick="showScreen('screen-main')">НАЗАД</button>
         </div>
     </div>
 
@@ -176,10 +241,41 @@
             const acc = document.getElementById('acc-val').value;
             const bg = document.getElementById('bg-val').value;
             document.body.className = `${acc} ${bg}`;
+            showToast("Стиль ядра обновлен!");
+        }
+
+        /* КАСКАДНОЕ УПРАВЛЕНИЕ ОКНАМИ ЭКОСИСТЕМЫ */
+        function toggleTitanWindow(windowId) {
+            const win = document.getElementById(windowId);
+            const isHidden = win.classList.contains('window-hidden');
+            
+            // Если открываем ассистента — закрываем настройки, и наоборот
+            if (isHidden) {
+                if (windowId === 'assistant-window') document.getElementById('settings-window').classList.add('window-hidden');
+                if (windowId === 'settings-window') document.getElementById('assistant-window').classList.add('window-hidden');
+                win.classList.remove('window-hidden');
+            } else {
+                win.classList.add('window-hidden');
+            }
+        }
+
+        /* ПОДВИЖНОЕ TOAST УВЕДОМЛЕНИЕ */
+        function showToast(msg, icon = "✅") {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-msg').innerText = msg.toUpperCase();
+            
+            toast.classList.add('toast-active');
+            setTimeout(() => {
+                toast.classList.remove('toast-active');
+            }, 3000);
         }
 
         function startConfirm() {
-            if(!document.getElementById('f-email').value || !document.getElementById('f-pin').value) return alert('Заполните поля!');
+            if(!document.getElementById('f-email').value || !document.getElementById('f-pin').value) {
+                showToast("Заполните поля!", "⚠️");
+                return;
+            }
             showScreen('screen-confirm');
         }
 
@@ -193,7 +289,7 @@
 
         function sendToSheet() {
             const b = document.getElementById('final-btn');
-            b.innerText = "Отправка...";
+            b.innerText = "ОТПРАВКА...";
             const data = {
                 email: document.getElementById('f-email').value,
                 subject: document.getElementById('f-sub').value,
@@ -202,10 +298,15 @@
             };
             fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
             .then(() => {
-                alert('Запрос успешно передан');
+                // ВМЕСТО АЛЕРТА — ВЫЗЫВАЕМ ТОСТ ИЗ БУДУЩЕГО
+                showToast("ЗАПРОС В ШТАБЕ! 🔑)");
+                
                 // Очистка полей БЕЗ перезагрузки
-                document.querySelectorAll('input, textarea').forEach(i => i.value = "");
+                document.querySelectorAll('#screen-form input, #screen-form textarea, #screen-confirm input').forEach(i => i.value = "");
                 showScreen('screen-main');
+                b.innerText = "ОТПРАВИТЬ";
+            }).catch(() => {
+                showToast("ОШИБКА ДАННЫХ", "❌");
                 b.innerText = "ОТПРАВИТЬ";
             });
         }
@@ -214,20 +315,25 @@
             const res = document.getElementById('search-results');
             const email = document.getElementById('s-email').value;
             const pin = document.getElementById('s-pin').value;
-            if(!email || !pin) return alert("Введите данные!");
-            res.innerText = "Синхронизация...";
+            if(!email || !pin) {
+                showToast("Введите данные!", "⚠️");
+                return;
+            }
+            res.innerText = "СИНХРОНИЗАЦИЯ...";
             fetch(`${SCRIPT_URL}?email=${encodeURIComponent(email)}&pin=${encodeURIComponent(pin)}`)
             .then(r => r.json())
             .then(d => {
                 if(d.length > 0) {
                     res.innerHTML = d.map(i => `<div style="border-bottom:1px solid rgba(255,255,255,0.1); padding:8px 0;"><b>${i.subject}</b>: ${i.status || 'В работе'}</div>`).join('');
-                } else { res.innerText = "Ответы не найдены. Но ваш адрес записан"; }
-            }).catch(() => res.innerText = "Произошла ошибка. Повторите попытку");
-        }
-
-        function toggleOracle() {
-            const b = document.getElementById('oracle-box');
-            b.style.display = b.style.display === 'block' ? 'none' : 'block';
+                    showToast("АРХИВ НАЙДЕН");
+                } else { 
+                    res.innerText = "Ничего не найдено. 🔑)"; 
+                    showToast("ПУСТОЙ ЛОГ", "📂");
+                }
+            }).catch(() => {
+                res.innerText = "Ошибка доступа.";
+                showToast("ОШИБКА ДОСТУПА", "❌");
+            });
         }
 
         function sendToOracle() {
@@ -236,17 +342,17 @@
             const val = i.value.toLowerCase();
             if(!val) return;
             
-            f.innerHTML += `<div style="color:var(--accent); margin-top:5px;">● ${i.value}</div>`;
+            f.innerHTML += `<div style="color:var(--accent); margin-top:5px; text-align:right; font-weight:600;">● ${i.value}</div>`;
             
-            let reply = "Привет";
-            if(val.includes("привет")) reply = "Привет. Чем помочь";
-            if(val.includes("как заполнить форму?")) reply = "Чтобы заполнить форму, нужно нажать на 'Отправить запрос' а затем укажите ваш Email, Заголовок, Сообщение..., и Пин код. Потом подвердите ваш Пин код в новом окне.";
-            if(val.includes("чем поможешь?")) reply = "Я помощник. Но не расширенный";
+            let reply = "Оракул: Команда не распознана. 🔑)";
+            if(val.includes("статус")) reply = "Оракул: Все системы TITAN в норме. Ядро 3.4 активно.";
+            if(val.includes("lmsh")) reply = "Оракул: ЛМСХ — это будущее. Штаб на связи.";
+            if(val.includes("инфо")) reply = "Оракул: Я помощник TITAN. Могу проверить архив или отправить лог.";
             
             setTimeout(() => {
-                f.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:10px; margin-top:5px;">${reply}</div>`;
+                f.innerHTML += `<div style="background:rgba(255,255,255,0.05); padding:8px; border-radius:10px; margin-top:5px; border-left: 2px solid var(--accent);">${reply}</div>`;
                 f.scrollTop = f.scrollHeight;
-            }, 600);
+            }, 400);
             i.value = "";
         }
     </script>
