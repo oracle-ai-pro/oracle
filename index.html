@@ -2,94 +2,73 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Core Node 2.4 | Prestige HQ</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0a0b10; --surface: #14151f; --border: #2d313e;
-            --primary: #adc6ff; --grad: linear-gradient(90deg, #02b6ed, #e60ced);
-        }
-        body { margin: 0; background: var(--bg); color: #e3e2e6; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        :root { --bg: #0a0b10; --surface: #14151f; --border: #2d313e; --primary: #adc6ff; --grad: linear-gradient(90deg, #02b6ed, #e60ced); }
+        body { margin: 0; background: var(--bg); color: #e3e2e6; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; }
 
-        .app-container { display: flex; flex-grow: 1; overflow: hidden; }
-        .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); padding: 20px; display: none; }
-        @media (min-width: 768px) { .sidebar { display: block; } }
+        /* Адаптивная боковая панель */
+        .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: none; flex-direction: column; padding: 20px; }
+        @media (min-width: 768px) { .sidebar { display: flex; } }
+        .sidebar-bottom { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
 
-        .chat-main { flex: 1; display: flex; flex-direction: column; padding: 20px; position: relative; }
+        /* Основной экран - всегда прижат к низу */
+        .chat-main { flex: 1; display: flex; flex-direction: column; height: 100vh; padding: 20px; box-sizing: border-box; }
         
-        /* Квантовый поток */
-        .stream-line { height: 3px; background: var(--grad); background-size: 200% 100%; animation: flow 2s linear infinite; opacity: 0; transition: opacity 0.3s; }
-        @keyframes flow { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
-
-        /* Split View Grid */
-        #chat-flow { flex-grow: 1; overflow-y: auto; display: grid; gap: 15px; grid-template-columns: 1fr; }
-        .dual-mode { grid-template-columns: 1fr 1fr !important; }
-
-        .input-box { display: flex; gap: 10px; align-items: center; background: var(--surface); padding: 8px 16px; border-radius: 30px; border: 1px solid var(--border); transition: all 0.3s; margin-top: 10px; }
+        /* Чат тянется, инпут фиксирован снизу */
+        #chat-flow { flex-grow: 1; overflow-y: auto; margin-bottom: 20px; display: grid; gap: 15px; }
+        
+        .input-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
         input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 16px; }
-        .send-btn { width: 0; opacity: 0; transition: all 0.3s; border: none; background: var(--primary); border-radius: 50%; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .input-box.has-content .send-btn { width: 40px; opacity: 1; }
+        
+        /* Анализ-блок */
+        .analysis-box { opacity: 0; transition: 0.3s; padding: 10px; text-align: center; color: var(--primary); font-size: 12px; }
+        .processing-border { border: 2px solid transparent; border-image: var(--grad) 1; animation: flow 2s linear infinite; }
 
-        .msg { padding: 12px 18px; border-radius: 15px; background: var(--surface); max-width: 90%; }
-        button.download { background: var(--primary); border: none; padding: 8px 15px; border-radius: 10px; cursor: pointer; margin-top: 5px; font-weight: bold; }
+        @keyframes flow { 0% { border-image-source: var(--grad); } 100% { border-image-source: var(--grad); } }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <div class="sidebar"><h3>Core Node 2.4</h3><button onclick="toggleSplit()">Split View</button></div>
-    <div class="chat-main">
-        <div id="chat-flow"></div>
-        <div id="stream" class="stream-line"></div>
-        <div class="input-box" id="box">
-            <input type="text" id="user-input" placeholder="Введите команду..." oninput="check()">
-            <button class="send-btn" onclick="send()"><span class="material-symbols-rounded">send</span></button>
-        </div>
+<div class="sidebar">
+    <h3>Core Node 2.4</h3>
+    <div class="sidebar-bottom">
+        <button onclick="toggleTheme()">Настройки</button>
+    </div>
+</div>
+
+<div class="chat-main" id="main-area">
+    <div id="chat-flow"></div>
+    <div id="analysis-text" class="analysis-box">Анализ данных... •••</div>
+    <div class="input-wrapper" id="box">
+        <input type="text" id="user-input" placeholder="Введите запрос..." oninput="check()">
+        <button onclick="send()">➔</button>
     </div>
 </div>
 
 <script>
+    const greetings = ["Чем могу помочь?", "Как дела?", "Погнали?", "Чем займемся?", "Что делаете?", "Ламирк готов.", "Вам слово...", "Начнем?"];
     const flow = document.getElementById('chat-flow');
-    let isDual = false;
-
-    function toggleSplit() {
-        isDual = !isDual;
-        flow.classList.toggle('dual-mode', isDual);
-        if(isDual) {
-            flow.innerHTML = '<div class="msg">Core A онлайн</div><div class="msg">Core B онлайн</div>';
-        }
-    }
-
-    function check() {
-        const inp = document.getElementById('user-input');
-        const box = document.getElementById('box');
-        box.classList.toggle('has-content', inp.value.replace(/[\s\u00A0]+/g, '').length > 0);
-    }
+    
+    // Рандомное приветствие
+    flow.innerHTML = `<div class="msg">${greetings[Math.floor(Math.random() * greetings.length)]}</div>`;
 
     function send() {
         const inp = document.getElementById('user-input');
-        const text = inp.value.trim();
-        if (!text) return;
+        if (!inp.value.trim()) return;
 
-        document.getElementById('stream').style.opacity = '1';
-        
-        // Логика обработки
+        // Включаем режим анализа
+        document.getElementById('analysis-text').style.opacity = '1';
+        document.getElementById('box').classList.add('processing-border');
+
         setTimeout(() => {
-            let replyText = "Команда принята.";
-            if (text.toLowerCase().includes("скачай")) {
-                const ver = text.match(/\d+(\.\d+)?/g) || "3.4";
-                replyText = `Архив найден: <button class="download" onclick="window.open('https://oracle-ai-pro.github.io/oracle/packs/Kosmo_Level_${ver.replace('.', '_')}.worldpack')">Скачать ${ver}</button>`;
-            }
-            
-            const msg = document.createElement('div');
-            msg.className = 'msg';
-            msg.innerHTML = replyText;
-            flow.appendChild(msg);
-            
-            document.getElementById('stream').style.opacity = '0';
-            inp.value = ""; check();
-        }, 1200);
+            document.getElementById('analysis-text').style.opacity = '0';
+            document.getElementById('box').classList.remove('processing-border');
+            flow.innerHTML += `<div class="msg">Ламирк проанализировал: ${inp.value}</div>`;
+            inp.value = "";
+        }, 2000);
     }
 </script>
 </body>
