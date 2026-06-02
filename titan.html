@@ -6,110 +6,208 @@
     <title>LMSH TITAN | PRESTIGE iOS</title>
     <style>
         :root { 
-            --bg: #000000; --card: rgba(28, 28, 30, 0.8); --accent: #00f2ff; 
-            --purple: #5856d6; --text: #ffffff; --input: rgba(44, 44, 46, 0.6); 
-            --danger: #ff453a; --shadow: rgba(0, 242, 255, 0.2);
+            --bg: #000000; --card: #1c1c1e; --accent: #00f2ff; 
+            --text: #ffffff; --input: #2c2c2e; --danger: #ff453a; 
+            --shadow: rgba(0, 242, 255, 0.3);
+            --base-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
         }
         .light-theme { 
-            --bg: #f2f2f7; --card: rgba(255, 255, 255, 0.8); --accent: #007aff; 
-            --text: #000000; --input: rgba(229, 229, 234, 0.6); --shadow: rgba(0, 122, 255, 0.15);
+            --bg: #f2f2f7; --card: #ffffff; --accent: #007aff; 
+            --text: #000000; --input: #e5e5ea; --shadow: rgba(0, 122, 255, 0.15);
         }
         
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-        body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: var(--base-font); transition: 0.3s cubic-bezier(0.25, 1, 0.5, 1); -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; display: flex; align-items: center; justify-content: center; -webkit-overflow-scrolling: touch; }
         
-        /* ЖИВОЙ ФОН */
-        .main-bg { position: fixed; inset: 0; z-index: -1; background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%); }
+        /* Глобальное размытие фона */
+        body::before { content:''; position:fixed; inset:0; background:radial-gradient(circle at center, rgba(30,30,30,1) 0%, rgba(0,0,0,1) 100%); z-index:-1; filter:blur(20px); opacity:0.8; }
+        .light-theme::before { background:radial-gradient(circle at center, rgba(230,230,230,1) 0%, rgba(240,240,240,1) 100%); opacity:0.5; }
 
-        /* ЯДРО ОРАКУЛА В ТИТАНЕ */
-        .oracle-mini { position: fixed; top: 30px; right: 30px; display: flex; gap: 8px; }
-        .ball { width: 14px; height: 14px; border-radius: 50%; filter: blur(2px); }
-        .b1 { background: var(--accent); animation: pulse 2s infinite; }
-        .b2 { background: var(--purple); animation: pulse 2s infinite 1s; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(1.6); opacity: 1; filter: blur(4px); } }
+        .screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+        
+        /* iOS Пружинистая анимация появления */
+        .hidden { opacity: 0; pointer-events: none; transform: scale(0.8) translateY(50px); filter:blur(10px); }
+        .screen:not(.hidden) { animation: iosPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
 
-        /* КАРТОЧКА */
+        @keyframes iosPop { to { opacity: 1; transform: scale(1) translateY(0); filter:blur(0); } }
+
         .card { 
-            background: var(--card); width: 92%; max-width: 400px; padding: 35px; 
-            border-radius: 40px; backdrop-filter: blur(30px); -webkit-backdrop-filter: blur(30px);
-            border: 1px solid rgba(255,255,255,0.1); text-align: center;
-            box-shadow: 0 20px 60px var(--shadow);
+            background: var(--card); width: 100%; max-width: 390px; padding: 30px; 
+            border-radius: 30px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.04); max-height: 85vh; overflow-y: auto; 
+            text-align: center; 
+            /* РАЗНОЦВЕТНАЯ НЕОНОВАЯ ТЕНЬ (Мигает) */
+            box-shadow: 0 15px 50px -10px var(--shadow), 0 0 20px -5px var(--accent);
+            animation: neonGlow 4s ease-in-out infinite;
+        }
+        .light-theme .card { border: 1px solid rgba(0,0,0,0.02); }
+
+        @keyframes neonGlow {
+            0%, 100% { box-shadow: 0 15px 50px -10px var(--shadow), 0 0 20px -5px var(--accent); }
+            50% { box-shadow: 0 15px 60px -5px var(--shadow), 0 0 30px 0px var(--accent); }
         }
 
-        #timer { font-size: 64px; font-weight: 900; color: var(--accent); margin: 25px 0; letter-spacing: -3px; text-shadow: 0 0 20px var(--shadow); }
-
-        input, select, textarea { 
-            width: 100%; background: var(--input); border: 1px solid rgba(255,255,255,0.1); 
-            padding: 18px; border-radius: 20px; color: var(--text); margin-bottom: 15px; font-size: 17px; outline: none;
+        h1, h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 15px; }
+        input, textarea, select { 
+            width: 100%; background: var(--input); border: 1px solid rgba(255,255,255,0.02); 
+            padding: 16px; border-radius: 16px; color: var(--text); 
+            margin-bottom: 12px; font-size: 17px; outline: none; appearance: none; -webkit-appearance: none;
         }
-        input:focus { border-color: var(--accent); background: rgba(255,255,255,0.1); }
+        .light-theme input, .light-theme textarea, .light-theme select { border: 1px solid rgba(0,0,0,0.03); }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        /* iOS Нативный выбор */
+        select { background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%238e8e93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; }
 
         .btn { 
-            width: 100%; padding: 20px; border-radius: 22px; border: none; 
-            background: var(--accent); color: #000; font-weight: 700; font-size: 17px; cursor: pointer;
+            width: 100%; padding: 18px; border-radius: 16px; border: none; 
+            background: var(--accent); color: #ffffff; font-weight: 600; 
+            cursor: pointer; margin-top: 10px; font-size: 16px; 
+            /* iOS Касание: Уменьшение */
+            transform: scale(1); transition: 0.1s ease-in-out; 
         }
-        .btn-sec { background: rgba(255,255,255,0.1); color: #fff; margin-top: 10px; }
-        .btn:active { transform: scale(0.95); }
+        .btn:active { transform: scale(0.96); opacity: 0.9; }
+        .btn:disabled { opacity: 0.4; pointer-events: none; }
+        .btn-text { color: var(--accent); background: none; margin-top: 15px; font-size: 15px; text-transform: none; font-weight: 500;}
+        .btn-text:active { opacity:0.6; transform:scale(1); }
 
-        .hidden { opacity: 0; pointer-events: none; transform: scale(0.9) translateY(30px); position: absolute; }
-        .home-btn { position: fixed; top: 30px; left: 30px; font-size: 24px; cursor: pointer; opacity: 0.7; }
+        .settings-btn { position: fixed; top: calc(20px + env(safe-area-inset-top)); right: 20px; font-size: 28px; cursor: pointer; z-index: 100; opacity: 0.5; transition: 0.3s; }
+        .settings-btn:hover { opacity: 1; transform: rotate(90deg); }
+
+        .pin-warning { background: rgba(255, 69, 58, 0.08); border: 1px dashed var(--danger); padding: 15px; border-radius: 18px; margin-bottom: 15px; }
+        .pin-warning p { color: var(--danger); font-size: 12px; font-weight: 600; margin-top: 6px; }
+
+        .res-item { background: var(--input); padding: 18px; border-radius: 18px; margin-bottom: 12px; text-align: left; border-left: 4px solid var(--accent); animation: iosPop 0.4s ease-out; }
         
-        /* ТРЯСКА ПРИ ОШИБКЕ */
-        .shake { animation: shake 0.4s; }
-        @keyframes shake { 0%, 100% {transform: translateX(0);} 25% {transform: translateX(-10px);} 75% {transform: translateX(10px);} }
+        #timer { font-size: 48px; color: var(--accent); margin: 15px; font-weight: 800; letter-spacing: -1px; }
+        
+        /* Стилизация скролла iOS */
+        .card::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body>
-    <div class="main-bg"></div>
-    <div class="home-btn" onclick="location.href='index.html'">🔙</div>
-    
-    <div class="oracle-mini">
-        <div class="ball b1"></div>
-        <div class="ball b2"></div>
-    </div>
+
+    <div class="settings-btn" onclick="showScreen('screen-settings')">⚙️</div>
 
     <div id="screen-main" class="screen">
         <div class="card">
-            <h1 style="font-size: 28px; font-weight: 900;">TITAN v2</h1>
+            <h1 data-key="title">TITAN SYSTEM</h1>
             <div id="timer">01:00</div>
-            <button class="btn" onclick="startSystem()">АКТИВИРОВАТЬ СВЯЗЬ</button>
-            <button class="btn btn-sec" onclick="showScreen('screen-search')">🔍 АРХИВ ШТАБА</button>
+            <button class="btn" onclick="startSystem()" data-key="btn_activate">Отправить Запрос</button>
+            <button class="btn btn-text" onclick="showScreen('screen-search')" data-key="btn_archive">Поиск Ответов</button>
         </div>
     </div>
 
     <div id="screen-form" class="screen hidden">
         <div class="card">
-            <h2>ДОНЕСЕНИЕ</h2>
-            <input type="email" id="f-email" placeholder="Твой Email">
-            <select id="f-cat">
-                <option value="Срочно">🔴 Срочно</option>
-                <option value="Идея">💡 Идея</option>
-                <option value="Баг">🛠 Баг-репорт</option>
-            </select>
-            <textarea id="f-msg" placeholder="Опиши детали..." rows="3"></textarea>
-            <input type="text" id="f-pin" placeholder="ПИН-КОД (8 цифр)" maxlength="8" style="text-align:center; letter-spacing: 5px;">
-            <button class="btn" id="send-btn" onclick="sendData()">ОТПРАВИТЬ В ШТАБ</button>
-            <button class="btn btn-sec" onclick="showScreen('screen-main')">ОТМЕНА</button>
+            <h2 data-key="form_title">ДОНЕСЕНИЕ</h2>
+            <input type="email" id="f-email" placeholder="Email">
+            <input type="text" id="f-sub" data-placeholder="ph_subject">
+            <textarea id="f-msg" data-placeholder="ph_msg" rows="3"></textarea>
+            <div class="pin-warning">
+                <input type="text" id="f-pin" data-placeholder="ph_pin" maxlength="8" style="text-align:center; font-weight:700; letter-spacing:4px; border-color:var(--danger);">
+                <p data-key="pin_alert">ЗАПОМНИТЕ ПИН!</p>
+            </div>
+            <button class="btn" id="send-btn" onclick="sendData()" data-key="btn_send">ОТПРАВИТЬ</button>
+            <button class="btn btn-text" style="color:#8e8e93" onclick="showScreen('screen-main')" data-key="btn_cancel">ОТМЕНА</button>
         </div>
     </div>
 
     <div id="screen-search" class="screen hidden">
         <div class="card">
-            <h2>АРХИВ</h2>
+            <h2 data-key="archive_title">АРХИВ ШТАБА</h2>
             <input type="email" id="s-email" placeholder="Email">
-            <input type="password" id="s-pin" placeholder="ПИН-КОД">
-            <button class="btn" onclick="searchData()">НАЙТИ ДОНЕСЕНИЯ</button>
-            <div id="results" style="margin-top: 20px; max-height: 200px; overflow-y: auto;"></div>
-            <button class="btn btn-sec" onclick="showScreen('screen-main')">НАЗАД</button>
+            <input type="password" id="s-pin" data-placeholder="ph_pin">
+            <button class="btn" onclick="searchData()" data-key="btn_find">НАЙТИ ОТВЕТЫ</button>
+            <div id="results" style="margin-top:20px;"></div>
+            <button class="btn btn-text" onclick="showScreen('screen-main')" data-key="btn_back">ВЕРНУТЬСЯ</button>
         </div>
     </div>
 
+    <div id="screen-settings" class="screen hidden">
+        <div class="card">
+            <h2 data-key="settings_title">НАСТРОЙКИ</h2>
+            <button class="btn" style="background:var(--input); color:var(--text);" onclick="toggleLang()" id="lang-btn">LANGUAGE: RU</button>
+            <button class="btn" style="background:var(--input); color:var(--text);" onclick="toggleTheme()" data-key="btn_theme">СМЕНИТЬ ТЕМУ</button>
+            <div style="margin: 25px 0; display: flex; justify-content: center; gap: 15px;">
+                <div onclick="setAccent('#00f2ff')" style="background:#00f2ff; width:38px; height:38px; border-radius:50%; cursor:pointer; border:2px solid #fff;"></div>
+                <div onclick="setAccent('#ff3b30')" style="background:#ff3b30; width:38px; height:38px; border-radius:50%; cursor:pointer; border:2px solid #fff;"></div>
+                <div onclick="setAccent('#34c759')" style="background:#34c759; width:38px; height:38px; border-radius:50%; cursor:pointer; border:2px solid #fff;"></div>
+            </div>
+            <button class="btn" style="background:#3a3a3c; color:#fff;" onclick="showScreen('screen-main')" data-key="btn_close">ЗАКРЫТЬ</button>
+        </div>
+    </div>
+<div id="update-modal" style="position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,0.6); backdrop-filter:blur(10px);">
+    <div class="card" style="width:100%; max-width:340px; padding:25px; animation: iosPop 0.4s ease;">
+        <h2 style="font-size: 18px; margin-bottom: 10px;">⚠️ Обновление TITAN SYSTEM</h2>
+        <p style="font-size: 14px; color: var(--sub); margin-bottom: 20px; line-height: 1.4;">
+            Эта версия TITAN SYSTEM устарела.<br><br>
+            В новой версии доступны: расширенные настройки Flow Graphics (анимации, фон, ассистент).
+        </p>
+        <a href="titan_system.html" class="btn" style="text-decoration:none; display:block; margin-bottom:10px;">ОБНОВИТЬ</a>
+        <button class="btn btn-text" onclick="this.parentElement.parentElement.style.display='none'">Продолжить в этой версии</button>
+    </div>
+</div>
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby8YweWa9ZP1nQKbrgvZvPiwVa2DLlaRgM-03xRFUJ5SSTv1WiSXpE9S6mG3aMtZhRahw/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlDNCzP0A8rCxIvTxoKJpCYOEf9vK00ZRn-uugmE4QIMUb7g__alwMGYtwJnCzD6t9XQ/exec";
+        
+        let currentLang = 'ru';
+        const langData = {
+            ru: {
+                title: "TITAN SYSTEM", btn_activate: "АКТИВИРОВАТЬ СВЯЗЬ", btn_archive: "🔍 АРХИВ ДОНЕСЕНИЙ",
+                form_title: "НОВОЕ ДОНЕСЕНИЕ", ph_subject: "Тема", ph_msg: "Текст сообщения...", ph_pin: "ПИН-КОД (8 знаков)",
+                pin_alert: "ЗАПОМНИТЕ ПИН! БЕЗ НЕГО НЕТ ДОСТУПА.", btn_send: "ОТПРАВИТЬ", btn_cancel: "ОТМЕНА",
+                archive_title: "АРХИВ ШТАБА", btn_find: "НАЙТИ ОТВЕТЫ", btn_back: "ВЕРНУТЬСЯ",
+                settings_title: "НАСТРОЙКИ", btn_theme: "СМЕНИТЬ ТЕМУ", btn_close: "ЗАКРЫТЬ",
+                cat_1: "🟢 Обычный", cat_2: "🔴 Срочный", cat_3: "💡 Идея", cat_4: "⭐️ Отзыв",
+                alert_success: "Отправлено успешно! Штаб принял.", alert_wait: "СВЯЗЬ...", alert_no_res: "Донесений не найдено.",
+                staff: "ШТАБ: ", re_ph: "Дополнение (Re)..."
+            },
+            en: {
+                title: "TITAN SYSTEM", btn_activate: "ACTIVATE COMM", btn_archive: "🔍 ARCHIVE",
+                form_title: "REPORT", ph_subject: "Subject", ph_msg: "Message text...", ph_pin: "PIN (8 digits)",
+                pin_alert: "REMEMBER YOUR PIN! NO RECOVERY.", btn_send: "SEND REPORT", btn_cancel: "CANCEL",
+                archive_title: "STAFF ARCHIVE", btn_find: "FIND ANSWERS", btn_back: "GO BACK",
+                settings_title: "SETTINGS", btn_theme: "TOGGLE THEME", btn_close: "CLOSE",
+                cat_1: "🟢 General", cat_2: "🔴 Urgent", cat_3: "💡 Idea", cat_4: "⭐️ Feedback",
+                alert_success: "Sent successfully!", alert_wait: "SYNCING...", alert_no_res: "No records found.",
+                staff: "STAFF: ", re_ph: "Your Re..."
+            }
+        };
+
+        function toggleLang() {
+            currentLang = currentLang === 'ru' ? 'en' : 'ru';
+            document.getElementById('lang-btn').innerText = `LANGUAGE: ${currentLang.toUpperCase()}`;
+            applyLang();
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+            updateShadowColor();
+        }
+
+        function applyLang() {
+            const lang = langData[currentLang];
+            document.querySelectorAll('[data-key]').forEach(el => el.innerText = lang[el.getAttribute('data-key')]);
+            document.querySelectorAll('[data-placeholder]').forEach(el => el.placeholder = lang[el.getAttribute('data-placeholder')]);
+        }
 
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
+        }
+
+        function setAccent(color) { 
+            document.documentElement.style.setProperty('--accent', color); 
+            updateShadowColor();
+        }
+
+        // Автоматическое обновление цвета тени в зависимости от акцента
+        function updateShadowColor() {
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+            const isLight = document.body.classList.contains('light-theme');
+            const shadowBase = isLight ? accent + '26' : accent + '4d'; // Глубина тени
+            document.documentElement.style.setProperty('--shadow', shadowBase);
         }
 
         function startSystem() {
@@ -118,40 +216,68 @@
             const interval = setInterval(() => {
                 t--;
                 timerDiv.innerText = `00:${t < 10 ? '0'+t : t}`;
-                if(t <= 0) { 
-                    clearInterval(interval); 
-                    showScreen('screen-form'); 
-                    timerDiv.innerText = "01:00"; 
-                }
-            }, 15); // Ускорил для теста, можно вернуть 100 для реальной секунды
+                if(t <= 0) { clearInterval(interval); showScreen('screen-form'); timerDiv.innerText = "01:00"; }
+            }, 10);
         }
 
         function sendData() {
-            const pin = document.getElementById('f-pin').value;
-            const card = document.querySelector('#screen-form .card');
-            
-            if(pin.length < 8) {
-                card.classList.add('shake');
-                setTimeout(() => card.classList.remove('shake'), 400);
-                return;
-            }
-
             const btn = document.getElementById('send-btn');
-            btn.innerText = "ШИФРОВАНИЕ...";
+            const data = {
+                action: 'send', id: Date.now(),
+                email: document.getElementById('f-email').value,
+                sub: document.getElementById('f-sub').value,
+                cat: document.getElementById('f-cat').value,
+                msg: document.getElementById('f-msg').value,
+                pin: document.getElementById('f-pin').value
+            };
+            if(!data.email || !data.pin) return alert("Error: Email/PIN!");
+            btn.innerText = langData[currentLang].alert_wait;
             btn.disabled = true;
 
-            // Логика отправки...
-            setTimeout(() => {
-                alert("Донесение отправлено в Штаб! 🛠");
-                location.reload();
-            }, 1500);
+            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
+            .finally(() => {
+                setTimeout(() => {
+                    alert(langData[currentLang].alert_success);
+                    location.reload();
+                }, 800);
+            });
         }
 
         async function searchData() {
             const resDiv = document.getElementById('results');
-            resDiv.innerHTML = "СИНХРОНИЗАЦИЯ...";
-            // Твоя логика поиска из исходника...
+            const email = document.getElementById('s-email').value;
+            const pin = document.getElementById('s-pin').value;
+            resDiv.innerHTML = "...";
+
+            try {
+                const resp = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'search', email, pin }) });
+                const list = await resp.json();
+                resDiv.innerHTML = list.length ? "" : langData[currentLang].alert_no_res;
+                list.forEach(item => {
+                    resDiv.innerHTML += `
+                        <div class="res-item">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; opacity:0.6; margin-bottom:5px;">
+                                <span>${item.sub}</span>
+                                <span style="font-weight:600;">${item.status}</span>
+                            </div>
+                            <b style="color:var(--accent); font-size:17px;">${langData[currentLang].staff}${item.reply}</b>
+                            <div style="margin-top:10px;">
+                                <input type="text" id="re-in-${item.id}" placeholder="${langData[currentLang].re_ph}" value="${item.userRe}" style="font-size:14px; padding:12px; border-radius:12px;">
+                                <button class="btn btn-re" style="padding:10px; font-size:12px; border-radius:12px;" onclick="sendRe('${item.id}')">RE</button>
+                            </div>
+                        </div>`;
+                });
+            } catch(e) { resDiv.innerHTML = "Error!"; }
         }
+
+        function sendRe(msgId) {
+            const text = document.getElementById(`re-in-${msgId}`).value;
+            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'addRe', msgId, userText: text }) })
+            .finally(() => alert("OK"));
+        }
+
+        applyLang();
+        updateShadowColor();
     </script>
 </body>
 </html>
