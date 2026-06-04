@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <link rel="stylesheet" href="../core.css">
+    <title>About | Core Node 2.5</title>
+    <style>
+        .hero-section { height: 60vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .grid-levels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding: 40px; }
+        .card { background: var(--surface); padding: 20px; border: 1px solid var(--border); border-radius: 12px; }
+    </style>
+</head>
+<body>
+
+<div class="hero-section">
+    <div id="core-3d" class="oracle-mini" style="transform: scale(2);">
+        <div class="dot blue"></div>
+        <div class="dot purple"></div>
+    </div>
+    <h1>Core Node 2.5</h1>
+    <p>Инженерная экосистема ЛМСХ</p>
+</div>
+
+<div class="grid-levels">
+    <div class="card">
+        <h3>Level 0: Guest</h3>
+        <p>Базовый доступ к вычислительным мощностям.</p>
+    </div>
+    <div class="card pulse-glow">
+        <h3>Level 1: Инженер</h3>
+        <p>Полная связка с Notepad Helper 2 + Prestige Bridge.</p>
+    </div>
+    <div class="card">
+        <h3>Level 2: Архитектор</h3>
+        <p>Доступ к прошивке ядра и глобальным директивам.</p>
+    </div>
+</div>
+
+<script>
+    // Параллакс для логотипа
+    document.addEventListener('mousemove', (e) => {
+        const logo = document.getElementById('core-3d');
+        logo.style.transform = `scale(2) translate(${(e.clientX - window.innerWidth/2)/50}px, ${(e.clientY - window.innerHeight/2)/50}px)`;
+    });
+</script>
+</body>
+</html>
