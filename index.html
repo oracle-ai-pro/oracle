@@ -1,75 +1,50 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Core Node 2.4 | Prestige HQ</title>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
-    <style>
-        :root { --bg: #0a0b10; --surface: #14151f; --border: #2d313e; --primary: #adc6ff; --grad: linear-gradient(90deg, #02b6ed, #e60ced); }
-        body { margin: 0; background: var(--bg); color: #e3e2e6; font-family: 'Segoe UI', sans-serif; height: 100vh; display: flex; }
-
-        /* Адаптивная боковая панель */
-        .sidebar { width: 280px; background: var(--surface); border-right: 1px solid var(--border); display: none; flex-direction: column; padding: 20px; }
-        @media (min-width: 768px) { .sidebar { display: flex; } }
-        .sidebar-bottom { margin-top: auto; padding-top: 20px; border-top: 1px solid var(--border); }
-
-        /* Основной экран - всегда прижат к низу */
-        .chat-main { flex: 1; display: flex; flex-direction: column; height: 100vh; padding: 20px; box-sizing: border-box; }
-        
-        /* Чат тянется, инпут фиксирован снизу */
-        #chat-flow { flex-grow: 1; overflow-y: auto; margin-bottom: 20px; display: grid; gap: 15px; }
-        
-        .input-wrapper { background: var(--surface); border: 1px solid var(--border); border-radius: 30px; padding: 8px 16px; display: flex; align-items: center; gap: 10px; }
-        input { flex: 1; background: transparent; border: none; color: white; padding: 10px; outline: none; font-size: 16px; }
-        
-        /* Анализ-блок */
-        .analysis-box { opacity: 0; transition: 0.3s; padding: 10px; text-align: center; color: var(--primary); font-size: 12px; }
-        .processing-border { border: 2px solid transparent; border-image: var(--grad) 1; animation: flow 2s linear infinite; }
-
-        @keyframes flow { 0% { border-image-source: var(--grad); } 100% { border-image-source: var(--grad); } }
-    </style>
+    <link rel="stylesheet" href="core.css">
+    <title>Core Node 2.5 | Prestige HQ</title>
 </head>
 <body>
 
-<div class="sidebar">
-    <h3>Core Node 2.4</h3>
-    <div class="sidebar-bottom">
-        <button onclick="toggleTheme()">Настройки</button>
+<div id="login-overlay" class="overlay">
+    <div class="login-box">
+        <div class="oracle-mini" id="main-logo">
+            <div class="dot blue"></div>
+            <div class="dot purple"></div>
+        </div>
+        <h2 id="status-text">Вход в Prestige HQ</h2>
+        <input type="text" placeholder="ID или Email">
+        <input type="password" placeholder="Ключ доступа">
+        <button onclick="initPrestige()">Войти в систему</button>
+        <button class="secondary-btn">Создать аккаунт</button>
     </div>
 </div>
 
+<div class="sidebar" id="sidebar">...</div>
 <div class="chat-main" id="main-area">
+    <div class="badge" id="context-badge">No Context</div>
     <div id="chat-flow"></div>
-    <div id="analysis-text" class="analysis-box">Анализ данных... •••</div>
-    <div class="input-wrapper" id="box">
-        <input type="text" id="user-input" placeholder="Введите запрос..." oninput="check()">
-        <button onclick="send()">➔</button>
-    </div>
+    <input type="text" id="main-input" placeholder="Введите команду...">
 </div>
 
+<script src="Account.js"></script>
 <script>
-    const greetings = ["Чем могу помочь?", "Как дела?", "Погнали?", "Чем займемся?", "Что делаете?", "Ламирк готов.", "Вам слово...", "Начнем?"];
-    const flow = document.getElementById('chat-flow');
+async function initPrestige() {
+    const logo = document.getElementById('main-logo');
+    const status = document.getElementById('status-text');
     
-    // Рандомное приветствие
-    flow.innerHTML = `<div class="msg">${greetings[Math.floor(Math.random() * greetings.length)]}</div>`;
-
-    function send() {
-        const inp = document.getElementById('user-input');
-        if (!inp.value.trim()) return;
-
-        // Включаем режим анализа
-        document.getElementById('analysis-text').style.opacity = '1';
-        document.getElementById('box').classList.add('processing-border');
-
-        setTimeout(() => {
-            document.getElementById('analysis-text').style.opacity = '0';
-            document.getElementById('box').classList.remove('processing-border');
-            flow.innerHTML += `<div class="msg">Ламирк проанализировал: ${inp.value}</div>`;
-            inp.value = "";
-        }, 2000);
-    }
+    // Анимация подготовки
+    status.innerText = "Подготовка аккаунта...";
+    logo.classList.add('hyper-pulse');
+    
+    // Инициализация Prestige
+    await PrestigeAccount.initialize();
+    
+    // Переход в главное окно
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('main-input').classList.add('blink-neon');
+    console.log("Core Node 2.5 Online.");
+}
 </script>
 </body>
 </html>
