@@ -2,543 +2,276 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Oracle AI 2.3 | Prestige HQ</title>
-    <link rel="manifest" href="manifest.json">
+    <title>Oracle AI 2.5 | Prestige HQ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
     <meta name="theme-color" content="#0a0b10">
     <style>
-        /* MATERIAL YOU ДИНАМИЧЕСКАЯ ПАЛИТРА */
+        /* =========================================
+           1. CORE VARIABLES (MATERIAL YOU)
+        ========================================= */
         :root {
-            --bg: #050505;
+            --bg: #0a0b10;
             --surface: #14151f;
             --surface-variant: #1f202e;
             --on-surface: #e3e2e6;
             --on-surface-variant: #c7c6ca;
             --primary: #adc6ff;
             --primary-container: #254487;
-            --on-primary-container: #d9e2ff;
             --secondary: #e8bbf1;
             --border: #434753;
             --grad: linear-gradient(90deg, #02b6ed 0%, #e60ced 100%);
-            
-            --radius-large: 28px;
-            --radius-medium: 16px;
-            --radius-small: 12px;
+            --glass-bg: rgba(31, 32, 46, 0.75); /* Для Liquid Glass */
         }
 
         body.light-theme {
-            --bg: #f8f9ff;
-            --surface: #f0f1f9;
-            --surface-variant: #e1e2ec;
-            --on-surface: #1a1b20;
-            --on-surface-variant: #43474e;
-            --primary: #3b5ba9;
-            --primary-container: #d9e2ff;
-            --on-primary-container: #001947;
-            --secondary: #74547e;
-            --border: #c3c6cf;
+            --bg: #f8f9ff; --surface: #f0f1f9; --surface-variant: #e1e2ec;
+            --on-surface: #1a1b20; --on-surface-variant: #43474e;
+            --primary: #3b5ba9; --primary-container: #d9e2ff;
+            --border: #c3c6cf; --glass-bg: rgba(225, 226, 236, 0.85);
         }
 
-        body.light-theme .oracle-container { box-shadow: 0 12px 40px rgba(0,0,0,0.08); }
-        body.light-theme .user-msg { color: #fff; }
-
-        ::-webkit-scrollbar { width: 6px; background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-
-        html, body { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            overflow: hidden; background: var(--bg); color: var(--on-surface); 
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
-            transition: background 0.3s ease; 
+        /* =========================================
+           2. GLOBAL RESET & CONTAINER
+        ========================================= */
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background: var(--bg); color: var(--on-surface);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: background 0.3s ease;
         }
-        
-        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 16px; box-sizing: border-box; }
 
-        /* ГЛАВНЫЙ КОНТЕЙНЕР ОБОРУДОВАНИЯ ЛМСХ */
-        /* Исправления для адаптивности */
-.oracle-container { 
-    width: 100%; max-width: 820px; height: 95vh; /* Немного меньше для лучшего фита */
-    display: flex; flex-direction: column; 
-    position: relative; overflow: hidden;
-}
-
-/* LIQUID GLASS NAVIGATION v2.5 */
-/* Новая верхняя навигация */
-/* COMPACT TOP NAVIGATION v2.5 */
-/* ПЛАВАЮЩАЯ НАВИГАЦИЯ */
-.top-nav-bar {
-    position: absolute; /* Или fixed, если хочешь, чтобы она следовала за скроллом */
-    top: 15px;
-    left: 15px;
-    right: 15px;
-    z-index: 1000;
-    
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    
-    background: rgba(31, 32, 46, 0.85); /* Полупрозрачность для эффекта стекла */
-    backdrop-filter: blur(12px);         /* Размытие фона */
-    border: 1px solid var(--border);
-    border-radius: 30px;                /* Сильное скругление */
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
-
-.nav-tab-item {
-    padding: 8px 16px;
-    border-radius: 20px;
-    /* ... остальные стили ... */
-}
-
-/* Адаптация экрана под новую навигацию */
-.app-screen {
-    display: none;
-    flex-direction: column;
-    flex-grow: 1;
-    overflow-y: auto;
-    padding: 16px;
-    height: calc(100% - 50px); /* Вычитаем только топ-бар */
-}
-
-/* Компактный заголовок, если он нужен */
-.top-nav-title {
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--primary);
-    margin-right: 15px;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-
-/* Удаляем нижний бар */
-.bottom-nav-bar { display: none; }
-/* ФИКС ЭКРАНОВ И ВЫСОТЫ */
-.oracle-container { height: 100dvh; max-width: 1000px; } /* Чуть шире для Ридера */
-
-/* UI ДЛЯ РИДЕРА */
-.reader-workspace {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    height: 100%;
-}
-/* Исправляем чат */
-#screen-chat {
-    height: calc(100% - 125px); /* Авто-расчет для заполнения пространства */
-}
-
-.chat-flow-box {
-    flex-grow: 1; overflow-y: auto; padding: 20px 20px 80px 20px; /* Отступ снизу для скролла */
-}
-.app-screen {
-    display: none; /* Скрыты по умолчанию */
-    flex-direction: column;
-    flex-grow: 1;
-    overflow-y: auto;
-    width: 100%;
-    box-sizing: border-box;
-    padding: 80px 20px 100px 20px; /* Отступ сверху (для меню) и снизу (для инпута) */
-}
-
-.app-screen.active-screen {
-    display: flex; /* Показываем только активный */
-}
-        /* ЭКРАН 1: ЧАТ (СПЕЦИАЛЬНАЯ КОРРЕКЦИЯ) */
-        #screen-chat { padding: 0; overflow: hidden; display: none; flex-direction: column; }
-        #screen-chat.active-screen { display: flex; }
-        .chat-flow-box { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-
-        /* СООБЩЕНИЯ */
-        .msg { padding: 14px 18px; font-size: 14px; max-width: 80%; line-height: 1.5; animation: slideIn 0.2s cubic-bezier(0, 0, 0.2, 1); word-wrap: break-word; }
-        .ai-msg { background: var(--surface-variant); color: var(--on-surface); align-self: flex-start; border-radius: 4px 20px 20px 20px; border: 1px solid var(--border); }
-        .user-msg { background: var(--grad); color: #fff; align-self: flex-end; font-weight: 500; border-radius: 20px 4px 20px 20px; box-shadow: 0 4px 12px rgba(2, 182, 237, 0.15); }
-
-        /* ЗОНА ВВОДА */
-        .input-box {
-    position: fixed;
-    bottom: 25px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 600px;
-    background: var(--surface-variant);
-    border: 1px solid var(--border);
-    border-radius: 28px;
-    padding: 8px 16px;
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    transition: all 0.3s ease;
-    z-index: 1000;
-}
-
-/* Компактное состояние */
-.input-box:focus-within {
-    border-color: var(--primary);
-    box-shadow: 0 0 15px rgba(173, 198, 255, 0.15);
-}
-
-#user-input {
-    flex: 1;
-    background: none;
-    border: none;
-    color: var(--on-surface);
-    resize: none;
-    outline: none;
-    max-height: 120px;
-    padding: 10px 0;
-    font-size: 15px;
-    overflow-y: auto;
-}
-
-.input-actions { display: flex; align-items: center; gap: 4px; }
-
-.icon-btn {
-    background: none; border: none; color: var(--on-surface-variant);
-    cursor: pointer; padding: 8px; display: flex; align-items: center;
-}
-
-.hidden { display: none !important; }
-
-.send-btn {
-    background: var(--primary); color: var(--bg);
-    border: none; border-radius: 50%; width: 36px; height: 36px;
-    display: flex; align-items: center; justify-content: center;
-}
-
-        /* МОНОЛИТНАЯ НИЖНЯЯ ПАНЕЛЬ НАВИГАЦИИ */
-        .bottom-nav-bar {
-            height: 65px; background: var(--surface-variant);
-            border-top: 1px solid var(--border); display: flex;
-            justify-content: space-around; align-items: center;
-            z-index: 10; box-sizing: border-box; padding: 0 10px;
+        .oracle-container {
+            position: relative;
+            width: 100%; max-width: 900px; margin: 0 auto;
+            height: 100dvh; /* Динамическая высота для мобилок */
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
         }
-        .nav-tab-item {
+
+        /* =========================================
+           3. LIQUID GLASS NAVIGATION (TOP)
+        ========================================= */
+        .glass-nav {
+            position: absolute;
+            top: 15px; left: 15px; right: 15px;
+            z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px; padding: 6px 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .nav-item {
             flex: 1; display: flex; flex-direction: column; align-items: center;
-            justify-content: center; gap: 4px; color: var(--on-surface-variant);
-            background: none; border: none; cursor: pointer; font-size: 11px;
-            font-weight: 700; height: 100%; transition: all 0.2s ease;
+            background: transparent; border: none; color: var(--on-surface-variant);
+            cursor: pointer; padding: 8px 0; border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        .nav-tab-item .tab-icon {
-            padding: 4px 16px; border-radius: 16px; transition: background 0.2s;
-            font-size: 16px;
-        }
-        .nav-tab-item.active-tab { color: var(--primary); }
-        .nav-tab-item.active-tab .tab-icon { background: var(--primary-container); }
 
-        /* ПАНЕЛИ НАСТРОЕК И ПАКОВ */
-        .section-title { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 16px 0 12px; letter-spacing: 1px; border-left: 4px solid var(--secondary); padding-left: 10px; }
-        .settings-box { background: rgba(0,0,0,0.15); border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-large); display: flex; flex-direction: column; gap: 14px; }
-        .setting-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-        .setting-label { font-size: 14px; font-weight: 600; }
-        .setting-desc { font-size: 12px; color: var(--on-surface-variant); margin-top: 2px; }
+        .nav-item .material-symbols-rounded { font-size: 22px; margin-bottom: 2px; }
+        .nav-item .nav-text { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+
+        .nav-item.active { color: var(--primary); background: var(--primary-container); }
+
+        /* =========================================
+           4. APP SCREENS LOGIC
+        ========================================= */
+        .app-screen {
+            display: none; flex-direction: column; flex-grow: 1;
+            width: 100%; height: 100%; box-sizing: border-box;
+            overflow-y: auto; overflow-x: hidden;
+            padding: 90px 20px 20px 20px; /* Отступ сверху для меню */
+        }
+        .app-screen.active-screen { display: flex; animation: boot 0.3s ease-out; }
         
-        .core-select, .core-switch-btn { background: var(--surface-variant); border: 1px solid var(--border); color: var(--on-surface); padding: 10px 14px; border-radius: var(--radius-small); font-size: 13px; font-weight: bold; outline: none; cursor: pointer; }
-        .core-switch-btn.active { border-color: var(--primary); color: var(--primary); background: var(--primary-container); }
-        .warning-text { color: #ff5252; font-size: 11px; font-weight: bold; margin-top: 4px; border-left: 3px solid #ff5252; padding-left: 8px; }
+        #screen-chat { padding-bottom: 100px; /* Отступ снизу для инпута */ }
+        .chat-flow-box { flex-grow: 1; display: flex; flex-direction: column; gap: 12px; }
 
-        /* АДАПТИВНАЯ СЕТКА ПАКОВ */
-        .packs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)); gap: 10px; }
-        .item-card { background: var(--surface-variant); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-medium); display: flex; flex-direction: column; justify-content: space-between; }
-        .item-name { font-size: 13px; font-weight: 700; color: var(--on-surface); margin-bottom: 8px; text-align: center; }
-        .download-btn { display: block; padding: 8px; background: var(--surface); color: var(--primary); text-decoration: none; border-radius: var(--radius-small); font-weight: 700; font-size: 11px; text-transform: uppercase; text-align: center; border: 1px solid var(--border); }
-        .download-btn:hover { background: var(--primary); color: var(--bg); }
-
-        /* ТУЛБАРЫ РИДЕРА */
-        .story-selector { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
-        .story-tab-btn { flex: 1; min-width: 90px; background: var(--surface-variant); border: 1px solid var(--border); color: var(--on-surface-variant); padding: 10px 6px; border-radius: var(--radius-small); font-size: 12px; font-weight: bold; cursor: pointer; }
-        .story-tab-btn.active { background: var(--primary-container); border-color: var(--primary); color: var(--on-primary-container); }
-        .reader-inner-card { background: rgba(0,0,0,0.15); border-radius: var(--radius-medium); border: 1px solid var(--border); padding: 16px; }
-        .story-container { max-height: 260px; overflow-y: auto; }
-        .story-content { font-size: 14px; line-height: 1.6; color: var(--on-surface); text-align: justify; }
-
-        /* ПОДКАСТ КАНАЛ */
-        .io-stream-container { background: rgba(0,0,0,0.15); border: 2px solid var(--secondary); border-radius: var(--radius-medium); overflow: hidden; display: flex; flex-direction: column; margin: 15px 0; }
-        .io-stream-header { background: rgba(0,0,0,0.3); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-        .io-premiere-tag { background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-size: 12px; font-weight: 800; }
-        .audio-link-body { padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-        .neon-gate-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-variant); border: 1px solid var(--secondary); display: flex; align-items: center; justify-content: center; font-size: 16px; cursor: pointer; }
-        .launch-btn { background: var(--grad); color: #fff; border: none; padding: 10px 20px; border-radius: var(--radius-small); font-weight: bold; font-size: 11px; cursor: pointer; }
-
-        /* АРХИВ ЧАТОВ */
-        .drawer-chat-item { padding: 12px 16px; background: var(--surface-variant); border: 1px solid var(--border); border-radius: var(--radius-small); font-size: 13px; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--on-surface); font-weight: 600; }
-
-        /* ДОБРО ПОЖАЛОВАТЬ БЛОК */
-       /* ОБНОВЛЕННЫЙ БЛОК АНИМАЦИИ (MetaBalls v2.5) */
-.welcome-zone {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    flex-grow: 1; gap: 24px; padding: 20px; transition: all 0.3s ease;
-    filter: url('#gooey'); /* Привязка SVG-фильтра */
-}
-.welcome-zone.hidden { display: none; filter: none; } /* Отключаем фильтр при скрытии */
-
-.blob-container {
-    position: relative; width: 150px; height: 60px; /* Немного больше для маневра */
-    display: flex; align-items: center; justify-content: center;
-}
-
-.blob {
-    position: absolute; width: 30px; height: 30px; border-radius: 50%;
-    filter: blur(2px); /* Базовый блюр для фильтра */
-    transition: background 0.3s ease;
-}
-
-.cyan-blob {
-    background: var(--primary); /* Наш Неоновый Циан #02b6ed */
-    left: 30px;
-    animation: mergeLeft_v2 4s infinite cubic-bezier(0.77, 0, 0.175, 1);
-}
-
-.purple-blob {
-    background: var(--secondary); /* Наш Неоновый Фиолет #e60ced */
-    right: 30px;
-    animation: mergeRight_v2 4s infinite cubic-bezier(0.77, 0, 0.175, 1);
-}
-
-/* Новые Keyframes с учетом цвета и слияния */
-@keyframes mergeLeft_v2 {
-    0%, 100% { transform: translateX(0); background: var(--primary); }
-    40%, 60% { transform: translateX(25px) scale(1.1); background: #fff; box-shadow: 0 0 20px #fff; } /* Белый импульс в центре */
-}
-
-@keyframes mergeRight_v2 {
-    0%, 100% { transform: translateX(0); background: var(--secondary); }
-    40%, 60% { transform: translateX(-25px) scale(1.1); background: #fff; box-shadow: 0 0 20px #fff; } /* Белый импульс в центре */
-}
-
-.derzky-title {
-    font-size: 34px; font-weight: 900; color: var(--on-surface);
-    text-align: center; margin: 0; text-transform: uppercase;
-    letter-spacing: -1px; animation: neonPulse 3s infinite ease-in-out;
-}
-
-        /* АНИМАЦИИ */
-        @keyframes boot { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes neonPulse { 0%, 100% { opacity: 0.95; } 50% { opacity: 1; } }
-
-        @media (max-width: 600px) {
-            body { padding: 0; }
-            .oracle-container { height: 100vh; max-height: 100vh; border-radius: 0; border: none; }
+        /* =========================================
+           5. LIQUID GLASS FLOATING INPUT
+        ========================================= */
+        .glass-input-box {
+            position: absolute; bottom: 20px; left: 20px; right: 20px;
+            z-index: 1000;
+            display: none; /* Скрыт по умолчанию */
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 28px; padding: 8px 16px;
+            align-items: flex-end; gap: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
         }
-.toolbar {
-    display: flex; gap: 8px; margin-bottom: 10px; background: var(--surface-variant);
-    padding: 8px; border-radius: var(--radius-small); border: 1px solid var(--border);
-}
-.toolbar button, .toolbar select {
-    background: var(--surface); border: 1px solid var(--border);
-    color: var(--on-surface); padding: 5px 10px; border-radius: 4px; cursor: pointer;
-}
-#editor { min-height: 200px; outline: none; padding: 10px; }
-.chat-card {
-    background: var(--surface-variant);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 16px;
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.chat-title { font-weight: 700; font-size: 15px; }
-.chat-meta { font-size: 11px; color: var(--on-surface-variant); margin-top: 4px; }
-.chat-actions button { background: none; border: none; cursor: pointer; color: var(--on-surface-variant); }
 
-/* Умная кнопка отправки (скрыта по умолчанию) */
-.send-btn {
-    width: 0; opacity: 0; padding: 0; margin: 0;
-    overflow: hidden; visibility: hidden;
-    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
+        /* МАГИЯ: Показываем инпут только когда активен чат */
+        #screen-chat.active-screen ~ .glass-input-box { display: flex; }
+        
+        .glass-input-box:focus-within { border-color: var(--primary); }
 
-.send-btn.visible {
-    width: 38px; opacity: 1; visibility: visible;
-}
+        #user-input {
+            flex: 1; background: transparent; border: none;
+            color: var(--on-surface); font-size: 15px; outline: none;
+            resize: none; max-height: 120px; padding: 10px 0;
+            overflow-y: auto; line-height: 1.4;
+        }
 
-/* Анимация записи голоса */
-.icon-btn.recording {
-    color: #ff5252;
-    animation: pulseMic 1.5s infinite;
-}
+        .icon-btn { background: none; border: none; color: var(--on-surface-variant); cursor: pointer; padding: 8px; }
+        .hidden { display: none !important; }
+        .send-btn {
+            background: var(--primary); color: var(--bg); border: none;
+            border-radius: 50%; width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            transition: 0.2s; cursor: pointer;
+        }
 
-@keyframes pulseMic {
-    0% { transform: scale(1); background: rgba(255, 82, 82, 0); border-radius: 50%; }
-    50% { transform: scale(1.15); background: rgba(255, 82, 82, 0.15); border-radius: 50%; }
-    100% { transform: scale(1); background: rgba(255, 82, 82, 0); border-radius: 50%; }
-}
+        /* =========================================
+           6. COMPONENTS & ANIMATIONS
+        ========================================= */
+        .msg { padding: 14px 18px; font-size: 14px; max-width: 80%; line-height: 1.5; animation: slideIn 0.2s ease-out; word-wrap: break-word; }
+        .ai-msg { background: var(--surface-variant); align-self: flex-start; border-radius: 4px 20px 20px 20px; }
+        .user-msg { background: var(--grad); color: #fff; align-self: flex-end; border-radius: 20px 4px 20px 20px; }
+
+        .section-title { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; border-left: 4px solid var(--secondary); padding-left: 10px; }
+        .chat-card { background: var(--surface-variant); padding: 16px; border-radius: 20px; margin-bottom: 12px; }
+
+        /* Blob Animation */
+        .welcome-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; filter: url('#gooey'); }
+        .welcome-zone.hidden { display: none; filter: none; }
+        .blob-container { position: relative; width: 100px; height: 60px; display: flex; align-items: center; justify-content: center; }
+        .blob { position: absolute; width: 30px; height: 30px; border-radius: 50%; filter: blur(2px); }
+        .cyan-blob { background: var(--primary); animation: pulseLeft 3s infinite alternate; }
+        .purple-blob { background: var(--secondary); animation: pulseRight 3s infinite alternate; }
+
+        @keyframes boot { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseLeft { 0% { transform: translateX(-15px) scale(1); } 100% { transform: translateX(5px) scale(1.2); } }
+        @keyframes pulseRight { 0% { transform: translateX(15px) scale(1); } 100% { transform: translateX(-5px) scale(1.2); } }
+
+        /* =========================================
+           7. MOBILE ADAPTATION (COMPACT MODE)
+        ========================================= */
+        @media (max-width: 600px) {
+            .nav-item .nav-text { display: none; } /* Прячем текст на телефоне */
+            .nav-item { padding: 10px 0; }
+            .glass-nav { top: 10px; left: 10px; right: 10px; padding: 4px 8px; border-radius: 20px; }
+            .app-screen { padding-top: 75px; }
+            .glass-input-box { bottom: 10px; left: 10px; right: 10px; }
+        }
+        
+        /* Fullscreen Mode (Input) */
+        .glass-input-box.fullscreen-mode {
+            top: 80px; bottom: 20px; left: 20px; right: 20px;
+            height: auto; align-items: flex-start;
+        }
+        .glass-input-box.fullscreen-mode textarea { max-height: none; height: 100%; }
     </style>
 </head>
 <body>
 
 <div class="oracle-container">
-   <div class="top-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
-    <div id="top-nav-title" style="font-weight: 700; font-size: 18px;">Core Node v2.5</div>
     
-    <button onclick="switchScreen('logs')" 
-            style="background: rgba(255,255,255,0.05); border: none; border-radius: 12px; padding: 8px; cursor: pointer; color: var(--on-surface); display: flex; align-items: center;">
-        <span class="material-symbols-rounded">menu_open</span>
-    </button>
-</div>
+    <nav class="glass-nav">
+        <button class="nav-item active" id="btn-tab-chat" onclick="switchScreen('chat')">
+            <span class="material-symbols-rounded">chat_bubble</span>
+            <span class="nav-text">ЧАТ NODE</span>
+        </button>
+        <button class="nav-item" id="btn-tab-logs" onclick="switchScreen('logs')">
+            <span class="material-symbols-rounded">database</span>
+            <span class="nav-text">АРХИВ</span>
+        </button>
+        <button class="nav-item" id="btn-tab-reader" onclick="switchScreen('reader')">
+            <span class="material-symbols-rounded">auto_stories</span>
+            <span class="nav-text">РИДЕР</span>
+        </button>
+        <button class="nav-item" id="btn-tab-settings" onclick="switchScreen('settings')">
+            <span class="material-symbols-rounded">settings_heart</span>
+            <span class="nav-text">ПУЛЬТ</span>
+        </button>
+    </nav>
 
-    <div id="screen-chat" class="app-screen active-screen">
+    <main id="screen-chat" class="app-screen active-screen">
         <div id="welcome-block" class="welcome-zone">
             <div class="blob-container">
                 <div class="blob cyan-blob"></div>
                 <div class="blob purple-blob"></div>
             </div>
-            <h1 class="derzky-title">Что делаешь?</h1>
+            <h1 style="margin:0; font-size:24px; text-transform:uppercase;">Что делаешь?</h1>
         </div>
         <div id="chat-flow" class="chat-flow-box"></div>
-        <div class="input-box" id="main-input-box">
-    <textarea id="user-input" placeholder="Введите ваш запрос..." rows="1" oninput="handleInput(this)"></textarea>
-    <button id="expand-btn" class="icon-btn hidden" onclick="toggleFullscreen()">
-        <span class="material-symbols-rounded" id="expand-icon">open_in_full</span>
-    </button>
-    <button id="voice-btn" class="icon-btn" onclick="startVoice()">
-        <span class="material-symbols-rounded">mic</span>
-    </button>
-    <button id="send-btn" class="send-btn" onclick="sendMsg()">
-        <span class="material-symbols-rounded">send</span>
-    </button>
-</div>
+    </main>
 
-    <div id="screen-logs" class="app-screen">
-        <div class="section-title" style="margin-top:0;">Архив сессий ядра</div>
-        <button class="download-btn" onclick="clearCurrentSession()" style="background:#ff5252; color:#fff; margin-bottom:14px; border:none; width:100%;">⚡ Сбросить Текущий Чат</button>
-        <div id="saved-chats-list"></div>
-    </div>
+    <main id="screen-logs" class="app-screen">
+        <div class="section-title">Архив сессий ядра</div>
+        <div class="chat-card">Пример старого чата...</div>
+    </main>
 
-    <div id="screen-reader" class="app-screen">
-    <div class="section-title" style="margin-top: 0;">🔮 AI Ридер: Редактор Хроник</div>
-    
-    <div class="toolbar" id="rich-toolbar">
-        <button onclick="exec('bold')"><b>B</b></button>
-        <button onclick="exec('italic')"><i>I</i></button>
-        <button onclick="exec('underline')"><u>U</u></button>
-        <input type="color" onchange="exec('foreColor', this.value)">
-        <select onchange="exec('fontSize', this.value)">
-            <option value="3">Норм</option>
-            <option value="5">Заг</option>
-        </select>
-    </div>
-
-    <div id="save-status-reader" style="font-size: 10px; color: var(--on-surface-variant); margin-bottom: 8px;">Готов к записи...</div>
-
-    <div class="story-selector">
-        <button class="story-tab-btn active" id="tab-story1" onclick="loadStory(1)">Летание</button>
-        <button class="story-tab-btn" id="tab-story2" onclick="loadStory(2)">Оракул Поток</button>
-    </div>
-    
-    <div class="reader-inner-card">
-        <div class="story-container" id="scroll-box">
-            <div class="story-content" id="editor" contenteditable="true"></div>
+    <main id="screen-reader" class="app-screen">
+        <div class="section-title">🔮 AI Ридер: Редактор Хроник</div>
+        <div class="chat-card" id="editor" contenteditable="true" style="min-height: 200px;">
+            Текст хроники...
         </div>
-    </div>
-</div>
-    <div id="screen-settings" class="app-screen">
-        <div class="section-title" style="margin-top:0;">Инженерный Пульт Управления</div>
-        <div class="settings-box">
-            <div class="setting-row">
-                <div>
-                    <div class="setting-label">Голос Оракула</div>
-                    <div class="setting-desc">Кто модулирует частоту ответов</div>
-                </div>
-                <select id="voice-select" class="core-select">
-                    <option value="murzik">Мурзик (Помощница) 🐾</option>
-                    <option value="khakhmi">Хахми (Мужской вокал) 🎤</option>
-                    <option value="snezhinka">Снежинка (Женский вокал) ❄️</option>
-                    <option value="lamirk" selected>Ламирк (Главный Инженер) 🛠️</option>
-                </select>
-            </div>
+    </main>
 
-            <div class="setting-row" style="flex-direction: column; align-items: flex-start; gap: 4px;">
-                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
-                    <div>
-                        <div class="setting-label">Сохранять чаты in-memory</div>
-                        <div class="setting-desc">Резерв потоков в кэш</div>
-                    </div>
-                    <button id="memory-btn" class="core-switch-btn active" onclick="toggleMemory()">ВКЛЮЧЕНО</button>
-                </div>
-                <div id="cache-warn" class="warning-text" style="display: block;">⚠️ ВНИМАНИЕ: Если вы очистите кэш браузера, логи будут уничтожены!</div>
-            </div>
-
-            <div class="setting-row">
-                <div>
-                    <div class="setting-label">Цветовой Слой Ядра</div>
-                    <div class="setting-desc">По умолчанию Тёмная Тема ЛМСХ</div>
-                </div>
-                <button id="theme-btn" class="core-switch-btn" onclick="toggleTheme()">ГЛУБОКИЙ КОСМОС (DARK)</button>
-            </div>
+    <main id="screen-settings" class="app-screen">
+        <div class="section-title">Инженерный Пульт Управления</div>
+        <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 600;">Цветовой Слой Ядра</span>
+            <button onclick="document.body.classList.toggle('light-theme')" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer;">СМЕНИТЬ ТЕМУ</button>
         </div>
+    </main>
 
-        <div class="section-title">Паки Kosmo Level (Fast Download)</div>
-        <div class="packs-grid" id="packs-list"></div>
+    <div class="glass-input-box" id="main-input-box">
+        <textarea id="user-input" placeholder="Введите ваш запрос..." rows="1" oninput="handleInput(this)"></textarea>
+        <button id="expand-btn" class="icon-btn hidden" onclick="toggleFullscreen()">
+            <span class="material-symbols-rounded" id="expand-icon">open_in_full</span>
+        </button>
+        <button id="voice-btn" class="icon-btn">
+            <span class="material-symbols-rounded">mic</span>
+        </button>
+        <button id="send-btn" class="send-btn" onclick="sendMsg()">
+            <span class="material-symbols-rounded">send</span>
+        </button>
     </div>
 
-    <div class="top-nav-bar" id="top-nav-bar">
-    <button class="nav-tab-item active-tab" id="btn-tab-chat" onclick="switchScreen('chat')">
-        <span class="material-symbols-rounded tab-icon">chat_bubble</span>
-        <span>Чат</span>
-    </button>
-    <button class="nav-tab-item" id="btn-tab-logs" onclick="switchScreen('logs')">
-        <span class="material-symbols-rounded tab-icon">database</span>
-        <span>Архив</span>
-    </button>
-    <button class="nav-tab-item" id="btn-tab-reader" onclick="switchScreen('reader')">
-        <span class="material-symbols-rounded tab-icon">auto_stories</span>
-        <span>Ридер</span>
-    </button>
-    <button class="nav-tab-item" id="btn-tab-settings" onclick="switchScreen('settings')">
-        <span class="material-symbols-rounded tab-icon">settings</span>
-        <span>Пульт</span>
-    </button>
 </div>
+
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="display:none;">
+  <defs>
+    <filter id="gooey">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="gooey" />
+    </filter>
+  </defs>
+</svg>
 
 <script>
-    // Глобальные переменные для памяти Ядра
-    let currentChatSessionId = null;
-
     // --- НАВИГАЦИЯ ---
     function switchScreen(screenName) {
+        // Убираем активные классы везде
         document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
         document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
         
+        // Включаем нужный экран и кнопку
         document.getElementById(`screen-${screenName}`).classList.add('active-screen');
-        
-        // Кнопки в плавающей навигации
-        const tabBtn = document.getElementById(`btn-tab-${screenName}`);
-        if(tabBtn) tabBtn.classList.add('active');
-
-        // Если открыли архив - рендерим логи
-        if (screenName === 'logs') {
-            renderSavedChatsList();
-        }
+        document.getElementById(`btn-tab-${screenName}`).classList.add('active');
     }
 
-    // --- ЛОГИКА ИНПУТА И УМНОЙ КНОПКИ ---
+    // --- ЛОГИКА ИНПУТА ---
     function handleInput(textarea) {
-        const box = document.getElementById('main-input-box');
-        
-        if (!box.classList.contains('fullscreen-mode')) {
+        if (!document.getElementById('main-input-box').classList.contains('fullscreen-mode')) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
         }
 
         const expandBtn = document.getElementById('expand-btn');
-        if (textarea.scrollHeight > 48) expandBtn.classList.remove('hidden');
-        else expandBtn.classList.add('hidden');
-
-        const sendBtn = document.getElementById('send-btn');
-        const voiceBtn = document.getElementById('voice-btn');
-        
-        if (textarea.value.trim().length > 0) {
-            sendBtn.classList.add('visible');
-            voiceBtn.classList.add('hidden');
+        if (textarea.scrollHeight > 48) { 
+            expandBtn.classList.remove('hidden');
         } else {
-            sendBtn.classList.remove('visible');
-            voiceBtn.classList.remove('hidden');
+            expandBtn.classList.add('hidden');
         }
     }
 
@@ -558,168 +291,23 @@
         }
     }
 
-    // --- ЛОГИКА ОТПРАВКИ И ОТВЕТА ИИ ---
     function sendMsg() {
         const input = document.getElementById('user-input');
         const msg = input.value.trim();
-        const chatFlow = document.getElementById('chat-flow');
-        const screenChat = document.getElementById('screen-chat');
-        
         if (msg) {
-            // 1. Выводим сообщение пользователя
-            chatFlow.innerHTML += `<div class="msg user-msg">${msg}</div>`;
-            input.value = ""; 
-            handleInput(input); 
+            document.getElementById('chat-flow').innerHTML += `<div class="msg user-msg">${msg}</div>`;
+            input.value = "";
+            input.style.height = 'auto';
             document.getElementById('welcome-block').classList.add('hidden');
+            document.getElementById('expand-btn').classList.add('hidden');
             
-            // Если полноэкранный - сворачиваем
+            // Если отправляем из полноэкранного, сворачиваем
             const box = document.getElementById('main-input-box');
             if (box.classList.contains('fullscreen-mode')) toggleFullscreen();
             
+            // Скролл вниз
+            const screenChat = document.getElementById('screen-chat');
             screenChat.scrollTop = screenChat.scrollHeight;
-            
-            // Первичное сохранение (создание сессии)
-            saveCurrentChat();
-
-            // 2. Имитация обработки и ответа Oracle AI (задержка 1 секунда)
-            setTimeout(() => {
-                // Здесь будет реальный API запрос, а пока заглушка:
-                const aiResponse = `Ядро получило запрос: "${msg}". Анализирую данные...`;
-                
-                chatFlow.innerHTML += `<div class="msg ai-msg">${aiResponse}</div>`;
-                screenChat.scrollTop = screenChat.scrollHeight;
-                
-                // Сохраняем сессию вместе с ответом ИИ
-                saveCurrentChat();
-            }, 1000);
-        }
-    }
-
-    // --- ПАМЯТЬ ЯДРА (АРХИВАЦИЯ) ---
-    function saveCurrentChat() {
-        if (!currentChatSessionId) {
-            // Если чат новый, генерируем ID
-            currentChatSessionId = 'session_' + Date.now();
-        }
-        
-        const chatHtml = document.getElementById('chat-flow').innerHTML;
-        const now = new Date();
-        const chatData = {
-            id: currentChatSessionId,
-            name: "Сессия от " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-            date: now.toLocaleDateString(),
-            html: chatHtml
-        };
-        
-        localStorage.setItem(currentChatSessionId, JSON.stringify(chatData));
-    }
-
-    function renderSavedChatsList() {
-        const list = document.getElementById('saved-chats-list');
-        if (!list) return;
-        
-        list.innerHTML = "";
-        let count = 0;
-
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.startsWith("session_")) {
-                count++;
-                const data = JSON.parse(localStorage.getItem(key));
-                const chatName = data.name || "Неизвестный лог";
-                
-                list.innerHTML += `
-                    <div class="chat-card" style="cursor: pointer;" onclick="loadChat('${key}')">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div class="chat-title" style="color: var(--primary);">${chatName}</div>
-                                <div class="chat-meta">${data.date}</div>
-                            </div>
-                            <button onclick="event.stopPropagation(); deleteChat('${key}')" style="background:none; border:none; color:#ff5252; cursor:pointer;">
-                                <span class="material-symbols-rounded">delete</span>
-                            </button>
-                        </div>
-                    </div>`;
-            }
-        }
-        
-        if (count === 0) {
-            list.innerHTML = `<div style="text-align:center; padding:20px; color: var(--on-surface-variant);">Архив Ядра пуст</div>`;
-        }
-    }
-
-    function loadChat(key) {
-        const data = JSON.parse(localStorage.getItem(key));
-        currentChatSessionId = key;
-        
-        document.getElementById('welcome-block').classList.add('hidden');
-        document.getElementById('chat-flow').innerHTML = data.html;
-        
-        switchScreen('chat');
-        
-        // Скроллим вниз при загрузке
-        const screenChat = document.getElementById('screen-chat');
-        screenChat.scrollTop = screenChat.scrollHeight;
-    }
-
-    function deleteChat(key) {
-        if (confirm("Удалить этот лог из базы?")) {
-            localStorage.removeItem(key);
-            
-            // Если удалили текущий открытый чат - сбрасываем экран
-            if (key === currentChatSessionId) {
-                clearCurrentSession();
-            } else {
-                renderSavedChatsList();
-            }
-        }
-    }
-
-    function clearCurrentSession() {
-        document.getElementById('chat-flow').innerHTML = "";
-        currentChatSessionId = null;
-        document.getElementById('welcome-block').classList.remove('hidden');
-        renderSavedChatsList(); // Обновляем список, если мы на вкладке логов
-    }
-
-    // --- ГОЛОСОВОЙ ВВОД (Остается без изменений) ---
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition;
-
-    if (SpeechRecognition) {
-        recognition = new SpeechRecognition();
-        recognition.lang = 'ru-RU';
-        recognition.interimResults = true;
-        
-        recognition.onstart = function() {
-            document.getElementById('voice-btn').classList.add('recording');
-        };
-        
-        recognition.onresult = function(event) {
-            let transcript = Array.from(event.results)
-                .map(result => result[0].transcript)
-                .join('');
-            
-            const input = document.getElementById('user-input');
-            input.value = transcript; 
-            handleInput(input);
-        };
-        
-        recognition.onend = function() {
-            document.getElementById('voice-btn').classList.remove('recording');
-        };
-        
-        recognition.onerror = function(event) {
-            console.error("Ошибка микрофона:", event.error);
-            document.getElementById('voice-btn').classList.remove('recording');
-        };
-    }
-
-    function startVoice() {
-        if (recognition) {
-            try { recognition.start(); } catch(e) { recognition.stop(); }
-        } else {
-            alert("Голосовой ввод не поддерживается в этом браузере.");
         }
     }
 </script>
