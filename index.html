@@ -1,50 +1,411 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <link rel="stylesheet" href="core.css">
-    <title>Core Node 2.5 | Prestige HQ</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Oracle AI 2.5 | Prestige HQ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
+    <meta name="theme-color" content="#0a0b10">
+    <style>
+        /* =========================================
+           1. CORE VARIABLES (MATERIAL YOU)
+        ========================================= */
+        :root {
+            --bg: #0a0b10;
+            --surface: #14151f;
+            --surface-variant: #1f202e;
+            --on-surface: #e3e2e6;
+            --on-surface-variant: #c7c6ca;
+            --primary: #adc6ff;
+            --primary-container: #254487;
+            --secondary: #e8bbf1;
+            --border: #434753;
+            --grad: linear-gradient(90deg, #02b6ed 0%, #e60ced 100%);
+            --glass-bg: rgba(31, 32, 46, 0.75); /* Для Liquid Glass */
+        }
+
+        body.light-theme {
+            --bg: #f8f9ff; --surface: #f0f1f9; --surface-variant: #e1e2ec;
+            --on-surface: #1a1b20; --on-surface-variant: #43474e;
+            --primary: #3b5ba9; --primary-container: #d9e2ff;
+            --border: #c3c6cf; --glass-bg: rgba(225, 226, 236, 0.85);
+        }
+
+        /* =========================================
+           2. GLOBAL RESET & CONTAINER
+        ========================================= */
+        html, body {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background: var(--bg); color: var(--on-surface);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            transition: background 0.3s ease;
+        }
+
+        .oracle-container {
+            position: relative;
+            width: 100%; max-width: 900px; margin: 0 auto;
+            height: 100dvh; /* Динамическая высота для мобилок */
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+        }
+
+        /* =========================================
+           3. LIQUID GLASS NAVIGATION (TOP)
+        ========================================= */
+        .glass-nav {
+            position: absolute;
+            top: 15px; left: 15px; right: 15px;
+            z-index: 1000;
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 24px; padding: 6px 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+
+        .nav-item {
+            flex: 1; display: flex; flex-direction: column; align-items: center;
+            background: transparent; border: none; color: var(--on-surface-variant);
+            cursor: pointer; padding: 8px 0; border-radius: 16px;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .nav-item .material-symbols-rounded { font-size: 22px; margin-bottom: 2px; }
+        .nav-item .nav-text { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+
+        .nav-item.active { color: var(--primary); background: var(--primary-container); }
+
+        /* =========================================
+           4. APP SCREENS LOGIC
+        ========================================= */
+        .app-screen {
+            display: none; flex-direction: column; flex-grow: 1;
+            width: 100%; height: 100%; box-sizing: border-box;
+            overflow-y: auto; overflow-x: hidden;
+            padding: 90px 20px 20px 20px; /* Отступ сверху для меню */
+        }
+        .app-screen.active-screen { display: flex; animation: boot 0.3s ease-out; }
+        
+        #screen-chat { padding-bottom: 100px; /* Отступ снизу для инпута */ }
+        .chat-flow-box { flex-grow: 1; display: flex; flex-direction: column; gap: 12px; }
+
+        /* =========================================
+           5. LIQUID GLASS FLOATING INPUT
+        ========================================= */
+        .glass-input-box {
+            position: absolute; bottom: 20px; left: 20px; right: 20px;
+            z-index: 1000;
+            display: none; /* Скрыт по умолчанию */
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 28px; padding: 8px 16px;
+            align-items: flex-end; gap: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+        }
+
+        /* МАГИЯ: Показываем инпут только когда активен чат */
+        #screen-chat.active-screen ~ .glass-input-box { display: flex; }
+        
+        .glass-input-box:focus-within { border-color: var(--primary); }
+
+        #user-input {
+            flex: 1; background: transparent; border: none;
+            color: var(--on-surface); font-size: 15px; outline: none;
+            resize: none; max-height: 120px; padding: 10px 0;
+            overflow-y: auto; line-height: 1.4;
+        }
+
+        .icon-btn { background: none; border: none; color: var(--on-surface-variant); cursor: pointer; padding: 8px; transition: 0.3s ease; }
+        .hidden { display: none !important; }
+        
+        /* Умная кнопка отправки (скрыта по умолчанию) */
+        .send-btn {
+            background: var(--primary); color: var(--bg); border: none;
+            border-radius: 50%; width: 0; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: pointer;
+            opacity: 0; padding: 0; overflow: hidden; visibility: hidden;
+        }
+
+        .send-btn.visible {
+            width: 38px; opacity: 1; visibility: visible;
+        }
+
+        /* Анимация микрофона */
+        .icon-btn.recording {
+            color: #ff5252;
+            animation: pulseMic 1.5s infinite;
+        }
+
+        /* =========================================
+           6. COMPONENTS & ANIMATIONS
+        ========================================= */
+        .msg { padding: 14px 18px; font-size: 14px; max-width: 80%; line-height: 1.5; animation: slideIn 0.2s ease-out; word-wrap: break-word; }
+        .ai-msg { background: var(--surface-variant); align-self: flex-start; border-radius: 4px 20px 20px 20px; }
+        .user-msg { background: var(--grad); color: #fff; align-self: flex-end; border-radius: 20px 4px 20px 20px; }
+
+        .section-title { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; border-left: 4px solid var(--secondary); padding-left: 10px; }
+        .chat-card { background: var(--surface-variant); padding: 16px; border-radius: 20px; margin-bottom: 12px; }
+
+        /* Blob Animation */
+        .welcome-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; filter: url('#gooey'); }
+        .welcome-zone.hidden { display: none; filter: none; }
+        .blob-container { position: relative; width: 100px; height: 60px; display: flex; align-items: center; justify-content: center; }
+        .blob { position: absolute; width: 30px; height: 30px; border-radius: 50%; filter: blur(2px); }
+        .cyan-blob { background: var(--primary); animation: pulseLeft 3s infinite alternate; }
+        .purple-blob { background: var(--secondary); animation: pulseRight 3s infinite alternate; }
+
+        @keyframes boot { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseLeft { 0% { transform: translateX(-15px) scale(1); } 100% { transform: translateX(5px) scale(1.2); } }
+        @keyframes pulseRight { 0% { transform: translateX(15px) scale(1); } 100% { transform: translateX(-5px) scale(1.2); } }
+        @keyframes pulseMic { 
+            0% { transform: scale(1); background: rgba(255, 82, 82, 0); border-radius: 50%; } 
+            50% { transform: scale(1.15); background: rgba(255, 82, 82, 0.15); border-radius: 50%; } 
+            100% { transform: scale(1); background: rgba(255, 82, 82, 0); border-radius: 50%; } 
+        }
+
+        /* =========================================
+           7. MOBILE ADAPTATION (COMPACT MODE)
+        ========================================= */
+        @media (max-width: 600px) {
+            .nav-item .nav-text { display: none; } 
+            .nav-item { padding: 10px 0; }
+            .glass-nav { top: 10px; left: 10px; right: 10px; padding: 4px 8px; border-radius: 20px; }
+            .app-screen { padding-top: 75px; }
+            .glass-input-box { bottom: 10px; left: 10px; right: 10px; }
+        }
+        
+        /* Fullscreen Mode (Input) */
+        .glass-input-box.fullscreen-mode {
+            top: 80px; bottom: 20px; left: 20px; right: 20px;
+            height: auto; align-items: flex-start;
+        }
+        .glass-input-box.fullscreen-mode textarea { max-height: none; height: 100%; }
+    </style>
 </head>
 <body>
 
-<div id="login-overlay" class="overlay">
-    <div class="login-box">
-        <div class="oracle-mini" id="main-logo">
-            <div class="dot blue"></div>
-            <div class="dot purple"></div>
+<div class="oracle-container">
+    
+    <nav class="glass-nav">
+        <button class="nav-item active" id="btn-tab-chat" onclick="switchScreen('chat')">
+            <span class="material-symbols-rounded">chat_bubble</span>
+            <span class="nav-text">ЧАТ NODE</span>
+        </button>
+        <button class="nav-item" id="btn-tab-logs" onclick="switchScreen('logs')">
+            <span class="material-symbols-rounded">database</span>
+            <span class="nav-text">АРХИВ</span>
+        </button>
+        <button class="nav-item" id="btn-tab-reader" onclick="switchScreen('reader')">
+            <span class="material-symbols-rounded">auto_stories</span>
+            <span class="nav-text">РИДЕР</span>
+        </button>
+        <button class="nav-item" id="btn-tab-settings" onclick="switchScreen('settings')">
+            <span class="material-symbols-rounded">settings_heart</span>
+            <span class="nav-text">ПУЛЬТ</span>
+        </button>
+    </nav>
+
+    <main id="screen-chat" class="app-screen active-screen">
+        <div id="welcome-block" class="welcome-zone">
+            <div class="blob-container">
+                <div class="blob cyan-blob"></div>
+                <div class="blob purple-blob"></div>
+            </div>
+            <h1 style="margin:0; font-size:24px; text-transform:uppercase;">Что делаешь?</h1>
         </div>
-        <h2 id="status-text">Вход в Prestige HQ</h2>
-        <input type="text" placeholder="ID или Email">
-        <input type="password" placeholder="Ключ доступа">
-        <button onclick="initPrestige()">Войти в систему</button>
-        <button class="secondary-btn">Создать аккаунт</button>
+        <div id="chat-flow" class="chat-flow-box"></div>
+    </main>
+
+    <main id="screen-logs" class="app-screen">
+        <div class="section-title">Архив сессий ядра</div>
+        <div class="chat-card">Пример старого чата...</div>
+    </main>
+
+    <main id="screen-reader" class="app-screen">
+        <div class="section-title">🔮 AI Ридер: Редактор Хроник</div>
+        <div class="chat-card" id="editor" contenteditable="true" style="min-height: 200px;">
+            Текст хроники...
+        </div>
+    </main>
+
+    <main id="screen-settings" class="app-screen">
+        <div class="section-title">Инженерный Пульт Управления</div>
+        <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 600;">Цветовой Слой Ядра</span>
+            <button onclick="document.body.classList.toggle('light-theme')" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer;">СМЕНИТЬ ТЕМУ</button>
+        </div>
+    </main>
+
+    <div class="glass-input-box" id="main-input-box">
+        <textarea id="user-input" placeholder="Введите ваш запрос..." rows="1" oninput="handleInput(this)"></textarea>
+        <button id="expand-btn" class="icon-btn hidden" onclick="toggleFullscreen()">
+            <span class="material-symbols-rounded" id="expand-icon">open_in_full</span>
+        </button>
+        <button id="voice-btn" class="icon-btn" onclick="startVoice()">
+            <span class="material-symbols-rounded">mic</span>
+        </button>
+        <button id="send-btn" class="send-btn" onclick="sendMsg()">
+            <span class="material-symbols-rounded">send</span>
+        </button>
     </div>
+
 </div>
 
-<div class="sidebar" id="sidebar">...</div>
-<div class="chat-main" id="main-area">
-    <div class="badge" id="context-badge">No Context</div>
-    <div id="chat-flow"></div>
-    <input type="text" id="main-input" placeholder="Введите команду...">
-</div>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" style="display:none;">
+  <defs>
+    <filter id="gooey">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="gooey" />
+    </filter>
+  </defs>
+</svg>
 
-<script src="Account.js"></script>
 <script>
-async function initPrestige() {
-    const logo = document.getElementById('main-logo');
-    const status = document.getElementById('status-text');
-    
-    // Анимация подготовки
-    status.innerText = "Подготовка аккаунта...";
-    logo.classList.add('hyper-pulse');
-    
-    // Инициализация Prestige
-    await PrestigeAccount.initialize();
-    
-    // Переход в главное окно
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('main-input').classList.add('blink-neon');
-    console.log("Core Node 2.5 Online.");
-}
+    // --- НАВИГАЦИЯ ---
+    function switchScreen(screenName) {
+        document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
+        document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+        
+        document.getElementById(`screen-${screenName}`).classList.add('active-screen');
+        document.getElementById(`btn-tab-${screenName}`).classList.add('active');
+    }
+
+    // --- ЛОГИКА ИНПУТА ---
+    const inputField = document.getElementById('user-input');
+
+    // Отправка по Enter
+    inputField.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMsg();
+        }
+    });
+
+    function handleInput(textarea) {
+        if (!document.getElementById('main-input-box').classList.contains('fullscreen-mode')) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        const expandBtn = document.getElementById('expand-btn');
+        if (textarea.scrollHeight > 48) { 
+            expandBtn.classList.remove('hidden');
+        } else {
+            expandBtn.classList.add('hidden');
+        }
+
+        // Умная кнопка
+        const sendBtn = document.getElementById('send-btn');
+        const voiceBtn = document.getElementById('voice-btn');
+        if (textarea.value.trim().length > 0) {
+            sendBtn.classList.add('visible');
+            voiceBtn.classList.add('hidden');
+        } else {
+            sendBtn.classList.remove('visible');
+            voiceBtn.classList.remove('hidden');
+        }
+    }
+
+    function toggleFullscreen() {
+        const box = document.getElementById('main-input-box');
+        const icon = document.getElementById('expand-icon');
+        const textarea = document.getElementById('user-input');
+        
+        box.classList.toggle('fullscreen-mode');
+        
+        if (box.classList.contains('fullscreen-mode')) {
+            icon.innerText = 'close_fullscreen';
+        } else {
+            icon.innerText = 'open_in_full';
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+    }
+
+    // --- ОТПРАВКА И ОТВЕТ (IF-ELSE) ---
+    function sendMsg() {
+        const input = document.getElementById('user-input');
+        const msg = input.value.trim();
+        const chatFlow = document.getElementById('chat-flow');
+        const screenChat = document.getElementById('screen-chat');
+
+        if (msg) {
+            // Вывод сообщения юзера
+            chatFlow.innerHTML += `<div class="msg user-msg">${msg}</div>`;
+            input.value = "";
+            handleInput(input);
+            document.getElementById('welcome-block').classList.add('hidden');
+            
+            if (document.getElementById('main-input-box').classList.contains('fullscreen-mode')) toggleFullscreen();
+            screenChat.scrollTop = screenChat.scrollHeight;
+
+            // Ответ Оракула (Имитация задержки)
+            setTimeout(() => {
+                let response = "";
+                const lowerMsg = msg.toLowerCase();
+
+                // ЛОГИКА ОТВЕТОВ
+                if (lowerMsg.includes("привет")) {
+                    response = "Приветствую. Системы Ядра активированы.";
+                } else if (lowerMsg.includes("как дела") || lowerMsg.includes("статус")) {
+                    response = "Все модули ЛМСХ работают в штатном режиме.";
+                } else if (lowerMsg.includes("кто ты")) {
+                    response = "Я Oracle AI v2.5 — центральное ядро. Ожидаю указаний.";
+                } else {
+                    response = "Запрос получен: '" + msg + "'. Обработка данных...";
+                }
+
+                chatFlow.innerHTML += `<div class="msg ai-msg">${response}</div>`;
+                screenChat.scrollTop = screenChat.scrollHeight;
+            }, 700); // 700мс задержка для реалистичности
+        }
+    }
+
+    // --- ИНИЦИАЛИЗАЦИЯ ГОЛОСА ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'ru-RU'; 
+        recognition.interimResults = true; 
+
+        recognition.onresult = function(event) {
+            let transcript = Array.from(event.results)
+                .map(result => result[0].transcript)
+                .join('');
+            
+            const input = document.getElementById('user-input');
+            input.value = transcript; 
+            handleInput(input); 
+        };
+
+        recognition.onstart = function() {
+            document.getElementById('voice-btn').classList.add('recording');
+        };
+
+        recognition.onend = function() {
+            document.getElementById('voice-btn').classList.remove('recording');
+        };
+    }
+
+    function startVoice() {
+        if (recognition) {
+            try {
+                recognition.start();
+            } catch(e) {
+                recognition.stop(); 
+            }
+        } else {
+            alert("Голосовой ввод не поддерживается в этом браузере.");
+        }
+    }
 </script>
 </body>
 </html>
