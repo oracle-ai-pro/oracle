@@ -406,6 +406,30 @@
             alert("Голосовой ввод не поддерживается в этом браузере.");
         }
     }
+    // --- ПЕРЕХВАТ ДАННЫХ ИЗ БЫСТРОГО ПОМОЩНИКА ---
+    window.addEventListener('DOMContentLoaded', () => {
+        // Читаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const incomingData = urlParams.get('data');
+
+        if (incomingData) {
+            console.log("Получены внешние данные:", incomingData);
+            
+            const input = document.getElementById('user-input');
+            
+            // Вставляем раскодированный текст в инпут
+            input.value = incomingData;
+            
+            // Вызываем handleInput, чтобы подогнать высоту и показать кнопку отправки
+            handleInput(input);
+            
+            // Автоматически отправляем запрос (если хочешь, чтобы юзер отправлял сам — удали строку ниже)
+            sendMsg();
+            
+            // Очищаем URL, чтобы при обновлении страницы сообщение не отправилось повторно
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    });
 </script>
 </body>
 </html>
