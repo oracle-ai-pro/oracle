@@ -229,9 +229,9 @@
         <button id="expand-btn" class="icon-btn hidden" onclick="toggleFullscreen()">
             <span class="material-symbols-rounded" id="expand-icon">open_in_full</span>
         </button>
-        <button id="voice-btn" class="icon-btn">
-            <span class="material-symbols-rounded">mic</span>
-        </button>
+        <button id="voice-btn" class="icon-btn" onclick="startVoice()">
+   	<span class="material-symbols-rounded">mic</span>
+	</button>
         <button id="send-btn" class="send-btn" onclick="sendMsg()">
             <span class="material-symbols-rounded">send</span>
         </button>
@@ -310,6 +310,46 @@
             screenChat.scrollTop = screenChat.scrollHeight;
         }
     }
+// --- ИНИЦИАЛИЗАЦИЯ ГОЛОСА ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition;
+
+if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ru-RU'; // Устанавливаем русский язык
+    recognition.interimResults = true; // Будем получать текст по мере распознавания
+
+    recognition.onresult = function(event) {
+        let transcript = Array.from(event.results)
+            .map(result => result[0].transcript)
+            .join('');
+        
+        const input = document.getElementById('user-input');
+        input.value = transcript; // Вставляем распознанный текст в поле
+        handleInput(input); // Вызываем функцию для подстройки высоты инпута
+    };
+
+    recognition.onstart = function() {
+        document.getElementById('voice-btn').style.color = '#ff5252'; // Меняем цвет кнопки на красный при записи
+    };
+
+    recognition.onend = function() {
+        document.getElementById('voice-btn').style.color = ''; // Возвращаем цвет после завершения
+    };
+}
+
+// --- ФУНКЦИЯ ЗАПУСКА ---
+function startVoice() {
+    if (recognition) {
+        try {
+            recognition.start();
+        } catch(e) {
+            recognition.stop(); // Если запись уже идет, останавливаем
+        }
+    } else {
+        alert("Голосовой ввод не поддерживается в этом браузере.");
+    }
+}
 </script>
 </body>
 </html>
