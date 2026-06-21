@@ -231,6 +231,43 @@
             justify-content: center;
         }
         .close-tab { font-size: 16px; opacity: 0.5; }
+        .archive-group {
+    margin-bottom: 20px;
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.group-header {
+    cursor: pointer;
+    padding: 10px;
+    font-weight: bold;
+    color: var(--on-surface);
+    display: flex;
+    justify-content: space-between;
+}
+
+.group-content {
+    display: block; /* По умолчанию развернуто */
+    padding: 10px;
+}
+
+.group-content.hidden {
+    display: none; /* Класс, который будет добавлять JS при клике */
+}
+
+.story-card, .chat-card {
+    background: var(--surface-variant);
+    padding: 15px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+
+.archive-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
     </style>
 </head>
 <body>
@@ -268,9 +305,40 @@
     </main>
 
     <main id="screen-logs" class="app-screen">
-        <div class="section-title">Архив сессий ядра</div>
-        <div class="chat-card">Пример старого чата...</div>
-    </main>
+    <div class="section-title">Архив сессий ядра</div>
+
+    <div class="archive-group">
+        <div class="group-header" onclick="toggleGroup('chats')">
+            <span>▼ Чаты</span>
+        </div>
+        <div id="chats-list" class="group-content">
+            <div class="chat-card">
+                <span>Пример старого чата</span>
+                <div class="archive-actions">
+                    <button>Открыть</button>
+                    <button>Удалить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="archive-group">
+        <div class="group-header" onclick="toggleGroup('stories')">
+            <span>▼ Истории (Книги)</span>
+        </div>
+        <div id="stories-list" class="group-content">
+            <div class="story-card">
+                <span>История: Проект "Оракул"</span>
+                <div class="archive-actions">
+                    <button>Book</button>
+                    <button>Настройки</button>
+                    <button>Удалить</button>
+                </div>
+                <div class="last-date">Последнее обновление: 21.06.2026</div>
+            </div>
+        </div>
+    </div>
+</main>
 
     <main id="screen-reader" class="app-screen">
         <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -338,6 +406,22 @@
 </svg>
 
 <script>
+    const archiveData = {
+    chats: [
+        { id: 1, title: "Быстрый вопрос", lastDate: "2026-06-21" }
+    ],
+    stories: [
+        { 
+            id: 101, 
+            title: "Проект Ядро", 
+            pages: [
+                { id: 1, content: "...", tag: "Введение", node: "..." },
+                { id: 2, content: "...", tag: "Анализ", node: "..." }
+            ],
+            settings: { allowNode: true, maxPages: 30 }
+        }
+    ]
+};
     // --- НАВИГАЦИЯ ---
     function switchScreen(screenName) {
         document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
@@ -540,6 +624,10 @@
         a.download = 'my-story.md';
         a.click();
     }
+    function toggleGroup(groupId) {
+    const content = document.getElementById(groupId + '-list');
+    content.classList.toggle('hidden');
+}
 </script>
 </body>
 </html>
