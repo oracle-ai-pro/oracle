@@ -186,6 +186,29 @@
             height: auto; align-items: flex-start;
         }
         .glass-input-box.fullscreen-mode textarea { max-height: none; height: 100%; }
+
+        .tab-item {
+    background: var(--surface-variant);
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+}
+.tab-item.active { background: var(--primary-container); color: var(--primary); }
+.add-tab-btn {
+    background: var(--surface-variant);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 8px 16px;
+    cursor: pointer;
+    color: var(--on-surface-variant);
+}
+.close-tab { font-size: 16px; opacity: 0.5; }
     </style>
 </head>
 <body>
@@ -228,14 +251,30 @@
     </main>
 
         <main id="screen-reader" class="app-screen">
-        <div class="markdown-toolbar" style="background: var(--surface-variant); padding: 10px; border-radius: 16px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-            <button onclick="format('bold')" class="icon-btn"><span class="material-symbols-rounded">format_bold</span></button>
-            <button onclick="format('italic')" class="icon-btn"><span class="material-symbols-rounded">format_italic</span></button>
-            <button onclick="format('underline')" class="icon-btn"><span class="material-symbols-rounded">format_underlined</span></button>
-            <input type="color" id="colorPicker" onchange="format('color', this.value)" style="width: 30px; height: 30px; border:none; background:none; cursor:pointer;">
-            <button onclick="exportStory()" class="icon-btn"><span class="material-symbols-rounded">download</span></button>
-            <button onclick="importStory()" class="icon-btn"><span class="material-symbols-rounded">upload</span></button>
-        </div>
+    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+        AI Ридер: Редактор Хроник
+        <button onclick="saveToLocalStorage()" class="icon-btn" title="Сохранить в Ядро">
+            <span class="material-symbols-rounded">save</span>
+        </button>
+    </div>
+
+    <div class="markdown-toolbar" style="background: var(--surface-variant); padding: 10px; border-radius: 16px; margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <button onclick="format('bold')" class="icon-btn"><span class="material-symbols-rounded">format_bold</span></button>
+        <button onclick="format('italic')" class="icon-btn"><span class="material-symbols-rounded">format_italic</span></button>
+        <button onclick="format('underline')" class="icon-btn"><span class="material-symbols-rounded">format_underlined</span></button>
+        <input type="color" onchange="format('foreColor', this.value)" style="width: 30px; height: 30px; border:none; background:none; cursor:pointer;">
+        <button onclick="exportStory()" class="icon-btn"><span class="material-symbols-rounded">download</span></button>
+    </div>
+    
+    <div id="tabs-container" style="display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
+        <div class="tab-item active" onclick="switchTab(this)">История 1</div>
+        <button id="add-tab-btn" class="add-tab-btn" onclick="addTab()">+</button>
+    </div>
+    
+    <div class="chat-card" id="editor" contenteditable="true" style="min-height: 300px; outline: none; padding: 20px;">
+        Текст хроники...
+    </div>
+</main>
 
         <div id="tabs-container" style="display: flex; gap: 5px; margin-bottom: 10px;">
             <button class="tab-btn active" onclick="switchTab(0)">История 1</button>
@@ -436,15 +475,45 @@
 
     // Добавление вкладок
     let tabCount = 1;
-    function addTab() {
-        if (tabCount < 10) {
-            tabCount++;
-            const newTab = document.createElement('button');
-            newTab.className = 'tab-btn';
-            newTab.innerText = 'История ' + tabCount;
-            document.getElementById('tabs-container').insertBefore(newTab, event.target);
-        }
+   // Добавление вкладки
+function addTab() {
+    const container = document.getElementById('tabs-container');
+    const tabs = document.querySelectorAll('.tab-item');
+    
+    if (tabs.length < 10) {
+        const newTab = document.createElement('div');
+        newTab.className = 'tab-item';
+        newTab.innerHTML = `История ${tabs.length + 1} <span class="close-tab" onclick="confirmDelete(event, this)">×</span>`;
+        newTab.setAttribute('onclick', 'switchTab(this)');
+        container.insertBefore(newTab, document.getElementById('add-tab-btn'));
     }
+    
+    if (tabs.length + 1 >= 10) {
+        document.getElementById('add-tab-btn').style.display = 'none';
+    }
+}
+
+// Кастомный alert на удаление
+function confirmDelete(e, el) {
+    e.stopPropagation();
+    if (confirm("Удалить эту историю?")) {
+        el.parentElement.remove();
+        document.getElementById('add-tab-btn').style.display = 'block';
+    }
+}
+
+// Сохранение в LocalStorage
+function saveToLocalStorage() {
+    const content = document.getElementById('editor').innerHTML;
+    localStorage.setItem('oracle_story', content);
+    alert("Хроника зафиксирована в памяти Ядра.");
+}
+
+// Переключение
+function switchTab(el) {
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+}
 
     // Скрытие подсказок при первом клике
     document.getElementById('editor').addEventListener('focus', function() {
