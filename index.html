@@ -91,6 +91,15 @@
         #screen-chat { padding-bottom: 100px; /* Отступ снизу для инпута */ }
         .chat-flow-box { flex-grow: 1; display: flex; flex-direction: column; gap: 12px; }
 
+        /* --- Скрываем полосу прокрутки для контейнера вкладок --- */
+#tabs-container {
+    -ms-overflow-style: none;  /* IE и Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+#tabs-container::-webkit-scrollbar {
+    display: none; /* Chrome, Safari и Opera */
+}
         /* =========================================
            5. LIQUID GLASS FLOATING INPUT
         ========================================= */
