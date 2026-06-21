@@ -258,43 +258,41 @@
         </button>
     </div>
 
-    <div class="markdown-toolbar" style="background: var(--surface-variant); padding: 10px; border-radius: 16px; margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
-        <button onclick="format('bold')" class="icon-btn"><span class="material-symbols-rounded">format_bold</span></button>
-        <button onclick="format('italic')" class="icon-btn"><span class="material-symbols-rounded">format_italic</span></button>
-        <button onclick="format('underline')" class="icon-btn"><span class="material-symbols-rounded">format_underlined</span></button>
-        <input type="color" onchange="format('foreColor', this.value)" style="width: 30px; height: 30px; border:none; background:none; cursor:pointer;">
-        <button onclick="exportStory()" class="icon-btn"><span class="material-symbols-rounded">download</span></button>
-    </div>
-    
-    <div id="tabs-container" style="display: flex; gap: 6px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px;">
-        <div class="tab-item active" onclick="switchTab(this)">История 1</div>
-        <button id="add-tab-btn" class="add-tab-btn" onclick="addTab()">+</button>
-    </div>
-    
-    <div class="chat-card" id="editor" contenteditable="true" style="min-height: 300px; outline: none; padding: 20px;">
-        Текст хроники...
-    </div>
-</main>
-
-        <div id="tabs-container" style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <button class="tab-btn active" onclick="switchTab(0)">История 1</button>
-            <button class="tab-btn" onclick="addTab()">+</button>
+<main id="screen-reader" class="app-screen">
+        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+            AI Ридер: Редактор Хроник
+            <button onclick="saveToLocalStorage()" class="icon-btn" title="Сохранить в Ядро">
+                <span class="material-symbols-rounded">save</span>
+            </button>
         </div>
 
-        <div class="chat-card" id="editor" contenteditable="true" 
-             style="min-height: 300px; outline: none; padding: 20px; line-height: 1.6;">
-             <div id="first-time-help" style="color: var(--on-surface-variant); font-size: 0.9em;">
-                 <strong>Добро пожаловать в Oracle Reader:</strong><br>
-                 1. Используй Markdown-панель для кастомизации истории.<br>
-                 2. Сохраняй или скачивай историю на устройство.<br>
-                 3. Нажми «+» на вкладках, чтобы добавить новую историю (до 10).<br>
-                 4. Импортируй файлы .txt и .md через кнопку экспорта.<br>
-                 5. Поле растягивается автоматически при вводе текста.<br>
-                 6. Запрашивай создание историй у Чата Node!
-             </div>
+        <div class="markdown-toolbar" style="background: var(--surface-variant); padding: 10px; border-radius: 16px; margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <button onclick="format('bold')" class="icon-btn"><span class="material-symbols-rounded">format_bold</span></button>
+            <button onclick="format('italic')" class="icon-btn"><span class="material-symbols-rounded">format_italic</span></button>
+            <button onclick="format('underline')" class="icon-btn"><span class="material-symbols-rounded">format_underlined</span></button>
+            <input type="color" onchange="format('foreColor', this.value)" style="width: 30px; height: 30px; border:none; background:none; cursor:pointer;">
+            <button onclick="exportStory()" class="icon-btn"><span class="material-symbols-rounded">download</span></button>
+        </div>
+        
+    <div id="tabs-container" style="display: flex; gap: 6px; margin-bottom: 5px;">
+    <div class="tab-item" onclick="switchTab(this)">История 1</div>
+    <button id="add-tab-btn" class="add-tab-btn" onclick="addTab()">+</button>
+</div>
+
+<div id="tab-actions-container" style="margin-bottom: 10px;">
+   </div>
+
+<div class="chat-card" id="editor" contenteditable="true">...</div>
+        
+        <div class="chat-card" id="editor" contenteditable="true" style="min-height: 300px; outline: none; padding: 20px;">
+            <div id="first-time-help" style="color: var(--on-surface-variant); font-size: 0.9em;">
+                <strong>Добро пожаловать в Oracle Reader:</strong><br>
+                1. Используй панель для правок.<br>
+                2. Нажми «+» для создания новых историй.<br>
+                3. Используй «Save» для фиксации данных в памяти.
+            </div>
         </div>
     </main>
-
 
     <main id="screen-settings" class="app-screen">
         <div class="section-title">Инженерный Пульт Управления</div>
