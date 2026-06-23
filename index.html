@@ -628,6 +628,27 @@
     const content = document.getElementById(groupId + '-list');
     content.classList.toggle('hidden');
 }
+    window.addEventListener('load', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const data = urlParams.get('data');
+
+    if (data) {
+        try {
+            // Декодируем и парсим данные
+            const package = JSON.parse(decodeURIComponent(data));
+            
+            // Вставляем данные в чат
+            const chat = document.getElementById('chat');
+            chat.innerHTML += `<div class="bubble ai">📥 Импортировано из Fast Assistant:</div>
+                              <div class="bubble user">${package.text}</div>`;
+            
+            // Очищаем URL, чтобы при обновлении страницы данные не дублировались
+            window.history.replaceState({}, document.title, window.location.pathname);
+        } catch (e) {
+            console.error("Ошибка при импорте данных:", e);
+        }
+    }
+});
 </script>
 </body>
 </html>
