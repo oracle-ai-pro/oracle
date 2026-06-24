@@ -21,7 +21,7 @@
             --secondary: #e8bbf1;
             --border: #434753;
             --grad: linear-gradient(90deg, #02b6ed 0%, #e60ced 100%);
-            --glass-bg: rgba(31, 32, 46, 0.75); /* Для Liquid Glass */
+            --glass-bg: rgba(31, 32, 46, 0.75);
         }
 
         body.light-theme {
@@ -44,10 +44,11 @@
         .oracle-container {
             position: relative;
             width: 100%; max-width: 900px; margin: 0 auto;
-            height: 100dvh; /* Динамическая высота для мобилок */
+            height: 100dvh;
             display: flex; flex-direction: column;
             overflow: hidden;
             box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            transition: max-width 0.3s ease;
         }
 
         /* =========================================
@@ -84,29 +85,24 @@
             display: none; flex-direction: column; flex-grow: 1;
             width: 100%; height: 100%; box-sizing: border-box;
             overflow-y: auto; overflow-x: hidden;
-            padding: 90px 20px 20px 20px; /* Отступ сверху для меню */
+            padding: 90px 20px 20px 20px;
         }
         .app-screen.active-screen { display: flex; animation: boot 0.3s ease-out; }
         
-        #screen-chat { padding-bottom: 100px; /* Отступ снизу для инпута */ }
+        #screen-chat { padding-bottom: 100px; }
         .chat-flow-box { flex-grow: 1; display: flex; flex-direction: column; gap: 12px; }
 
-        /* --- Скрываем полосу прокрутки для контейнера вкладок --- */
-#tabs-container {
-    -ms-overflow-style: none;  /* IE и Edge */
-    scrollbar-width: none;  /* Firefox */
-}
+        #tabs-container {
+            -ms-overflow-style: none; scrollbar-width: none;
+        }
+        #tabs-container::-webkit-scrollbar { display: none; }
 
-#tabs-container::-webkit-scrollbar {
-    display: none; /* Chrome, Safari и Opera */
-}
         /* =========================================
            5. LIQUID GLASS FLOATING INPUT
         ========================================= */
         .glass-input-box {
             position: absolute; bottom: 20px; left: 20px; right: 20px;
-            z-index: 1000;
-            display: none; /* Скрыт по умолчанию */
+            z-index: 1000; display: none;
             background: var(--glass-bg);
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
             border: 1px solid rgba(255,255,255,0.05);
@@ -116,9 +112,7 @@
             transition: all 0.3s ease;
         }
 
-        /* МАГИЯ: Показываем инпут только когда активен чат */
         #screen-chat.active-screen ~ .glass-input-box { display: flex; }
-        
         .glass-input-box:focus-within { border-color: var(--primary); }
 
         #user-input {
@@ -131,7 +125,6 @@
         .icon-btn { background: none; border: none; color: var(--on-surface-variant); cursor: pointer; padding: 8px; transition: 0.3s ease; }
         .hidden { display: none !important; }
         
-        /* Умная кнопка отправки (скрыта по умолчанию) */
         .send-btn {
             background: var(--primary); color: var(--bg); border: none;
             border-radius: 50%; width: 0; height: 38px;
@@ -139,16 +132,8 @@
             transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); cursor: pointer;
             opacity: 0; padding: 0; overflow: hidden; visibility: hidden;
         }
-
-        .send-btn.visible {
-            width: 38px; opacity: 1; visibility: visible;
-        }
-
-        /* Анимация микрофона */
-        .icon-btn.recording {
-            color: #ff5252;
-            animation: pulseMic 1.5s infinite;
-        }
+        .send-btn.visible { width: 38px; opacity: 1; visibility: visible; }
+        .icon-btn.recording { color: #ff5252; animation: pulseMic 1.5s infinite; }
 
         /* =========================================
            6. COMPONENTS & ANIMATIONS
@@ -160,7 +145,6 @@
         .section-title { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; border-left: 4px solid var(--secondary); padding-left: 10px; }
         .chat-card { background: var(--surface-variant); padding: 16px; border-radius: 20px; margin-bottom: 12px; }
 
-        /* Blob Animation */
         .welcome-zone { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; filter: url('#gooey'); }
         .welcome-zone.hidden { display: none; filter: none; }
         .blob-container { position: relative; width: 100px; height: 60px; display: flex; align-items: center; justify-content: center; }
@@ -179,7 +163,7 @@
         }
 
         /* =========================================
-           7. MOBILE ADAPTATION (COMPACT MODE)
+           7. MODULES: TABS, ARCHIVE, COMPACT MODE
         ========================================= */
         @media (max-width: 600px) {
             .nav-item .nav-text { display: none; } 
@@ -189,7 +173,6 @@
             .glass-input-box { bottom: 10px; left: 10px; right: 10px; }
         }
         
-        /* Fullscreen Mode (Input) */
         .glass-input-box.fullscreen-mode {
             top: 80px; bottom: 20px; left: 20px; right: 20px;
             height: auto; align-items: flex-start;
@@ -197,77 +180,41 @@
         .glass-input-box.fullscreen-mode textarea { max-height: none; height: 100%; }
 
         .tab-item {
-            background: var(--surface-variant);
-            padding: 10px 18px; /* Увеличили отступы: 10px сверху/снизу, 18px по бокам */
-            border-radius: 14px; /* Чуть сильнее скруглили углы */
-            font-size: 15px; /* Увеличили шрифт (был 12px) */
-            font-weight: 500; /* Сделали текст немного плотнее */
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            border: 1px solid var(--border);
-            white-space: nowrap;
-/* ДОБАВЛЕНО ДЛЯ ЗАЩИТЫ ОТ СПЛЮЩИВАНИЯ: */
-            flex-shrink: 0; 
-            box-sizing: border-box;
+            background: var(--surface-variant); padding: 10px 18px;
+            border-radius: 14px; font-size: 15px; font-weight: 500;
+            display: flex; align-items: center; gap: 10px; cursor: pointer;
+            border: 1px solid var(--border); white-space: nowrap;
+            flex-shrink: 0; box-sizing: border-box;
         }
-
-        .tab-item.active { 
-            background: var(--primary-container); 
-            color: var(--primary); 
-        }
-
+        .tab-item.active { background: var(--primary-container); color: var(--primary); }
         .add-tab-btn {
-            background: var(--surface-variant);
-            border: 1px dashed var(--border);
-            border-radius: 14px;
-            padding: 10px 20px; /* Увеличили кнопку плюсика под новый размер вкладок */
-            font-size: 18px; /* Увеличили сам плюсик */
-            cursor: pointer;
-            color: var(--on-surface-variant);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: var(--surface-variant); border: 1px dashed var(--border);
+            border-radius: 14px; padding: 10px 20px; font-size: 18px; cursor: pointer;
+            color: var(--on-surface-variant); display: flex; align-items: center; justify-content: center;
         }
         .close-tab { font-size: 16px; opacity: 0.5; }
-        .archive-group {
-    margin-bottom: 20px;
-    background: var(--surface);
-    border-radius: 12px;
-    padding: 10px;
-}
 
-.group-header {
-    cursor: pointer;
-    padding: 10px;
-    font-weight: bold;
-    color: var(--on-surface);
-    display: flex;
-    justify-content: space-between;
-}
+        .archive-group { margin-bottom: 20px; background: var(--surface); border-radius: 12px; padding: 10px; }
+        .group-header { cursor: pointer; padding: 10px; font-weight: bold; color: var(--on-surface); display: flex; justify-content: space-between; }
+        .group-content { display: block; padding: 10px; }
+        .group-content.hidden { display: none; }
+        .story-card, .chat-card { background: var(--surface-variant); padding: 15px; border-radius: 10px; margin-bottom: 10px; }
+        .archive-actions { display: flex; gap: 10px; margin-top: 10px; }
 
-.group-content {
-    display: block; /* По умолчанию развернуто */
-    padding: 10px;
-}
-
-.group-content.hidden {
-    display: none; /* Класс, который будет добавлять JS при клике */
-}
-
-.story-card, .chat-card {
-    background: var(--surface-variant);
-    padding: 15px;
-    border-radius: 10px;
-    margin-bottom: 10px;
-}
-
-.archive-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-}
+        /* =========================================
+           8. SETTINGS PANEL (ADAPTIVE)
+        ========================================= */
+        @media (min-width: 768px) {
+            .settings-container { display: grid; grid-template-columns: 200px 1fr; gap: 20px; height: 100%; }
+            .sidebar-menu { display: flex; flex-direction: column; gap: 8px; border-right: 1px solid var(--border); padding-right: 15px; }
+            .content-area { padding-left: 5px; }
+        }
+        @media (max-width: 767px) {
+            .settings-container { display: flex; flex-direction: column; }
+            .sidebar-menu { display: flex; overflow-x: auto; gap: 10px; margin-bottom: 20px; padding-bottom: 10px; }
+            .sidebar-menu .nav-item { flex-shrink: 0; padding: 10px 15px; background: var(--surface-variant); flex-direction: row; gap: 8px; }
+            .sidebar-menu .nav-item .material-symbols-rounded { margin-bottom: 0; }
+        }
     </style>
 </head>
 <body>
@@ -305,40 +252,35 @@
     </main>
 
     <main id="screen-logs" class="app-screen">
-    <div class="section-title">Архив сессий ядра</div>
-
-    <div class="archive-group">
-        <div class="group-header" onclick="toggleGroup('chats')">
-            <span>▼ Чаты</span>
-        </div>
-        <div id="chats-list" class="group-content">
-            <div class="chat-card">
-                <span>Пример старого чата</span>
-                <div class="archive-actions">
-                    <button>Открыть</button>
-                    <button>Удалить</button>
+        <div class="section-title">Архив сессий ядра</div>
+        <div class="archive-group">
+            <div class="group-header" onclick="toggleGroup('chats')">
+                <span>▼ Чаты</span>
+            </div>
+            <div id="chats-list" class="group-content">
+                <div class="chat-card">
+                    <span>Пример старого чата</span>
+                    <div class="archive-actions">
+                        <button style="padding: 5px 10px; border-radius: 5px; border:none; background:var(--primary-container); color:var(--primary);">Открыть</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="archive-group">
-        <div class="group-header" onclick="toggleGroup('stories')">
-            <span>▼ Истории (Книги)</span>
-        </div>
-        <div id="stories-list" class="group-content">
-            <div class="story-card">
-                <span>История: Проект "Оракул"</span>
-                <div class="archive-actions">
-                    <button>Book</button>
-                    <button>Настройки</button>
-                    <button>Удалить</button>
+        <div class="archive-group">
+            <div class="group-header" onclick="toggleGroup('stories')">
+                <span>▼ Истории (Книги)</span>
+            </div>
+            <div id="stories-list" class="group-content">
+                <div class="story-card">
+                    <span>История: Проект "Оракул"</span>
+                    <div class="archive-actions">
+                        <button style="padding: 5px 10px; border-radius: 5px; border:none; background:var(--primary-container); color:var(--primary);">Настройки</button>
+                    </div>
+                    <div class="last-date" style="font-size: 12px; margin-top: 10px; color: var(--on-surface-variant);">Последнее обновление: 21.06.2026</div>
                 </div>
-                <div class="last-date">Последнее обновление: 21.06.2026</div>
             </div>
         </div>
-    </div>
-</main>
+    </main>
 
     <main id="screen-reader" class="app-screen">
         <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
@@ -347,7 +289,6 @@
                 <span class="material-symbols-rounded">save</span>
             </button>
         </div>
-
         <div class="markdown-toolbar" style="background: var(--surface-variant); padding: 10px; border-radius: 16px; margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">
             <button onclick="format('bold')" class="icon-btn"><span class="material-symbols-rounded">format_bold</span></button>
             <button onclick="format('italic')" class="icon-btn"><span class="material-symbols-rounded">format_italic</span></button>
@@ -355,14 +296,10 @@
             <input type="color" onchange="format('foreColor', this.value)" style="width: 30px; height: 30px; border:none; background:none; cursor:pointer;">
             <button onclick="exportStory()" class="icon-btn"><span class="material-symbols-rounded">download</span></button>
         </div>
-        
         <div id="tabs-container" style="display: flex; gap: 6px; margin-bottom: 5px; overflow-x: auto; padding-bottom: 5px;">
             <div class="tab-item active" onclick="switchTab(this)">История 1</div>
             <button id="add-tab-btn" class="add-tab-btn" onclick="addTab()">+</button>
         </div>
-
-        <div id="tab-actions-container" style="margin-bottom: 10px;"></div>
-        
         <div class="chat-card" id="editor" contenteditable="true" style="min-height: 300px; outline: none; padding: 20px; line-height: 1.6;">
             <div id="first-time-help" style="color: var(--on-surface-variant); font-size: 0.9em;">
                 <strong>Добро пожаловать в Oracle Reader:</strong><br>
@@ -375,9 +312,58 @@
 
     <main id="screen-settings" class="app-screen">
         <div class="section-title">Инженерный Пульт Управления</div>
-        <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-weight: 600;">Цветовой Слой Ядра</span>
-            <button onclick="document.body.classList.toggle('light-theme')" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer;">СМЕНИТЬ ТЕМУ</button>
+        <div class="settings-container">
+            <div class="sidebar-menu">
+                <button class="nav-item active" id="btn-sec-general" onclick="showSection('general')">
+                    <span class="material-symbols-rounded">tune</span> Общие
+                </button>
+                <button class="nav-item" id="btn-sec-security" onclick="showSection('security')">
+                    <span class="material-symbols-rounded">lock</span> Защита
+                </button>
+                <button class="nav-item" id="btn-sec-bridge" onclick="showSection('bridge')">
+                    <span class="material-symbols-rounded">settings_ethernet</span> Мост
+                </button>
+                <button class="nav-item" id="btn-sec-archive" onclick="if(checkAccess()) showSection('archive')">
+                    <span class="material-symbols-rounded">folder_delete</span> Корзина
+                </button>
+                <button class="nav-item" onclick="toggleLayoutWidth()">
+                    <span class="material-symbols-rounded">aspect_ratio</span> Растянуть
+                </button>
+            </div>
+
+            <div class="content-area" id="settings-content">
+                
+                <div id="section-general" class="setting-section">
+                    <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 600;">Цветовой Слой Ядра</span>
+                        <button onclick="document.body.classList.toggle('light-theme')" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer; font-weight: 600;">СМЕНИТЬ ТЕМУ</button>
+                    </div>
+                </div>
+
+                <div id="section-security" class="setting-section" style="display:none;">
+                    <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Параметры защиты</h3>
+                    <div class="chat-card">
+                        <span style="display: block; margin-bottom: 10px;">Master Password установлен на: <b>1234</b></span>
+                        <span style="font-size: 12px; color: #ff5252;">*Авторизация сбрасывается при закрытии вкладки.</span>
+                    </div>
+                </div>
+
+                <div id="section-bridge" class="setting-section" style="display:none;">
+                    <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Системный мост</h3>
+                    <div class="chat-card">
+                        <span style="color: var(--on-surface-variant); font-size: 13px;">Ожидание подключения внешних модулей...</span>
+                    </div>
+                </div>
+
+                <div id="section-archive" class="setting-section" style="display:none;">
+                    <h3 style="margin-top: 0; font-size: 14px; color: #ff5252;">Секретный Архив</h3>
+                    <div class="chat-card">
+                        <span style="display: block; margin-bottom: 15px;">Доступ разрешен. Здесь лежат удаленные логи Ядра.</span>
+                        <button onclick="lockArchive()" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--surface); color: var(--on-surface); cursor: pointer; width: 100%; border: 1px solid var(--border);">ЗАБЛОКИРОВАТЬ СНОВА</button>
+                    </div>
+                </div>
+
+            </div>
         </div>
     </main>
 
@@ -406,35 +392,30 @@
 </svg>
 
 <script>
+    // =========================================
+    // БАЗА ДАННЫХ ПРОТОТИПА
+    // =========================================
     const archiveData = {
-    chats: [
-        { id: 1, title: "Быстрый вопрос", lastDate: "2026-06-21" }
-    ],
-    stories: [
-        { 
-            id: 101, 
-            title: "Проект Ядро", 
-            pages: [
-                { id: 1, content: "...", tag: "Введение", node: "..." },
-                { id: 2, content: "...", tag: "Анализ", node: "..." }
-            ],
-            settings: { allowNode: true, maxPages: 30 }
-        }
-    ]
-};
-    // --- НАВИГАЦИЯ ---
+        chats: [ { id: 1, title: "Быстрый вопрос", lastDate: "2026-06-21" } ],
+        stories: [ { id: 101, title: "Проект Ядро", settings: { allowNode: true, maxPages: 30 } } ]
+    };
+
+    // =========================================
+    // ГЛАВНАЯ НАВИГАЦИЯ МЕЖДУ ЭКРАНАМИ
+    // =========================================
     function switchScreen(screenName) {
         document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
-        document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.glass-nav .nav-item').forEach(t => t.classList.remove('active'));
         
         document.getElementById(`screen-${screenName}`).classList.add('active-screen');
         document.getElementById(`btn-tab-${screenName}`).classList.add('active');
     }
 
-    // --- ЛОГИКА ИНПУТА ---
+    // =========================================
+    // ЛОГИКА ЧАТА И ИНПУТА
+    // =========================================
     const inputField = document.getElementById('user-input');
 
-    // Отправка по Enter
     inputField.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -455,7 +436,6 @@
             expandBtn.classList.add('hidden');
         }
 
-        // Умная кнопка
         const sendBtn = document.getElementById('send-btn');
         const voiceBtn = document.getElementById('voice-btn');
         if (textarea.value.trim().length > 0) {
@@ -483,7 +463,6 @@
         }
     }
 
-    // --- ОТПРАВКА И ОТВЕТ (IF-ELSE) ---
     function sendMsg() {
         const input = document.getElementById('user-input');
         const msg = input.value.trim();
@@ -491,7 +470,6 @@
         const screenChat = document.getElementById('screen-chat');
 
         if (msg) {
-            // Вывод сообщения юзера
             chatFlow.innerHTML += `<div class="msg user-msg">${msg}</div>`;
             input.value = "";
             handleInput(input);
@@ -500,12 +478,9 @@
             if (document.getElementById('main-input-box').classList.contains('fullscreen-mode')) toggleFullscreen();
             screenChat.scrollTop = screenChat.scrollHeight;
 
-            // Ответ Оракула (Имитация задержки)
             setTimeout(() => {
                 let response = "";
                 const lowerMsg = msg.toLowerCase();
-
-                // ЛОГИКА ОТВЕТОВ
                 if (lowerMsg.includes("привет")) {
                     response = "Приветствую. Системы Ядра активированы.";
                 } else if (lowerMsg.includes("как дела") || lowerMsg.includes("статус")) {
@@ -515,14 +490,15 @@
                 } else {
                     response = "Запрос получен: '" + msg + "'. Обработка данных...";
                 }
-
                 chatFlow.innerHTML += `<div class="msg ai-msg">${response}</div>`;
                 screenChat.scrollTop = screenChat.scrollHeight;
-            }, 700); // 700мс задержка для реалистичности
+            }, 700);
         }
     }
 
-    // --- ИНИЦИАЛИЗАЦИЯ ГОЛОСА ---
+    // =========================================
+    // ЛОГИКА ГОЛОСОВОГО ВВОДА
+    // =========================================
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition;
 
@@ -533,9 +509,7 @@
 
         recognition.onresult = function(event) {
             let transcript = Array.from(event.results)
-                .map(result => result[0].transcript)
-                .join('');
-            
+                .map(result => result[0].transcript).join('');
             const input = document.getElementById('user-input');
             input.value = transcript; 
             handleInput(input); 
@@ -552,28 +526,23 @@
 
     function startVoice() {
         if (recognition) {
-            try {
-                recognition.start();
-            } catch(e) {
-                recognition.stop(); 
-            }
+            try { recognition.start(); } catch(e) { recognition.stop(); }
         } else {
             alert("Голосовой ввод не поддерживается в этом браузере.");
         }
     }
-    
-    // Функция форматирования
+
+    // =========================================
+    // ЛОГИКА РИДЕРА (ХРОНИКИ)
+    // =========================================
     function format(command, value = null) {
         document.execCommand(command, false, value);
     }
 
-    // Добавление вкладок
     let tabCount = 1;
-
     function addTab() {
         const container = document.getElementById('tabs-container');
         const tabs = document.querySelectorAll('.tab-item');
-        
         if (tabs.length < 10) {
             const newTab = document.createElement('div');
             newTab.className = 'tab-item';
@@ -581,41 +550,33 @@
             newTab.setAttribute('onclick', 'switchTab(this)');
             container.insertBefore(newTab, document.getElementById('add-tab-btn'));
         }
-        
-        if (tabs.length + 1 >= 10) {
-            document.getElementById('add-tab-btn').style.display = 'none';
-        }
+        if (tabs.length + 1 >= 10) document.getElementById('add-tab-btn').style.display = 'none';
     }
 
-    // Кастомный alert на удаление
     function confirmDelete(e, el) {
         e.stopPropagation();
         if (confirm("Удалить эту историю?")) {
             el.parentElement.remove();
-            document.getElementById('add-tab-btn').style.display = 'block';
+            document.getElementById('add-tab-btn').style.display = 'flex';
         }
     }
 
-    // Сохранение в LocalStorage
     function saveToLocalStorage() {
         const content = document.getElementById('editor').innerHTML;
         localStorage.setItem('oracle_story', content);
         alert("Хроника зафиксирована в памяти Ядра.");
     }
 
-    // Переключение
     function switchTab(el) {
         document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
         el.classList.add('active');
     }
 
-    // Скрытие подсказок при первом клике
     document.getElementById('editor').addEventListener('focus', function() {
         const help = document.getElementById('first-time-help');
         if (help) help.style.display = 'none';
     }, {once: true});
 
-    // Экспорт
     function exportStory() {
         const text = document.getElementById('editor').innerText;
         const blob = new Blob([text], {type: 'text/markdown'});
@@ -624,31 +585,75 @@
         a.download = 'my-story.md';
         a.click();
     }
-    function toggleGroup(groupId) {
-    const content = document.getElementById(groupId + '-list');
-    content.classList.toggle('hidden');
-}
-    window.addEventListener('load', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const data = urlParams.get('data');
 
-    if (data) {
-        try {
-            // Декодируем и парсим данные
-            const package = JSON.parse(decodeURIComponent(data));
-            
-            // Вставляем данные в чат
-            const chat = document.getElementById('chat');
-            chat.innerHTML += `<div class="bubble ai">📥 Импортировано из Fast Assistant:</div>
-                              <div class="bubble user">${package.text}</div>`;
-            
-            // Очищаем URL, чтобы при обновлении страницы данные не дублировались
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {
-            console.error("Ошибка при импорте данных:", e);
+    // =========================================
+    // ЛОГИКА АРХИВА (АККОРДЕОН)
+    // =========================================
+    function toggleGroup(groupId) {
+        const content = document.getElementById(groupId + '-list');
+        content.classList.toggle('hidden');
+    }
+
+    // =========================================
+    // ЛОГИКА ПУЛЬТА УПРАВЛЕНИЯ (НАСТРОЙКИ)
+    // =========================================
+    function showSection(sectionId) {
+        document.querySelectorAll('.setting-section').forEach(s => s.style.display = 'none');
+        document.querySelectorAll('.sidebar-menu .nav-item').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById('section-' + sectionId).style.display = 'block';
+        document.getElementById('btn-sec-' + sectionId).classList.add('active');
+    }
+
+    function toggleLayoutWidth() {
+        const container = document.querySelector('.oracle-container');
+        if (container.style.maxWidth === 'none') {
+            container.style.maxWidth = '900px';
+        } else {
+            container.style.maxWidth = 'none';
         }
     }
-});
+
+    function checkAccess() {
+        if (sessionStorage.getItem('access_granted') === 'true') {
+            return true; 
+        }
+        const password = prompt("Система безопасности Ядра.\nВведите Master Password (1234):");
+        if (password === '1234') { 
+            sessionStorage.setItem('access_granted', 'true');
+            return true;
+        } else if (password !== null) {
+            alert("Отказ системы. Неверный ключ доступа.");
+            return false;
+        }
+        return false;
+    }
+
+    function lockArchive() {
+        sessionStorage.removeItem('access_granted');
+        showSection('general'); 
+        alert("Корзина заблокирована.");
+    }
+
+    // =========================================
+    // ИМПОРТ ДАННЫХ ИЗ URL (Мост)
+    // =========================================
+    window.addEventListener('load', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const data = urlParams.get('data');
+        if (data) {
+            try {
+                const packageData = JSON.parse(decodeURIComponent(data));
+                const chatFlow = document.getElementById('chat-flow');
+                document.getElementById('welcome-block').classList.add('hidden');
+                chatFlow.innerHTML += `<div class="msg ai-msg">📥 Данные импортированы через Bridge:</div>
+                                       <div class="msg user-msg">${packageData.text}</div>`;
+                window.history.replaceState({}, document.title, window.location.pathname);
+            } catch (e) {
+                console.error("Ошибка при импорте данных:", e);
+            }
+        }
+    });
 </script>
 </body>
 </html>
