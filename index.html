@@ -140,7 +140,12 @@
         ========================================= */
         .msg { padding: 14px 18px; font-size: 14px; max-width: 80%; line-height: 1.5; animation: slideIn 0.2s ease-out; word-wrap: break-word; }
         .ai-msg { background: var(--surface-variant); align-self: flex-start; border-radius: 4px 20px 20px 20px; }
-        .user-msg { background: var(--grad); color: #fff; align-self: flex-end; border-radius: 20px 4px 20px 20px; }
+        .user-msg { 
+    background: var(--user-msg-bg); /* Теперь это кастомизируется! */
+    color: #fff; 
+    align-self: flex-end; 
+    border-radius: 20px 4px 20px 20px; 
+}
 
         .section-title { font-size: 12px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; border-left: 4px solid var(--secondary); padding-left: 10px; }
         .chat-card { background: var(--surface-variant); padding: 16px; border-radius: 20px; margin-bottom: 12px; }
@@ -314,7 +319,7 @@
         <div class="settings-container">
             <div class="sidebar-menu">
                 <button class="nav-item active" id="btn-sec-general" onclick="showSection('general')">
-                    <span class="material-symbols-rounded">tune</span> Общие
+                    <span class="material-symbols-rounded">palette</span> Персонализация
                 </button>
                 <button class="nav-item" id="btn-sec-security" onclick="showSection('security')">
                     <span class="material-symbols-rounded">lock</span> Защита
@@ -333,11 +338,21 @@
             <div class="content-area" id="settings-content">
                 
                 <div id="section-general" class="setting-section">
-                    <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="font-weight: 600;">Цветовой Слой Ядра</span>
-                        <button onclick="document.body.classList.toggle('light-theme')" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer; font-weight: 600;">СМЕНИТЬ ТЕМУ</button>
-                    </div>
-                </div>
+    <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Визуальные параметры</h3>
+    
+    <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <span style="font-weight: 600;">Темная/Светлая тема</span>
+        <button onclick="document.body.classList.toggle('light-theme')" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer;">ПЕРЕКЛЮЧИТЬ</button>
+    </div>
+
+    <div class="chat-card">
+        <label style="display: block; margin-bottom: 10px; font-weight: 600;">Цвет Бабла (User Message)</label>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="color" id="bubble-color-picker" value="#8a2be2" onchange="updateUserBubbleColor(this.value)" style="width: 50px; height: 50px; border:none; cursor:pointer; background:none;">
+            <span style="font-size: 12px; color: var(--on-surface-variant);">Выберите основной оттенок для ваших сообщений. Система автоматически сгенерирует градиент.</span>
+        </div>
+    </div>
+</div>
 
                 <div id="section-security" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Параметры защиты</h3>
@@ -653,6 +668,11 @@
             }
         }
     });
+    function updateUserBubbleColor(color) {
+    // Генерируем градиент на основе выбранного цвета
+    const newGradient = `linear-gradient(90deg, ${color} 0%, #254487 100%)`;
+    document.documentElement.style.setProperty('--user-msg-bg', newGradient);
+}
 </script>
 </body>
 </html>
