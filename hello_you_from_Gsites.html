@@ -2,12 +2,13 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Привет...</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>You're Welcome... | Prestige HQ</title>
     <style>
         body {
-            background: #000;
-            color: #fff;
-            font-family: -apple-system, sans-serif;
+            background: #050505; /* Наш фирменный глубокий темный */
+            color: #e3e2e6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -15,54 +16,112 @@
             height: 100vh;
             margin: 0;
             overflow: hidden;
+            position: relative;
+        }
+
+        /* Живой неоновый фон (Хало-эффект) */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(50, 215, 75, 0.15) 0%, rgba(191, 90, 242, 0.05) 50%, transparent 100%);
+            border-radius: 50%;
+            filter: blur(40px);
+            z-index: 1;
+            animation: pulseBackground 8s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulseBackground {
+            0% { transform: scale(1) translate(-20px, -20px); }
+            100% { transform: scale(1.3) translate(20px, 20px); }
         }
 
         .portal-text {
             text-align: center;
             z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
 
+        /* Прокачанный Глитч-Заголовок */
         .glitch {
-            font-size: 24px;
-            font-weight: 800;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 26px;
+            font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 5px;
-            color: #ff453a; /* Цвет старого сайта (опасность/лимиты) */
-            animation: transformToGreen 3s forwards;
+            letter-spacing: 6px;
+            color: #ff453a; 
+            animation: transformToGreen 3.5s forwards cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         @keyframes transformToGreen {
-            0% { color: #ff453a; filter: blur(2px); }
-            50% { color: #bf5af2; filter: blur(0); text-shadow: 0 0 20px #bf5af2; }
-            100% { color: #32d74b; text-shadow: 0 0 20px #32d74b; }
+            0% { 
+                color: #ff453a; 
+                filter: blur(3px); 
+                text-shadow: 2px 0 #bf5af2, -2px 0 #ff453a;
+            }
+            15% { filter: blur(0); }
+            45% { 
+                color: #bf5af2; 
+                text-shadow: 0 0 25px #bf5af2; 
+                letter-spacing: 8px;
+                transform: skewX(0deg);
+            }
+            50% { transform: skewX(-10deg); } /* Микро-глитч эффект */
+            52% { transform: skewX(0deg); }
+            100% { 
+                color: #32d74b; 
+                text-shadow: 0 0 20px rgba(50, 215, 75, 0.6), 0 0 40px rgba(50, 215, 75, 0.2); 
+                letter-spacing: 6px;
+            }
         }
 
         .message {
-            margin-top: 20px;
+            margin-top: 25px;
             font-size: 14px;
             color: #8e8e93;
-            max-width: 300px;
-            line-height: 1.6;
+            max-width: 320px;
+            line-height: 1.7;
+            letter-spacing: 0.5px;
             opacity: 0;
-            animation: fadeIn 1s 2s forwards;
+            animation: fadeIn 1.2s 2.2s forwards ease-out;
         }
 
-        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
 
+        /* Кнопка в стиле Жидкого Стекла (Liquid Glass) */
         .btn-enter {
-            margin-top: 40px;
-            padding: 15px 30px;
-            background: #fff;
-            color: #000;
+            margin-top: 45px;
+            padding: 14px 40px;
+            background: rgba(255, 255, 255, 0.03);
+            color: #32d74b; /* Сразу красим в финальный зеленый цвет */
+            border: 1px solid rgba(50, 215, 75, 0.3);
             border-radius: 50px;
             text-decoration: none;
             font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             opacity: 0;
-            animation: fadeIn 1s 3s forwards;
-            transition: 0.3s;
+            animation: fadeIn 1.2s 3.2s forwards ease-out;
+            transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
-        .btn-enter:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(255,255,255,0.4); }
+        .btn-enter:hover { 
+            transform: translateY(-2px) scale(1.05); 
+            background: rgba(50, 215, 75, 0.1);
+            border-color: #32d74b;
+            box-shadow: 0 0 25px rgba(50, 215, 75, 0.4);
+            color: #fff;
+        }
     </style>
 </head>
 <body>
