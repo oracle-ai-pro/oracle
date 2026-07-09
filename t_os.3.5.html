@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>LMSH TITAN | 3.5 Personal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505; 
+            --card: #0a0a0a; 
+            --accent: #00ccff; 
+            --text: #ffffff; 
+            --input: #121212;
+            --radius: 30px;
+            --shadow: rgba(0, 204, 255, 0.15);
+            /* AI Цвета */
+            --ai-bg: #0f0f0f;
+            --user-bg: #007aff;
+            --border: #38383a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; outline: none; }
+        body { background: var(--bg); color: var(--text); height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        .screen { position: absolute; width: 100%; max-width: 400px; padding: 20px; transition: 0.5s; display: flex; flex-direction: column; align-items: center; }
+        .hidden { opacity: 0; pointer-events: none; transform: scale(0.95); filter: blur(5px); position: absolute; }
+        
+        .card { 
+            background: var(--card); border-radius: var(--radius); padding: 30px; 
+            border: 1px solid rgba(255,255,255,0.05); width: 100%; box-shadow: 0 10px 40px var(--shadow);
+            transition: 0.4s ease; position: relative; overflow: hidden; max-height: 85vh; overflow-y: auto;
+        }
+
+        .expand-anim { animation: expand 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes expand { 0% { transform: scale(0.9); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        h2 { margin-bottom: 20px; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); display: flex; align-items: center; gap: 10px; }
+        h3 { margin: 20px 0 10px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); }
+        #welcome-text { font-size: 22px; font-weight: 700; transition: opacity 0.5s; color: #fff; text-align: center; }
+        
+        input, textarea { width: 100%; background: var(--input); border: 1px solid rgba(255,255,255,0.05); padding: 16px; border-radius: 15px; color: var(--text); margin-bottom: 12px; font-size: 14px; transition: 0.3s; }
+        input:focus, textarea:focus { border-color: var(--accent); }
+        
+        .btn { width: 100%; padding: 16px; border-radius: 15px; border: none; background: var(--accent); color: #000; font-weight: 700; cursor: pointer; margin-top: 10px; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn:active { transform: scale(0.97); }
+        .btn-ghost { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.1); }
+
+        .menu-item { display: flex; align-items: center; gap: 15px; padding: 18px; background: rgba(255,255,255,0.03); border-radius: 20px; margin-bottom: 12px; cursor: pointer; transition: 0.3s; border: 1px solid transparent; }
+        .menu-item:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); transform: scale(1.02); }
+        .menu-icon { color: var(--accent); }
+
+        #toast { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); background: rgba(10,10,10,0.9); backdrop-filter: blur(10px); border: 1px solid var(--accent); padding: 12px 24px; border-radius: 20px; z-index: 1000; box-shadow: 0 5px 20px rgba(0,0,0,0.5); transition: 0.5s; opacity: 0; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+        #toast.active { top: 40px; opacity: 1; }
+
+        .module { display: none; flex-direction: column; animation: fadeIn 0.4s; }
+        .module.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ПОЧТА */
+        .inbox-card { background: #121212; padding: 20px; border-radius: 20px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); text-align: left; transition: 0.3s; }
+        .inbox-card.replied { border-left: 4px solid var(--accent); }
+        .inbox-card.waiting { border-left: 4px solid #444; }
+        
+        .format-btn { background: rgba(255,255,255,0.05); border: none; color: var(--text); padding: 8px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s; }
+        .format-btn:hover { background: rgba(255,255,255,0.1); color: var(--accent); }
+
+        /* ПЛАВАЮЩИЙ ИИ */
+        #ai-container { background: var(--ai-bg); border-radius: 20px; display: flex; flex-direction: column; transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid var(--border); overflow: hidden; position: relative; height: 350px; margin-bottom: 15px; }
+        /* ИСПРАВЛЕННЫЙ ПЛАВАЮЩИЙ РЕЖИМ */
+#ai-container.floating { 
+    position: fixed; 
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); /* Центрируем по экрану, игнорируя баг */
+    width: 90%; 
+    max-width: 350px; 
+    height: 70vh; 
+    z-index: 99999; 
+    box-shadow: 0 20px 60px rgba(0,0,0,0.9), 0 0 30px var(--shadow); 
+    border: 2px solid var(--accent); 
+    margin-bottom: 0; 
+}
+        
+        .ai-controls { padding: 10px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); font-size: 12px; font-weight: bold; letter-spacing: 1px; }
+        #ai-header-title { color: var(--text); opacity: 0.6; }
+        .ai-close-btn { background: none; border: none; color: var(--text); opacity: 0.6; cursor: pointer; display: none; }
+        .ai-close-btn:hover { color: #ff3b30; opacity: 1; }
+        #ai-container.floating .ai-close-btn { display: block; }
+        #ai-container.floating .float-trigger-btn { display: none; }
+
+        #chat-box { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .bubble { max-width: 85%; padding: 10px 15px; border-radius: 18px; font-size: 14px; line-height: 1.4; animation: slideUp 0.3s ease; }
+        .bubble.ai { align-self: flex-start; background: rgba(255,255,255,0.05); border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+        .bubble.user { align-self: flex-end; background: var(--user-bg); color: #fff; border-bottom-right-radius: 4px; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .ai-input-area { display: flex; gap: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border); align-items: center; }
+        .ai-input-area input { margin: 0; background: transparent; border: none; padding: 10px; flex: 1; font-size: 14px; outline: none; color: white; }
+        .ai-send { background: var(--accent); color: #000; border: none; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .ai-send:active { transform: scale(0.9); }
+    </style>
+</head>
+<body>
+
+    <div id="toast"><span class="material-symbols-outlined" style="font-size: 18px;">info</span> <span id="toast-msg">СИСТЕМА</span></div>
+
+    <div id="auth-screen" class="screen">
+        <div class="card" id="auth-card">
+            <div id="login-module" class="module">
+                <h2><span class="material-symbols-outlined">key</span> Инициализация</h2>
+                <input type="text" id="u-name" placeholder="Имя (Позывной)">
+                <input type="email" id="u-email" placeholder="Email">
+                <input type="password" id="u-pin" placeholder="Секретный PIN">
+                <button class="btn" onclick="register()">АВТОРИЗАЦИЯ</button>
+            </div>
+            <div id="greeting-module" class="module">
+                <h2 id="welcome-text">...</h2>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-app" class="screen hidden">
+        <div class="card expand-anim">
+            
+            <div id="view-hub" class="module active">
+                <h2><span class="material-symbols-outlined">hub</span> ГЛАВНЫЙ УЗЕЛ</h2>
+                <div class="menu-item" onclick="openModule('view-create')">
+                    <span class="material-symbols-outlined menu-icon">add_box</span> Создать ветку
+                </div>
+                <div class="menu-item" onclick="openModule('view-inbox'); loadInbox();">
+                    <span class="material-symbols-outlined menu-icon">mail</span> Почтовый ящик
+                </div>
+                <div class="menu-item" onclick="openModule('view-ai')">
+                    <span class="material-symbols-outlined menu-icon">smart_toy</span> Искусственный интеллект
+                </div>
+                <div class="menu-item" onclick="openModule('view-settings')">
+                    <span class="material-symbols-outlined menu-icon">settings</span> Настройки
+                </div>
+            </div>
+
+            <div id="view-create" class="module">
+                <h2><span class="material-symbols-outlined">send</span> НОВЫЙ ЗАПРОС</h2>
+                <input type="text" id="f-sub" placeholder="Тема запроса">
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <button class="format-btn" onclick="formatText('<b>', '</b>')">B</button>
+                    <button class="format-btn" onclick="formatText('<i>', '</i>')" style="font-style: italic;">I</button>
+                    <button class="format-btn" onclick="formatText('<u>', '</u>')" style="text-decoration: underline;">U</button>
+                </div>
+                
+                <textarea id="f-msg" placeholder="Текст сообщения..." rows="4"></textarea>
+                <button class="btn" onclick="sendToSheet()" id="send-btn">ОТПРАВИТЬ ДАННЫЕ</button>
+                <button class="btn btn-ghost" onclick="openModule('view-hub')">ОТМЕНА</button>
+            </div>
+
+            <div id="view-inbox" class="module">
+                <h2><span class="material-symbols-outlined">inbox</span> АРХИВ ШТАБА</h2>
+                <div id="inbox-list" style="width: 100%; display: flex; flex-direction: column; gap: 10px;">
+                    <p style="text-align:center; opacity: 0.5;">Синхронизация...</p>
+                </div>
+                <button class="btn btn-ghost" onclick="openModule('view-hub')" style="margin-top: 10px;">ВЕРНУТЬСЯ В УЗЕЛ</button>
+            </div>
+
+            <div id="view-ai" class="module">
+                <h2><span class="material-symbols-outlined">memory</span> TITAN AI</h2>
+                
+                <div id="ai-container">
+                    <div class="ai-controls">
+                        <span id="ai-header-title">FAST ASSISTANT</span>
+                        <button class="ai-close-btn" onclick="toggleFloatingAI()"><span class="material-symbols-outlined" style="font-size: 18px;">close</span></button>
+                    </div>
+                    <div id="chat-box">
+                        <div class="bubble ai">Привет! Готов к работе.</div>
+                    </div>
+                    <div class="ai-input-area">
+                        <input type="text" id="ai-input" placeholder="Команда..." onkeypress="if(event.key==='Enter') askAI()">
+                        <button class="ai-send" onclick="askAI()"><span class="material-symbols-outlined" style="font-size: 20px;">arrow_upward</span></button>
+                    </div>
+                </div>
+
+                <button class="btn float-trigger-btn" onclick="toggleFloatingAI()">ПЛАВАЮЩИЙ РЕЖИМ</button>
+                <button class="btn btn-ghost float-trigger-btn" onclick="openModule('view-hub')">НАЗАД</button>
+            </div>
+
+            <div id="view-settings" class="module">
+                <h2><span class="material-symbols-outlined">build</span> ENGINEERING BAY</h2>
+                <p style="font-size: 12px; opacity: 0.5; margin-bottom: 15px;">Оператор: <span id="op-name"></span></p>
+                
+                <h3>ПЕРСОНАЛИЗАЦИЯ</h3>
+                <div style="margin: 15px 0;">
+                    <p style="font-size: 11px; margin-bottom: 8px; opacity: 0.6;">ЦВЕТОВАЯ СХЕМА (ACCENT)</p>
+                    <div style="display: flex; gap: 12px;">
+                        <button onclick="setAccent('#00ccff')" style="background:#00ccff; width:34px; height:34px; border-radius:50%; border:2px solid transparent; cursor:pointer; box-shadow:0 0 10px rgba(0,204,255,0.3);"></button>
+                        <button onclick="setAccent('#33ff99')" style="background:#33ff99; width:34px; height:34px; border-radius:50%; border:2px solid transparent; cursor:pointer; box-shadow:0 0 10px rgba(51,255,153,0.3);"></button>
+                        <button onclick="setAccent('#ff3366')" style="background:#ff3366; width:34px; height:34px; border-radius:50%; border:2px solid transparent; cursor:pointer; box-shadow:0 0 10px rgba(255,51,102,0.3);"></button>
+                    </div>
+                </div>
+                <div style="margin: 15px 0 25px 0;">
+                    <p style="font-size: 11px; margin-bottom: 8px; opacity: 0.6;">ИМЯ ИИ-ПОМОЩНИКА</p>
+                    <input type="text" id="ai-name-input" placeholder="Введите имя..." onchange="saveAIName(this.value)">
+                </div>
+
+                <button class="btn" style="background: #ff3366; color: white;" onclick="logout()">СБРОС СЕССИИ</button>
+                <button class="btn btn-ghost" onclick="openModule('view-hub')">НАЗАД</button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const ADMIN_ACCOUNTS = [
+            "lamirkmurziksnewinkahahmi@admin.com",
+            "hq.admin@lmsh.titan",
+            "engine.core@lmsh.titan",
+            "dispatch@lmsh.titan"
+        ];
+        function isAdmin(email) { return ADMIN_ACCOUNTS.includes(email); }
+
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlDNCzP0A8rCxIvTxoKJpCYOEf9vK00ZRn-uugmE4QIMUb7g__alwMGYtwJnCzD6t9XQ/exec";
+        const greetings = ["Рад видеть тебя,", "Добро пожаловать,", "Система активна,", "Приветствую,"];
+
+        window.onload = () => {
+            // Применяем сохраненную локальную конфигурацию до запуска интерфейса
+            const savedAccent = localStorage.getItem('titan-accent');
+            if (savedAccent) document.documentElement.style.setProperty('--accent', savedAccent);
+            
+            const savedAIName = localStorage.getItem('titan-ai-name');
+            const aiHeader = document.getElementById('ai-header-title');
+            const aiInput = document.getElementById('ai-name-input');
+            if (savedAIName) {
+                aiHeader.innerText = savedAIName.toUpperCase();
+                aiInput.value = savedAIName;
+            }
+
+            const name = localStorage.getItem('titan-name');
+            if (name) {
+                document.getElementById('greeting-module').classList.add('active');
+                const welcome = document.getElementById('welcome-text');
+                welcome.innerText = `${greetings[Math.floor(Math.random() * greetings.length)]}\n${name}`;
+                document.getElementById('op-name').innerText = name + (isAdmin(localStorage.getItem('titan-email')) ? " [ADMIN]" : "");
+                
+                setTimeout(() => {
+                    welcome.style.opacity = "0";
+                    setTimeout(() => {
+                        document.getElementById('auth-screen').classList.add('hidden');
+                        document.getElementById('main-app').classList.remove('hidden');
+                    }, 500);
+                }, 1200);
+            } else {
+                document.getElementById('login-module').classList.add('active');
+            }
+        };
+
+        function register() {
+            const name = document.getElementById('u-name').value;
+            const email = document.getElementById('u-email').value;
+            const pin = document.getElementById('u-pin').value;
+            
+            if (name && email && pin) {
+                localStorage.setItem('titan-name', name);
+                localStorage.setItem('titan-email', email);
+                localStorage.setItem('titan-pin', pin);
+                location.reload(); 
+            } else {
+                showToast("Заполни все поля!");
+            }
+        }
+
+        function logout() { localStorage.clear(); location.reload(); }
+
+        function openModule(moduleId) {
+            document.querySelectorAll('#main-app .module').forEach(m => m.classList.remove('active'));
+            document.getElementById(moduleId).classList.add('active');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg.toUpperCase();
+            toast.classList.add('active');
+            setTimeout(() => toast.classList.remove('active'), 3000);
+        }
+
+        function formatText(openTag, closeTag) {
+            const textarea = document.getElementById('f-msg');
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            
+            textarea.value = text.substring(0, start) + openTag + text.substring(start, end) + closeTag + text.substring(end);
+            textarea.focus();
+            textarea.selectionEnd = end + openTag.length + closeTag.length;
+        }
+
+        function sendToSheet() {
+            const sub = document.getElementById('f-sub').value;
+            const msg = document.getElementById('f-msg').value;
+            const btn = document.getElementById('send-btn');
+            
+            if (!sub || !msg) { showToast("Пустой запрос недопустим"); return; }
+            
+            btn.innerHTML = `<span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span> ОТПРАВКА...`;
+            btn.style.pointerEvents = "none";
+
+            const data = {
+                email: localStorage.getItem('titan-email'),
+                pin: localStorage.getItem('titan-pin'),
+                subject: sub,
+                message: msg
+            };
+
+            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) })
+            .then(() => {
+                showToast("ЗАПРОС ОТПРАВЛЕН! 🔑)");
+                setTimeout(() => {
+                    document.getElementById('f-sub').value = "";
+                    document.getElementById('f-msg').value = "";
+                    openModule('view-hub');
+                    btn.innerHTML = `ОТПРАВИТЬ ДАННЫЕ`;
+                    btn.style.pointerEvents = "auto";
+                }, 1000);
+            }).catch(() => {
+                showToast("ОШИБКА СЕТИ");
+                btn.innerHTML = `ОТПРАВИТЬ ДАННЫЕ`;
+                btn.style.pointerEvents = "auto";
+            });
+        }
+
+        function loadInbox() {
+            const list = document.getElementById('inbox-list');
+            const email = localStorage.getItem('titan-email');
+            const pin = localStorage.getItem('titan-pin');
+            
+            list.innerHTML = `<p style="text-align:center; opacity: 0.5;">Синхронизация с ядром...</p>`;
+
+            fetch(`${SCRIPT_URL}?email=${encodeURIComponent(email)}&pin=${encodeURIComponent(pin)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data || data.length === 0) {
+                        list.innerHTML = `<p style="text-align:center; opacity:0.5;">Архив пуст. 🔑)</p>`;
+                        return;
+                    }
+                    list.innerHTML = data.map(item => `
+                        <div class="inbox-card ${item.reply ? 'replied' : 'waiting'}">
+                            <div style="font-weight:bold; font-size:16px; margin-bottom:8px; color: #fff;">${item.subject}</div>
+                            <div style="font-size:13px; opacity:0.8; margin-bottom:10px; line-height: 1.4;">${item.message}</div>
+                            
+                            ${item.reply ? `
+                                <div style="background: rgba(0, 204, 255, 0.1); padding: 12px; border-radius: 12px; font-size: 13px;">
+                                    <div style="color:var(--accent); font-weight:bold; margin-bottom:5px; font-size: 11px; letter-spacing: 0.5px;">ОТВЕТ ШТАБА:</div>
+                                    ${item.reply}
+                                </div>
+                            ` : `<div style="font-size:11px; color: #888; font-style:italic;">Ожидание реакции Штаба...</div>`}
+                        </div>
+                    `).join('');
+                })
+                .catch(() => {
+                    list.innerHTML = `<p style="text-align:center; color:#ff3366;">Сбой синхронизации</p>`;
+                });
+        }
+
+        /* Логика Плавающего ИИ */
+        function toggleFloatingAI() {
+            const container = document.getElementById('ai-container');
+            container.classList.toggle('floating');
+            if (container.classList.contains('floating')) {
+                showToast("AI ОТКРЕПЛЕН");
+            }
+        }
+
+        function askAI() {
+            const input = document.getElementById('ai-input');
+            const chat = document.getElementById('chat-box');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            chat.innerHTML += `<div class="bubble user">${text}</div>`;
+            input.value = "";
+            chat.scrollTop = chat.scrollHeight;
+
+            const currentAIName = localStorage.getItem('titan-ai-name') || "Fast Assistant";
+
+            setTimeout(() => {
+                chat.innerHTML += `<div class="bubble ai">[${currentAIName.toUpperCase()}]: Запрос принят. Операция выполняется на максимальной скорости ядра.</div>`;
+                chat.scrollTop = chat.scrollHeight;
+            }, 800);
+        }
+
+        /* Функции Персонализации */
+        function setAccent(color) {
+            document.documentElement.style.setProperty('--accent', color);
+            localStorage.setItem('titan-accent', color);
+            showToast("АКЦЕНТ ОБНОВЛЕН");
+        }
+
+        function saveAIName(name) {
+            const finalName = name.trim() || "FAST ASSISTANT";
+            localStorage.setItem('titan-ai-name', finalName);
+            document.getElementById('ai-header-title').innerText = finalName.toUpperCase();
+            showToast("ИМЯ АГЕНТА: " + finalName);
+        }
+    </script>
+</body>
+</html>
