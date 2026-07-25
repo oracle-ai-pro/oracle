@@ -83,6 +83,100 @@
             color: #e60ced;
         }
 
+        /* ==========================================================================
+           МОДАЛЬНЫЕ ОКНА МЕДИА
+           ========================================================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #0d0e11;
+            border: 1px solid #1f2330;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 650px;
+            padding: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .modal-header {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #1f2330;
+            padding-bottom: 12px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #8a8d9b;
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #ffffff;
+        }
+
+        /* Видеоплеер */
+        video {
+            width: 100%;
+            border-radius: 12px;
+            outline: none;
+            background: #000;
+            max-height: 70vh;
+        }
+
+        /* Аудиоплеер */
+        audio {
+            width: 100%;
+            margin-top: 12px;
+            outline: none;
+        }
+
+        .audio-wrapper {
+            width: 100%;
+            padding: 20px;
+            background: #17181f;
+            border-radius: 12px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
         /* Адаптивность под узкий Split View */
         @media (max-width: 400px) {
             .select-container {
@@ -92,6 +186,9 @@
             }
             .title {
                 font-size: 18px;
+            }
+            .modal-content {
+                padding: 16px;
             }
         }
     </style>
@@ -105,17 +202,72 @@
 
         <div class="choice-grid">
             
-            <button class="media-btn video-gate" onclick="location.href='video1.html'">
+            <button class="media-btn video-gate" onclick="openModal('video-modal')">
                 🎬 Видеообзор (Шлюз Video1)
             </button>
 
-            <button class="media-btn audio-gate" onclick="location.href='audio1.html'">
+            <button class="media-btn audio-gate" onclick="openModal('audio-modal')">
                 🎵 Аудиообзор (Шлюз Audio1)
             </button>
 
         </div>
 
     </div>
+
+    <div class="modal-overlay" id="video-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" style="color: #02b6ed;">🎬 Видеообзор LMSH</div>
+                <button class="modal-close" onclick="closeModal('video-modal')">✕</button>
+            </div>
+            <video id="video-player" controls preload="metadata">
+                <source src="video1.mp4" type="video/mp4">
+                Ваш браузер не поддерживает видеоэлемент.
+            </video>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="audio-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" style="color: #e60ced;">🎵 Аудиообзор LMSH</div>
+                <button class="modal-close" onclick="closeModal('audio-modal')">✕</button>
+            </div>
+            <div class="audio-wrapper">
+                <div style="margin-bottom: 12px; color: #8a8d9b;">Воспроизведение аудиопотока...</div>
+                <audio id="audio-player" controls preload="metadata">
+                    <source src="audio1.mp3" type="audio/mpeg">
+                    Ваш браузер не поддерживает аудиоэлемент.
+                </audio>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('active');
+            
+            // Автоматически ставим на паузу при закрытии окна
+            const video = modal.querySelector('video');
+            const audio = modal.querySelector('audio');
+            if (video) video.pause();
+            if (audio) audio.pause();
+        }
+
+        // Закрытие по клику на темную область вокруг окна
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    closeModal(overlay.id);
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>
