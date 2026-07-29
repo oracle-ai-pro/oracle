@@ -462,6 +462,9 @@
                 <button class="nav-item active" id="btn-sec-general" onclick="showSection('general')">
                     <span class="material-symbols-rounded">palette</span> Внешний вид
                 </button>
+                <button class="nav-item" id="btn-sec-limits" onclick="showSection('limits')">
+                    <span class="material-symbols-rounded">analytics</span> Лимиты
+                </button>
                 <button class="nav-item" id="btn-sec-system" onclick="showSection('system')">
                     <span class="material-symbols-rounded">bedtime</span> Сонный Режим
                 </button>
@@ -521,7 +524,33 @@
                     </div>
                     <div class="pillow-warning">⚠️ Кастомные цвета и темы заблокированы Режимом Подушки. Отключите его для внесения изменений.</div>
                 </div>
+                
+                <div id="section-limits" class="setting-section" style="display:none;">
+                    <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Аналитика и Лимиты Ядра</h3>
+                    
+                    <div class="chat-card" style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-weight: 600; font-size: 14px;">За последние 24 часа</span>
+                            <span id="limit-24h-count" style="font-size: 12px; color: var(--primary); font-weight: bold;">0 / 100 запр.</span>
+                        </div>
+                        <div style="width: 100%; background: var(--surface); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+                            <div id="limit-24h-bar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s;"></div>
+                        </div>
+                        <div style="font-size: 11px; color: var(--on-surface-variant);">Сброс лимитов через: <span id="reset-24h-timer" style="color: var(--on-surface);">23 ч 59 мин</span></div>
+                    </div>
 
+                    <div class="chat-card" style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <span style="font-weight: 600; font-size: 14px;">За последние 168 часов (7 дней)</span>
+                            <span id="limit-168h-count" style="font-size: 12px; color: var(--secondary); font-weight: bold;">0 / 700 запр.</span>
+                        </div>
+                        <div style="width: 100%; background: var(--surface); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+                            <div id="limit-168h-bar" style="width: 0%; height: 100%; background: var(--secondary); transition: width 0.3s;"></div>
+                        </div>
+                        <div style="font-size: 11px; color: var(--on-surface-variant);">Сброс недельной квоты через: <span id="reset-168h-timer" style="color: var(--on-surface);">6 дней 23 ч</span></div>
+                    </div>
+                </div>
+                
                 <div id="section-system" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Системные пресеты</h3>
                     
@@ -1273,6 +1302,53 @@ async function checkArchivePassword() {
         await showCustomAlert("Ошибка", "Неверный пароль!");
     }
 }
+    function trackMessageUsage() {
+    let now = Date.now();
+    let timestamps = JSON.parse(localStorage.getItem('oracle_message_timestamps') || '[]');
+    
+    // Добавляем текущий запрос
+    timestamps.push(now);
+    
+    // Очищаем старые записи (старше 168 часов / 7 дней)
+    const weekAgo = now - (168 * 60 * 60 * 1000);
+    timestamps = timestamps.filter(t => t > weekAgo);
+    
+    localStorage.setItem('oracle_message_timestamps', JSON.stringify(timestamps));
+    updateLimitsUI();
+}
+
+function updateLimitsUI() {
+    let now = Date.now();
+    let timestamps = JSON.parse(localStorage.getItem('oracle_message_timestamps') || '[]');
+    
+    // За последние 24 часа
+    const dayAgo = now - (24 * 60 * 60 * 1000);
+    const count24h = timestamps.filter(t => t > dayAgo).length;
+    
+    // За последние 168 часов
+    const count168h = timestamps.length;
+    
+    // Обновляем элементы на экране лимитов (если они существуют)
+    const el24Count = document.getElementById('limit-24h-count');
+    const el24Bar = document.getElementById('limit-24h-bar');
+    if (el24Count && el24Bar) {
+        el24Count.innerText = `${count24h} / 100 запр.`;
+        el24Bar.style.width = Math.min((count24h / 100) * 100, 100) + '%';
+    }
+    
+    const el168Count = document.getElementById('limit-168h-count');
+    const el168Bar = document.getElementById('limit-168h-bar');
+    if (el168Count && el168Bar) {
+        el168Count.innerText = `${count168h} / 700 запр.`;
+        el168Bar.style.width = Math.min((count168h / 700) * 100, 100) + '%';
+    }
+}
+
+// Запускаем обновление при открытии вкладки настроек
+document.addEventListener('DOMContentLoaded', () => {
+    updateLimitsUI();
+});
+    
 </script>
 </body>
 </html>
