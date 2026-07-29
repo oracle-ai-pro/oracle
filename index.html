@@ -72,7 +72,14 @@
         }
         .pillow-warning { display: none; color: #ff9f0a; font-size: 11px; margin-top: 10px; font-weight: bold; border-left: 2px solid #ff9f0a; padding-left: 8px;}
         body.pillow-mode .pillow-warning { display: block; }
-
+/* РЕЖИМ КОМПАКТНЫХ КНОПОК НА ПК */
+body.compact-nav-mode .glass-nav .nav-text {
+    display: none !important;
+}
+body.compact-nav-mode .glass-nav .nav-item {
+    flex: 0 1 auto;
+    padding: 8px 14px;
+}
         /* =========================================
            2. GLOBAL RESET & CONTAINER
         ========================================= */
@@ -333,6 +340,9 @@
     overflow-y: visible;
     resize: vertical;
 }
+        @media (max-width: 767px) {
+    .desktop-only-setting { display: none !important; }
+}
     </style>
 </head>
 <body>
@@ -490,14 +500,24 @@
                     <div id="theme-color-controls">
                         <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-left: 4px solid var(--primary);">
                             <div>
-                                <div style="font-weight: 600; color: #fff;">True Black Фон (050505)</div>
-                                <div style="font-size: 12px; color: var(--on-surface-variant);">Абсолютно черный фон вместо темно-синего.</div>
+                                <div style="font-weight: 600; color: #fff;">True Black background</div>
+                                <div style="font-size: 12px; color: var(--on-surface-variant);">Абсолютно черный фон вместо цветного.</div>
+                                <span style="font-size: 12px; color: #ff5252;">Цветные кнопки останутся даже при включенном режиме! Этот фон имеет баги!</span>
                             </div>
                             <button onclick="toggleTrueBlack()" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer; font-weight: bold;">ПЕРЕКЛЮЧИТЬ</button>
                         </div>
-
+                        <div class="chat-card desktop-only-setting" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <div>
+                                <div style="font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                                    Компактные Кнопки на панели сверху
+                                    <span onclick="toggleCompactPreview(event)" style="font-size: 11px; color: var(--primary); cursor: pointer; text-decoration: underline;">Показать пример</span>
+                                </div>
+                                <div style="font-size: 12px; color: var(--on-surface-variant);">Скрывает текст под иконками на верхнем баре (только для ПК).</div>
+                            </div>
+                            <button id="compact-nav-toggle-btn" onclick="toggleCompactNav()" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--surface-variant); color: var(--on-surface); cursor: pointer; font-weight: bold;">ВКЛЮЧИТЬ</button>
+                        </div>
                         <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <span style="font-weight: 600;">Темная/Светлая тема</span>
+                            <span style="font-weight: 600;">Переключить Тему</span>
                             <button onclick="document.body.classList.toggle('light-theme')" style="padding: 8px 16px; border-radius: 8px; border:none; background: var(--primary-container); color: var(--primary); cursor: pointer;">ПЕРЕКЛЮЧИТЬ</button>
                         </div>
 
@@ -1197,6 +1217,10 @@
             if(sidebar && sidebar.classList.contains('open') && !sidebar.contains(e.target) && !burgerBtn.contains(e.target)) {
                 sidebar.classList.remove('open');
             }
+            
+            if (localStorage.getItem('oracle_compact_nav') === 'true') {
+        toggleCompactNav();
+            }
         });
     });
 // =========================================
@@ -1348,7 +1372,29 @@ function updateLimitsUI() {
 document.addEventListener('DOMContentLoaded', () => {
     updateLimitsUI();
 });
+function toggleCompactNav() {
+    document.body.classList.toggle('compact-nav-mode');
+    const isCompact = document.body.classList.contains('compact-nav-mode');
+    localStorage.setItem('oracle_compact_nav', isCompact);
     
+    const btn = document.getElementById('compact-nav-toggle-btn');
+    if (btn) {
+        if (isCompact) {
+            btn.innerText = "ВЫКЛЮЧИТЬ";
+            btn.style.background = "var(--primary-container)";
+            btn.style.color = "var(--primary)";
+        } else {
+            btn.innerText = "ВКЛЮЧИТЬ";
+            btn.style.background = "var(--surface-variant)";
+            btn.style.color = "var(--on-surface)";
+        }
+    }
+}
+
+function toggleCompactPreview(e) {
+    e.stopPropagation();
+    alert("Пример: Текст под иконками на верхнем баре пропадает, оставляя только аккуратные мини-иконки, освобождая ширину экрана на ПК!");
+}
 </script>
 </body>
 </html>
