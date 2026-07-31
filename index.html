@@ -27,21 +27,23 @@
             --pillow-brightness: 0.8; 
         }
 
-        /* 1.2 СВЕТЛАЯ ТЕМА (ПОЛНЫЙ ПАКЕТ ЦВЕТОВ БЕЗ БАГОВ) */
-        body.light-theme {
-            --bg: #f3f3f8;
-            --surface: #ffffff;
-            --surface-variant: #e4e2ec;
-            --on-surface: #191c20;
-            --on-surface-variant: #43474e;
-            --primary: #2553d2;
-            --primary-container: #d8e2ff;
-            --secondary: #6e5676;
-            --border: #c3c6cf;
-            --grad: linear-gradient(90deg, #2553d2 0%, #6e5676 100%);
-            --glass-bg: rgba(255, 255, 255, 0.85);
-            --user-msg-bg: linear-gradient(90deg, #d8e2ff 0%, #e4e2ec 100%);
-        }
+        /* =========================================
+   СВЕТЛАЯ ТЕМА (LIGHT THEME)
+========================================= */
+body.light-theme {
+    --bg: #f4f5fa;
+    --surface: #ffffff;
+    --surface-variant: #e7e9f3;
+    --on-surface: #1a1b26;
+    --on-surface-variant: #575a6c;
+    --primary: #2b56c6;
+    --primary-container: #d9e2ff;
+    --secondary: #9048a3;
+    --border: #c4c7d5;
+    --grad: linear-gradient(90deg, #2b56c6 0%, #9048a3 100%);
+    --glass-bg: rgba(255, 255, 255, 0.82);
+    --user-msg-bg: linear-gradient(90deg, #2b56c6 0%, #4c75e6 100%);
+}
         /* Адаптация текста сообщений пользователя под светлую тему */
         body.light-theme .user-msg {
             color: #191c20 !important;
@@ -1550,6 +1552,22 @@
             }
         });
     });
+    function toggleLightTheme() {
+    document.body.classList.toggle('light-theme');
+    const isLight = document.body.classList.contains('light-theme');
+    localStorage.setItem('oracle_light_theme', isLight);
+
+    // Если включается светлая тема, выключаем True Black (OLED)
+    if (isLight && document.body.classList.contains('true-black-theme')) {
+        document.body.classList.remove('true-black-theme');
+        localStorage.setItem('oracle_true_black', 'false');
+    }
+
+    const btn = document.getElementById('light-theme-toggle-btn');
+    if (btn) {
+        btn.innerText = isLight ? "ВЫКЛЮЧИТЬ" : "ВКЛЮЧИТЬ";
+    }
+}
 </script>
 </body>
 </html>
