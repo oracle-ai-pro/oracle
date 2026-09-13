@@ -72,6 +72,7 @@
             filter: brightness(var(--pillow-brightness));
         }
 
+        body.no-rgb { filter: grayscale(100%); }
         body.pillow-mode.no-rgb {
             filter: brightness(var(--pillow-brightness)) grayscale(100%);
         }
@@ -508,9 +509,107 @@
         }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    
+        /* PRO teaser modal (one-time) */
+        #pro-teaser-modal {
+            position: fixed; inset: 0; z-index: 100000;
+            background: rgba(0,0,0,0.72);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        #pro-teaser-modal.active { display: flex; animation: boot 0.3s ease-out; }
+        body.pro-teaser-open { overflow: hidden; }
+        .pro-teaser-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 28px 24px 22px;
+            max-width: 380px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.45);
+        }
+        .pro-teaser-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--primary);
+            background: var(--primary-container);
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+        }
+        .pro-teaser-title {
+            margin: 0 0 10px;
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.4px;
+            background: var(--grad);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        body.true-black-theme .pro-teaser-title,
+        body.pillow-mode .pro-teaser-title {
+            color: var(--primary);
+            background: none;
+            -webkit-background-clip: unset;
+            background-clip: unset;
+        }
+        .pro-teaser-sub {
+            margin: 0 0 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--on-surface-variant);
+        }
+        .pro-teaser-date {
+            margin: 0 0 6px;
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--on-surface);
+            letter-spacing: -0.5px;
+        }
+        .pro-teaser-place {
+            margin: 0 0 20px;
+            font-size: 12px;
+            color: var(--on-surface-variant);
+            opacity: 0.9;
+        }
+        .pro-teaser-ok {
+            width: 100%;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 14px;
+            background: var(--primary);
+            color: var(--bg);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .pro-teaser-ok:hover { filter: brightness(1.08); }
+
     </style>
 </head>
 <body>
+
+<!-- Core Node PRO teaser (once) -->
+<div id="pro-teaser-modal" role="dialog" aria-modal="true" aria-labelledby="pro-teaser-title" aria-describedby="pro-teaser-description">
+    <div class="pro-teaser-card">
+        <div class="pro-teaser-badge">Coming soon</div>
+        <h2 class="pro-teaser-title" id="pro-teaser-title">Core Node PRO</h2>
+        <p class="pro-teaser-sub" id="pro-teaser-description">Интеллектуальная система — удобнее и круче.</p>
+        <div class="pro-teaser-date"># 20 Сентября</div>
+        <p class="pro-teaser-place">На Virtual I/O / Blogs Kosmo Level</p>
+        <button type="button" class="pro-teaser-ok" onclick="closeProTeaser()">Ок</button>
+    </div>
+</div>
+
 
 <div class="oracle-container">
     <main id="screen-calendar" class="app-screen">
@@ -987,8 +1086,43 @@
         chatMode: 'normal',
         isScreensaverActive: false,
         screensaverTimer: null,
-        screensaverTimeoutMins: 5
+        screensaverTimeoutMins: 5,
+        isStreaming: false,
+        isFirstMsgInSession: true
     };
+
+    function readJsonStorage(key, fallback) {
+        try {
+            const raw = localStorage.getItem(key);
+            return raw === null ? fallback : JSON.parse(raw);
+        } catch (e) {
+            return fallback;
+        }
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>\"']/g, ch => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#039;'
+        }[ch]));
+    }
+
+    function showProTeaser() {
+        const modal = document.getElementById('pro-teaser-modal');
+        if (!modal) return;
+        // Пока пользователь не нажал ОК, модалка всегда остаётся открытой.
+        if (localStorage.getItem('core_node_pro_acknowledged') !== 'true') {
+            modal.classList.add('active');
+            document.body.classList.add('pro-teaser-open');
+        }
+    }
+
+    function closeProTeaser() {
+        const modal = document.getElementById('pro-teaser-modal');
+        if (!modal) return;
+        localStorage.setItem('core_node_pro_acknowledged', 'true');
+        modal.classList.remove('active');
+        document.body.classList.remove('pro-teaser-open');
+    }
 
     function switchChatMode(mode) {
         CoreState.chatMode = mode;
@@ -1044,6 +1178,8 @@
             }
         }
 
+        saveCurrentChatSession();
+
         if (badge) {
             badge.innerText = `Активен: ${CoreState.activeAgent}`;
         }
@@ -1085,14 +1221,11 @@
         modal.style.display = 'flex';
     }
 
-    function closeCustomModal() {
-        document.getElementById('custom-modal').style.display = 'none';
-    }
-
     let currentContextNode = null;
     let modalCallback = null;
     let currentCalDate = new Date();
-    let reminders = JSON.parse(localStorage.getItem('oracle_reminders') || '[]');
+    let reminders = readJsonStorage('oracle_reminders', []);
+    if (!Array.isArray(reminders)) reminders = [];
 
     function switchScreen(screenName) {
         document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
@@ -1155,8 +1288,8 @@
 
         menu.style.display = 'block';
         
-        let x = e.pageX;
-        let y = e.pageY;
+        let x = e.clientX;
+        let y = e.clientY;
         if (x + 160 > window.innerWidth) x = window.innerWidth - 170;
         
         menu.style.left = x + 'px';
@@ -1165,12 +1298,20 @@
 
     async function cmRename() {
         if (!currentContextNode) return;
+        const sessionId = currentContextNode.dataset.sessionId;
         const titleEl = currentContextNode.querySelector('.chat-title') || currentContextNode.querySelector('span');
-        
         const newName = await showCustomPrompt("Переименование", "Введите новое имя чата:", "Новое имя...");
         if (newName && newName.trim() !== "") {
-            if (titleEl) titleEl.innerText = newName.trim();
+            const cleanName = newName.trim();
+            if (titleEl) titleEl.innerText = cleanName;
+            if (sessionId && chatSessions[sessionId]) {
+                chatSessions[sessionId].title = cleanName;
+                localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+            }
+            renderSidebarChats();
         }
+        document.getElementById('context-menu').style.display = 'none';
+        currentContextNode = null;
     }
 
     async function cmBranch() {
@@ -1180,14 +1321,29 @@
 
     async function cmDelete() {
         if (!currentContextNode) return;
+        const sessionId = currentContextNode.dataset.sessionId;
         const titleEl = currentContextNode.querySelector('.chat-title') || currentContextNode.querySelector('span');
         const chatName = titleEl ? titleEl.innerText : "этот чат";
-        
         const confirmDelete = confirm(`Вы уверены, что хотите удалить "${chatName}" навсегда?`);
-        if (confirmDelete) {
-            currentContextNode.remove();
-            currentContextNode = null;
+        if (confirmDelete && sessionId) {
+            delete chatSessions[sessionId];
+            if (currentSessionId === sessionId) {
+                const nextId = Object.keys(chatSessions)[0];
+                if (nextId) {
+                    loadChatSession(nextId);
+                } else {
+                    currentSessionId = 'default';
+                    chatSessions.default = { title: 'Новый чат', html: '' };
+                    localStorage.setItem('oracle_active_session_id', 'default');
+                    loadChatSession('default');
+                }
+            }
+            localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+            renderSidebarChats();
         }
+        const menu = document.getElementById('context-menu');
+        if (menu) menu.style.display = 'none';
+        currentContextNode = null;
     }
 
     function showCustomAlert(title, text) {
@@ -1240,6 +1396,7 @@
 
     function selectAgent(agentName) {
         CoreState.activeAgent = agentName;
+        localStorage.setItem('oracle_active_agent', agentName);
         document.querySelectorAll('.agent-option').forEach(opt => opt.classList.remove('active-agent'));
         
         const optOracle = document.getElementById('opt-oracle');
@@ -1258,7 +1415,12 @@
         const welcomeBlock = document.getElementById('welcome-block');
         if (welcomeBlock) welcomeBlock.classList.add('hidden');
         if (chatFlow) {
-            chatFlow.innerHTML += `<div class="msg ai-msg" style="border-left: 3px solid var(--primary); font-style: italic; opacity:0.8;">Система: подключен профиль [${agentName}]</div>`;
+            const sys = document.createElement('div');
+            sys.className = 'msg ai-msg';
+            sys.style.cssText = 'border-left:3px solid var(--primary);font-style:italic;opacity:0.8;';
+            sys.textContent = `Система: подключен профиль [${agentName}]`;
+            chatFlow.appendChild(sys);
+            saveCurrentChatSession();
             document.getElementById('screen-chat').scrollTop = document.getElementById('screen-chat').scrollHeight;
         }
     }
@@ -1316,81 +1478,93 @@
     }
 
     async function streamResponse(text) {
-        CoreState.isStreaming = true;
         const chatFlow = document.getElementById('chat-flow');
         const screenChat = document.getElementById('screen-chat');
-        
+        if (!chatFlow) return;
+
+        CoreState.isStreaming = true;
         const msgDiv = document.createElement('div');
         msgDiv.className = 'msg ai-msg';
         chatFlow.appendChild(msgDiv);
-        
-        for (let char of text) {
-            msgDiv.textContent += char;
-            screenChat.scrollTop = screenChat.scrollHeight;
-            const delay = CoreState.activeAgent === 'Модель: Fast' ? 10 : 25;
-            await new Promise(resolve => setTimeout(resolve, delay));
+
+        try {
+            for (const char of text) {
+                msgDiv.textContent += char;
+                if (screenChat) screenChat.scrollTop = screenChat.scrollHeight;
+                const delay = CoreState.activeAgent === 'Модель: Fast' ? 10 : 25;
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        } finally {
+            CoreState.isStreaming = false;
+            saveCurrentChatSession();
         }
-        CoreState.isStreaming = false;
-        localStorage.setItem('oracle_chat_history', chatFlow.innerHTML);
     }
 
-    function sendMsg() {
+    function saveCurrentChatSession() {
+        const chatFlow = document.getElementById('chat-flow');
+        if (!chatFlow || !currentSessionId) return;
+        if (!chatSessions[currentSessionId]) chatSessions[currentSessionId] = { title: 'Новый чат', html: '' };
+        chatSessions[currentSessionId].html = chatFlow.innerHTML;
+        localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+        localStorage.setItem('oracle_chat_history', chatFlow.innerHTML);
+    }
+    async function sendMsg() {
         if (CoreState.isStreaming) return;
 
         const input = document.getElementById('user-input');
-        const msg = input.value.trim();
         const chatFlow = document.getElementById('chat-flow');
         const screenChat = document.getElementById('screen-chat');
-        
-        if (msg) {
-            trackMessageUsage();
+        if (!input || !chatFlow) return;
 
-            if (CoreState.isFirstMsgInSession) {
-                const activeChatTitle = document.querySelector('.chat-item-node.active-session .chat-title');
-                if (activeChatTitle) {
-                    activeChatTitle.innerText = msg;
-                }
-                CoreState.isFirstMsgInSession = false;
-            }
+        const msg = input.value.trim();
+        if (!msg) return;
 
-            chatFlow.innerHTML += `<div class="msg user-msg">${msg}</div>`;
-            input.value = "";
-            handleInput(input);
-            
-            const welcome = document.getElementById('welcome-block');
-            if (welcome) welcome.classList.add('hidden');
-            
-            if (document.getElementById('main-input-box').classList.contains('fullscreen-mode')) {
-                toggleFullscreen();
-            }
-            screenChat.scrollTop = screenChat.scrollHeight;
-            localStorage.setItem('oracle_chat_history', chatFlow.innerHTML);
+        trackMessageUsage();
 
-            setTimeout(async () => {
-                let response = "";
-                const lowerMsg = msg.toLowerCase();
-                
-                if (CoreState.activeAgent === 'Worldpack AI') {
-                    response = "[Worldpack Node]: Анализ запущен. Конфигурация в норме.";
-                } else if (CoreState.activeAgent === 'Модель: Fast') {
-                    response = "⚡ Обработано: " + msg + ". Действие успешно выполнено.";
-                } else {
-                    if (lowerMsg.includes("привет")) {
-                        response = "Приветствую. Системы Ядра активированы.";
-                    } else if (lowerMsg.includes("как дела") || lowerMsg.includes("статус")) {
-                        response = "Все модули Штаба ЛМСХ (Ламирк, Мурзик, Снежинка, Хахми) работают в штатном режиме.";
-                    } else if (lowerMsg.includes("кто ты")) {
-                        response = "Я Oracle AI v2.5.4 — центральное ядро. Ожидаю указаний, Главный инженер.";
-                    } else {
-                        response = "Запрос получен: '" + msg + "'. Обработка данных...";
-                    }
-                }
-                
-                chatFlow.innerHTML += `<div class="msg ai-msg">${response}</div>`;
-                screenChat.scrollTop = screenChat.scrollHeight;
-                localStorage.setItem('oracle_chat_history', chatFlow.innerHTML);
-            }, 500);
+        if (CoreState.isFirstMsgInSession) {
+            const activeChatTitle = document.querySelector('.chat-item-node.active-session .chat-title');
+            const cleanTitle = msg.length > 42 ? msg.slice(0, 42) + '…' : msg;
+            if (activeChatTitle) activeChatTitle.innerText = cleanTitle;
+            if (chatSessions[currentSessionId]) chatSessions[currentSessionId].title = cleanTitle;
+            CoreState.isFirstMsgInSession = false;
         }
+
+        const userMsg = document.createElement('div');
+        userMsg.className = 'msg user-msg';
+        userMsg.textContent = msg;
+        chatFlow.appendChild(userMsg);
+
+        input.value = '';
+        handleInput(input);
+
+        const welcome = document.getElementById('welcome-block');
+        if (welcome) welcome.classList.add('hidden');
+
+        const inputBox = document.getElementById('main-input-box');
+        if (inputBox && inputBox.classList.contains('fullscreen-mode')) toggleFullscreen();
+        if (screenChat) screenChat.scrollTop = screenChat.scrollHeight;
+        saveCurrentChatSession();
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        let response = '';
+        const lowerMsg = msg.toLowerCase();
+        if (CoreState.activeAgent === 'Worldpack AI') {
+            response = '[Worldpack Node]: Анализ запущен. Конфигурация в норме.';
+        } else if (CoreState.activeAgent === 'Модель: Fast') {
+            response = '⚡ Обработано: ' + msg + '. Действие успешно выполнено.';
+        } else if (lowerMsg.includes('привет')) {
+            response = 'Приветствую. Системы Ядра активированы.';
+        } else if (lowerMsg.includes('как дела') || lowerMsg.includes('статус')) {
+            response = 'Все модули Штаба ЛМСХ (Ламирк, Мурзик, Снежинка, Хахми) работают в штатном режиме.';
+        } else if (lowerMsg.includes('кто ты')) {
+            response = 'Я Oracle AI v2.5.4 — центральное ядро. Ожидаю указаний, Главный инженер.';
+        } else {
+            response = `Запрос получен: '${msg}'. Обработка данных...`;
+        }
+
+        await streamResponse(response);
+        renderSidebarChats();
     }
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1427,7 +1601,8 @@
 
     function trackMessageUsage() {
         let now = Date.now();
-        let timestamps = JSON.parse(localStorage.getItem('oracle_message_timestamps') || '[]');
+        let timestamps = readJsonStorage('oracle_message_timestamps', []);
+        if (!Array.isArray(timestamps)) timestamps = [];
         timestamps.push(now);
         
         const weekAgo = now - (168 * 60 * 60 * 1000);
@@ -1439,7 +1614,8 @@
 
     function updateLimitsUI() {
         let now = Date.now();
-        let timestamps = JSON.parse(localStorage.getItem('oracle_message_timestamps') || '[]');
+        let timestamps = readJsonStorage('oracle_message_timestamps', []);
+        if (!Array.isArray(timestamps)) timestamps = [];
         
         const dayAgo = now - (24 * 60 * 60 * 1000);
         const count24h = timestamps.filter(t => t > dayAgo).length;
@@ -1460,8 +1636,13 @@
         }
     }
 
-    let chatSessions = JSON.parse(localStorage.getItem('oracle_chat_sessions') || '{}');
+    let chatSessions = readJsonStorage('oracle_chat_sessions', {});
+    if (!chatSessions || typeof chatSessions !== 'object' || Array.isArray(chatSessions)) chatSessions = {};
     let currentSessionId = localStorage.getItem('oracle_active_session_id') || 'default';
+    if (!chatSessions[currentSessionId]) {
+        chatSessions[currentSessionId] = { title: 'Новый чат', html: '' };
+        localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+    }
 
     function createNewChatSession() {
         const chatFlow = document.getElementById('chat-flow');
@@ -1539,49 +1720,85 @@
 
     function format(command, value = null) { document.execCommand(command, false, value); }
 
-    function addStoryTab() {
+    let storyTabs = readJsonStorage('oracle_story_tabs', [{ id: 'story_1', title: 'История 1', html: '' }]);
+    if (!Array.isArray(storyTabs) || !storyTabs.length) storyTabs = [{ id: 'story_1', title: 'История 1', html: '' }];
+    let activeStoryTabId = localStorage.getItem('oracle_active_story_tab') || storyTabs[0].id;
+
+    function persistStoryTabs() {
+        const editor = document.getElementById('editor');
+        if (editor) {
+            const active = storyTabs.find(t => t.id === activeStoryTabId);
+            if (active) active.html = editor.innerHTML;
+        }
+        localStorage.setItem('oracle_story_tabs', JSON.stringify(storyTabs));
+        localStorage.setItem('oracle_active_story_tab', activeStoryTabId);
+    }
+
+    function renderStoryTabs() {
         const container = document.getElementById('tabs-container');
-        if (!container) return;
-        const tabs = container.querySelectorAll('.tab-item');
-        if (tabs.length < 10) {
-            const newTab = document.createElement('div');
-            newTab.className = 'tab-item';
-            newTab.innerHTML = `История ${tabs.length + 1} <span class="close-tab" onclick="deleteStory(event, this)">×</span>`;
-            newTab.setAttribute('onclick', 'switchTab(this)');
-            container.insertBefore(newTab, document.getElementById('add-tab-btn'));
-        }
-        if (container.querySelectorAll('.tab-item').length >= 10) {
-            const addBtn = document.getElementById('add-tab-btn');
-            if (addBtn) addBtn.style.display = 'none';
-        }
+        const addBtn = document.getElementById('add-tab-btn');
+        if (!container || !addBtn) return;
+        container.querySelectorAll('.tab-item').forEach(t => t.remove());
+        storyTabs.forEach((tab, index) => {
+            const el = document.createElement('div');
+            el.className = 'tab-item' + (tab.id === activeStoryTabId ? ' active' : '');
+            el.dataset.storyId = tab.id;
+            el.innerHTML = `${escapeHtml(tab.title || `История ${index + 1}`)} <span class="close-tab">×</span>`;
+            el.onclick = () => switchTab(el);
+            el.querySelector('.close-tab').onclick = e => deleteStory(e, el.querySelector('.close-tab'));
+            container.insertBefore(el, addBtn);
+        });
+        addBtn.style.display = storyTabs.length >= 10 ? 'none' : 'flex';
+    }
+
+    function addStoryTab() {
+        if (storyTabs.length >= 10) return;
+        persistStoryTabs();
+        const id = 'story_' + Date.now();
+        storyTabs.push({ id, title: `История ${storyTabs.length + 1}`, html: '' });
+        activeStoryTabId = id;
+        localStorage.setItem('oracle_active_story_tab', id);
+        const editor = document.getElementById('editor');
+        if (editor) editor.innerHTML = '';
+        renderStoryTabs();
+        persistStoryTabs();
     }
 
     async function deleteStory(e, btn) {
-        e.stopPropagation();
-        const confirmDel = confirm("Удалить эту историю? Данные будут стерты.");
-        if (confirmDel) {
-            const tab = btn.parentElement;
-            if (tab.classList.contains('active')) {
-                const ed = document.getElementById('editor');
-                if (ed) ed.innerHTML = ""; 
-            }
-            tab.remove();
-            const addBtn = document.getElementById('add-tab-btn');
-            if (addBtn) addBtn.style.display = 'flex'; 
+        if (e) e.stopPropagation();
+        const tab = btn?.closest('.tab-item');
+        if (!tab || storyTabs.length <= 1) return;
+        if (!confirm('Удалить эту историю? Данные будут стерты.')) return;
+        persistStoryTabs();
+        const id = tab.dataset.storyId;
+        const index = storyTabs.findIndex(t => t.id === id);
+        storyTabs = storyTabs.filter(t => t.id !== id);
+        if (id === activeStoryTabId) {
+            const next = storyTabs[Math.max(0, index - 1)] || storyTabs[0];
+            activeStoryTabId = next.id;
+            const editor = document.getElementById('editor');
+            if (editor) editor.innerHTML = next.html || '';
         }
+        renderStoryTabs();
+        persistStoryTabs();
     }
 
     function switchTab(el) {
-        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-        el.classList.add('active');
+        if (!el?.dataset.storyId) return;
+        persistStoryTabs();
+        activeStoryTabId = el.dataset.storyId;
+        const active = storyTabs.find(t => t.id === activeStoryTabId);
+        const editor = document.getElementById('editor');
+        if (editor) editor.innerHTML = active?.html || '';
+        renderStoryTabs();
+        localStorage.setItem('oracle_active_story_tab', activeStoryTabId);
     }
 
     async function saveToLocalStorage() {
+        persistStoryTabs();
         const editor = document.getElementById('editor');
-        if (editor) {
-            localStorage.setItem('oracle_story_active', editor.innerHTML);
-            await showCustomAlert("Сохранено", "Хроника в Ядре.");
-        }
+        if (editor) localStorage.setItem('oracle_story_active', editor.innerHTML);
+        await showCustomAlert('Сохранено', 'Хроника в Ядре.');
     }
 
     function exportStory() {
@@ -1606,6 +1823,10 @@
     }
 
     function toggleTrueBlack() {
+        if (document.body.classList.contains('light-theme')) {
+            showCustomAlert('True Black', 'Сначала выключите светлую тему.');
+            return;
+        }
         document.body.classList.toggle('true-black-theme');
         const isBlack = document.body.classList.contains('true-black-theme');
         localStorage.setItem('oracle_true_black', isBlack);
@@ -1636,6 +1857,16 @@
         localStorage.setItem('oracle_light_theme', isLight);
 
         let primary = '#bb86fc', container = '#3700b3', variant = '#1e1e1e';
+        if (localStorage.getItem('oracle_light_theme') === 'true') {
+            document.body.classList.add('light-theme');
+        }
+        if (localStorage.getItem('oracle_true_black') === 'true' && !document.body.classList.contains('light-theme')) {
+            document.body.classList.add('true-black-theme');
+        }
+
+        const savedAgent = localStorage.getItem('oracle_active_agent');
+        if (savedAgent) selectAgent(savedAgent);
+
         const savedTheme = localStorage.getItem('oracle_matte_theme');
         if (savedTheme) {
             try {
@@ -1809,7 +2040,9 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-        if (localStorage.getItem('oracle_true_black') === 'true') {
+        showProTeaser();
+
+        if (localStorage.getItem('oracle_true_black') === 'true' && localStorage.getItem('oracle_light_theme') !== 'true') {
             document.body.classList.add('true-black-theme');
         }
         
@@ -1837,22 +2070,31 @@
             });
         }
 
-        const savedChat = localStorage.getItem('oracle_chat_history');
-        if (savedChat) {
-            const chatFlow = document.getElementById('chat-flow');
-            if (chatFlow) { 
-                chatFlow.innerHTML = savedChat; 
-                if (chatFlow.children.length > 0 && document.getElementById('welcome-block')) {
-                    document.getElementById('welcome-block').classList.add('hidden');
-                }
-            }
+        const activeSession = chatSessions[currentSessionId];
+        const savedChat = activeSession?.html || localStorage.getItem('oracle_chat_history') || '';
+        const chatFlow = document.getElementById('chat-flow');
+        if (chatFlow) {
+            chatFlow.innerHTML = savedChat;
+            if (savedChat.trim()) document.getElementById('welcome-block')?.classList.add('hidden');
         }
+        CoreState.isFirstMsgInSession = !savedChat.trim();
+        renderSidebarChats();
 
         const savedStory = localStorage.getItem('oracle_story_active');
-        if (savedStory) {
-            const editor = document.getElementById('editor');
-            if (editor) editor.innerHTML = savedStory;
+        const editor = document.getElementById('editor');
+        const activeStory = storyTabs.find(t => t.id === activeStoryTabId);
+        if (activeStory && editor) editor.innerHTML = activeStory.html || savedStory || '';
+        renderStoryTabs();
+
+        if (localStorage.getItem('oracle_light_theme') === 'true') {
+            document.body.classList.add('light-theme');
         }
+        if (localStorage.getItem('oracle_true_black') === 'true' && !document.body.classList.contains('light-theme')) {
+            document.body.classList.add('true-black-theme');
+        }
+
+        const savedAgent = localStorage.getItem('oracle_active_agent');
+        if (savedAgent) selectAgent(savedAgent);
 
         const savedTheme = localStorage.getItem('oracle_matte_theme');
         if (savedTheme) {
@@ -1901,6 +2143,14 @@
                     e.preventDefault(); 
                     sendMsg(); 
                 }
+            });
+        }
+
+
+        const modalInput = document.getElementById('custom-modal-input');
+        if (modalInput) {
+            modalInput.addEventListener('keydown', e => {
+                if (e.key === 'Enter') { e.preventDefault(); closeCustomModal(true); }
             });
         }
 
@@ -1999,7 +2249,12 @@
         const time = await showCustomPrompt("Время", "Введите время (ЧЧ:ММ):", "12:00");
         if (!time) return;
 
-        const newReminder = { id: Date.now(), date: dateStr, time: time, title: title };
+        const cleanTime = time.trim();
+        if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(cleanTime)) {
+            await showCustomAlert('Ошибка', 'Введите время в формате ЧЧ:ММ, например 12:00.');
+            return;
+        }
+        const newReminder = { id: Date.now(), date: dateStr, time: cleanTime, title: title.trim() };
         reminders.push(newReminder);
         localStorage.setItem('oracle_reminders', JSON.stringify(reminders));
 
@@ -2014,18 +2269,29 @@
     function renderRemindersList() {
         const list = document.getElementById('reminders-list');
         if (!list) return;
-        list.innerHTML = reminders.length ? '' : '<div style="font-size: 13px; color: var(--on-surface-variant);">Напоминаний пока нет</div>';
-        
+        list.innerHTML = '';
+        if (!reminders.length) {
+            list.innerHTML = '<div style="font-size: 13px; color: var(--on-surface-variant);">Напоминаний пока нет</div>';
+            return;
+        }
         reminders.forEach(r => {
-            list.innerHTML += `
-                <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <div>
-                        <strong>${r.title}</strong>
-                        <div style="font-size: 12px; color: var(--on-surface-variant);">${r.date} в ${r.time}</div>
-                    </div>
-                    <button onclick="deleteReminder(${r.id})" class="icon-btn" style="color: #ff5252;"><span class="material-symbols-rounded">delete</span></button>
-                </div>
-            `;
+            const card = document.createElement('div');
+            card.className = 'chat-card';
+            card.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;';
+            const info = document.createElement('div');
+            const strong = document.createElement('strong');
+            strong.textContent = r.title || '';
+            const date = document.createElement('div');
+            date.style.cssText = 'font-size:12px;color:var(--on-surface-variant);';
+            date.textContent = `${r.date} в ${r.time}`;
+            info.append(strong, date);
+            const button = document.createElement('button');
+            button.className = 'icon-btn';
+            button.style.color = '#ff5252';
+            button.innerHTML = '<span class="material-symbols-rounded">delete</span>';
+            button.onclick = () => deleteReminder(r.id);
+            card.append(info, button);
+            list.appendChild(card);
         });
     }
 
