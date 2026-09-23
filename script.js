@@ -5583,3 +5583,225 @@ async function resolveAiResponse(msg) {
     }
     return { ok: true, text: response, external: false };
 }
+
+
+// ===== PRE-LAUNCH POLISH (20 Sep) =====
+CoreState.apiAbort = null;
+
+function updateApiStatusChip() {
+    const chip = document.getElementById('api-status-chip');
+    const text = document.getElementById('api-status-chip-text');
+    const banner = document.getElementById('limits-external-banner');
+    let s = {};
+    try { s = loadCustomApiState(); } catch (e) {}
+    const on = !!(s.enabled && s.key);
+    if (chip) {
+        chip.style.display = on ? 'inline-flex' : 'none';
+        if (text) {
+            const names = { openai: 'ChatGPT', gemini: 'Gemini', claude: 'Claude', grok: 'Grok', custom: 'Custom' };
+            text.textContent = on ? (names[s.provider] || 'API') + ' · ON' : 'API';
+        }
+    }
+    if (banner) banner.style.display = on ? 'flex' : 'none';
+    // soft dim core limits when external
+    document.querySelectorAll('#section-limits .chat-card, #section-limits .limit-bar-wrap').forEach(el => {
+        if (el.id === 'limits-external-banner') return;
+        el.style.opacity = on ? '0.45' : '';
+        el.style.pointerEvents = on ? 'none' : '';
+    });
+}
+
+const _stopGenBase = typeof stopGeneration === 'function' ? stopGeneration : null;
+if (_stopGenBase && !window._stopAbortPatched) {
+    window._stopAbortPatched = true;
+    window.stopGeneration = function() {
+        try {
+            if (CoreState.apiAbort) {
+                CoreState.apiAbort.abort();
+                CoreState.apiAbort = null;
+            }
+        } catch (e) {}
+        _stopGenBase();
+        showThinkingIndicator(false);
+        showToast('Генерация остановлена', 'info');
+    };
+}
+
+// wrap callExternalProvider to use AbortController
+const _callExtOrig = typeof callExternalProvider === 'function' ? callExternalProvider : null;
+if (_callExtOrig && !window._callAbortPatched) {
+    window._callAbortPatched = true;
+    window.callExternalProvider = async function(userMsg) {
+        const ctrl = new AbortController();
+        CoreState.apiAbort = ctrl;
+        // monkey-patch fetch temporarily is heavy — pass signal via internal
+        CoreState._apiSignal = ctrl.signal;
+        try {
+            return await _callExtOrig(userMsg);
+        } finally {
+            if (CoreState.apiAbort === ctrl) CoreState.apiAbort = null;
+            CoreState._apiSignal = null;
+        }
+    };
+}
+
+// Patch fetch inside gemini/openai by using global signal when present
+const _origFetch = window.fetch.bind(window);
+window.fetch = function(input, init) {
+    init = init || {};
+    if (CoreState._apiSignal && !init.signal) {
+        init = Object.assign({}, init, { signal: CoreState._apiSignal });
+    }
+    return _origFetch(input, init);
+};
+
+// refresh chip when API state changes
+const _saveApiState = typeof saveCustomApiState === 'function' ? saveCustomApiState : null;
+if (_saveApiState && !window._saveApiChipPatched) {
+    window._saveApiChipPatched = true;
+    window.saveCustomApiState = function(partial) {
+        const r = _saveApiState(partial);
+        try { updateApiStatusChip(); } catch (e) {}
+        return r;
+    };
+}
+
+// Extended onboarding tips
+(function extendOnboarding() {
+    const tipsExtra = [
+        { title: 'Сторонние API', text: 'Подключите Gemini (ключ AQ.), ChatGPT, Claude или Grok в Настройки → Сторонние API.', sel: '#btn-sec-api-keys' },
+        { title: 'Публичные ссылки', text: 'Все шаринги чатов — в Настройки → Публичные ссылки.', sel: '#btn-sec-public-links' },
+        { title: 'Markdown и код', text: 'Ответы ИИ поддерживают Markdown, окна кода и просмотр фото.', sel: '#btn-tab-chat' }
+    ];
+    // if startOnboarding exists and tips array is inline, we inject via storage flag one-time soft toast instead
+    if (localStorage.getItem('oracle_pro_tips_20260920') !== 'true') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (localStorage.getItem('oracle_pro_tips_20260920') === 'true') return;
+                localStorage.setItem('oracle_pro_tips_20260920', 'true');
+                showToast('Core Node 2.6 PRO · 20 сентября — Сторонние API, Markdown, публичные ссылки', 'success', 4500);
+            }, 2200);
+        });
+    }
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+    try { updateApiStatusChip(); } catch (e) {}
+});
+
+// when opening limits, refresh banner
+(function patchLimitsSection() {
+    const wrap = () => {
+        if (typeof window.showSection !== 'function' || window._limitsBannerPatched) return;
+        window._limitsBannerPatched = true;
+        const prev = window.showSection;
+        window.showSection = function(id) {
+            prev(id);
+            if (id === 'limits' || id === 'api-keys') {
+                try { updateApiStatusChip(); } catch (e) {}
+            }
+        };
+    };
+    wrap();
+    document.addEventListener('DOMContentLoaded', wrap);
+})();
+
+
+
+// ===== Fast Assistant bridge (shared keys + postMessage) =====
+const FA_BRIDGE_CHANNEL = 'fast-assistant-core-node';
+const FA_BRIDGE_KEYS = {
+  sessions: 'oracle_chat_sessions',
+  current: 'oracle_current_session',
+  meta: 'oracle_fa_bridge_meta'
+};
+
+function mergeFaChatsIntoSessions(chatsObj) {
+  if (!chatsObj || typeof chatsObj !== 'object') return 0;
+  let n = 0;
+  Object.keys(chatsObj).forEach(id => {
+    const c = chatsObj[id];
+    if (!c) return;
+    const key = String(id).startsWith('session_') || String(id).startsWith('fa_')
+      ? id
+      : ('fa_' + id);
+    chatSessions[key] = {
+      title: c.title || 'Чат из Fast Assistant',
+      html: c.html || '',
+      updated: c.updated || Date.now(),
+      source: c.source || 'fast-assistant'
+    };
+    n++;
+  });
+  if (n) {
+    try { localStorage.setItem(FA_BRIDGE_KEYS.sessions, JSON.stringify(chatSessions)); } catch (e) {}
+    if (typeof renderSidebarChats === 'function') renderSidebarChats();
+  }
+  return n;
+}
+
+function replyToFastAssistant(sourceWin, type, extra) {
+  try {
+    const target = sourceWin || window.opener;
+    if (!target || target === window) return;
+    target.postMessage(Object.assign({
+      channel: FA_BRIDGE_CHANNEL,
+      source: 'Core Node',
+      type: type,
+      timestamp: Date.now()
+    }, extra || {}), '*');
+  } catch (e) {}
+}
+
+window.addEventListener('message', function faBridgeOnMessage(e) {
+  const d = e.data;
+  if (!d || typeof d !== 'object' || d.channel !== FA_BRIDGE_CHANNEL) return;
+  if (d.source === 'Core Node') return;
+
+  if (d.type === 'hello' || d.type === 'ping') {
+    replyToFastAssistant(e.source, 'core-ready', { version: '2.6 PRO' });
+    replyToFastAssistant(e.source, 'core-pong', {});
+    // same-origin: refresh from shared key
+    try {
+      const raw = localStorage.getItem(FA_BRIDGE_KEYS.sessions);
+      if (raw) {
+        chatSessions = JSON.parse(raw) || chatSessions;
+        if (typeof renderSidebarChats === 'function') renderSidebarChats();
+      }
+    } catch (err) {}
+    return;
+  }
+
+  if (d.type === 'import' && d.payload) {
+    let n = 0;
+    if (d.payload.chats) n = mergeFaChatsIntoSessions(d.payload.chats);
+    if (d.payload.text && typeof addAI === 'function') {
+      // optional system note
+      try {
+        if (typeof showToast === 'function') showToast('Импорт из Fast Assistant: ' + n + ' чат(ов)', 'success');
+      } catch (err) {}
+    } else if (typeof showToast === 'function') {
+      showToast('Fast Assistant → Core Node: ' + n + ' чат(ов)', 'success');
+    }
+    replyToFastAssistant(e.source, 'import-ok', { count: n });
+    return;
+  }
+
+  if (d.type === 'request' && d.text && typeof sendMsg === 'function') {
+    // optional: inject into input
+    const input = document.getElementById('user-input');
+    if (input) {
+      input.value = String(d.text);
+      if (typeof handleInput === 'function') handleInput(input);
+    }
+  }
+});
+
+// Same-tab storage sync (FA and CN on same origin)
+window.addEventListener('storage', function(e) {
+  if (e.key !== FA_BRIDGE_KEYS.sessions || !e.newValue) return;
+  try {
+    chatSessions = JSON.parse(e.newValue) || chatSessions;
+    if (typeof renderSidebarChats === 'function') renderSidebarChats();
+  } catch (err) {}
+});
