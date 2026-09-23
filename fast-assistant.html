@@ -1,0 +1,5607 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+
+<title>Fast Assistant 4.4</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,1,0" rel="stylesheet">
+
+<style>
+:root{
+ --bg:#f3f3f3;--card:#fff;--text:#000;--ai:#e9e9eb;
+ --user:#000;--userText:#fff;--accent:#000;--border:#d1d1d6;
+ --sub:#8e8e93;--danger:#ff3b30;--success:#34c759;
+ --warning:#ff9500;--shadow:rgba(0,0,0,.08);--glass:rgba(255,255,255,.78)
+}
+[data-theme=dark]{
+ --bg:#050505;--card:#0a0a0a;--text:#fff;--ai:#151515;
+ --user:#fff;--userText:#000;--accent:#fff;--border:#38383a;
+ --sub:#98989d;--danger:#ff453a;--success:#30d158;
+ --warning:#ff9f0a;--shadow:rgba(0,0,0,.35);--glass:rgba(10,10,10,.82)
+}
+
+*{
+ box-sizing:border-box;
+ margin:0;
+ padding:0;
+ font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif
+}
+
+html,body{
+ width:100%;
+ height:100%;
+ overflow:hidden
+}
+
+body{
+ display:flex;
+ justify-content:center;
+ background:var(--bg);
+ color:var(--text)
+}
+
+button,input,textarea{font:inherit}
+button{border:0}
+a{color:var(--accent)}
+
+code{
+ padding:2px 5px;
+ border-radius:5px;
+ background:#8882;
+ font:0.9em ui-monospace,monospace
+}
+
+.card{
+ position:relative;
+ width:100%;
+ max-width:500px;
+ min-width:0;
+ height:100vh;
+ display:flex;
+ flex-direction:column;
+ padding:60px 15px 15px;
+ background:var(--card);
+ color:var(--text)
+}
+/* Кастомная ширина: никогда уже 400px (если экран позволяет) */
+.card.sized{
+ max-width:none;
+ min-width:min(400px,100%);
+}
+@media(max-width:420px){
+ .card.sized{ min-width:0; width:100%!important; }
+}
+
+.card.fullscreen{
+ position:fixed;
+ inset:0;
+ width:100vw!important;
+ max-width:none!important;
+ z-index:9999
+}
+
+#ai-head{
+ position:absolute;
+ top:22px;
+ left:50%;
+ transform:translateX(-50%);
+ color:var(--sub);
+ font-size:11px;
+ font-weight:800;
+ letter-spacing:1.5px;
+ white-space:nowrap
+}
+
+.controls{
+ position:absolute;
+ top:12px;
+ right:15px
+}
+
+.icon-btn{
+ width:36px;
+ height:36px;
+ border-radius:50%;
+ background:var(--ai);
+ color:var(--sub);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ cursor:pointer;
+ transition:.2s
+}
+
+.icon-btn:hover{
+ background:var(--border);
+ color:var(--text);
+ transform:scale(1.05)
+}
+
+#core-node-status{
+ position:absolute;
+ top:12px;
+ left:15px;
+ display:flex;
+ align-items:center;
+ gap:6px;
+ padding:4px 9px;
+ border:1px solid var(--border);
+ border-radius:999px;
+ background:var(--ai);
+ color:var(--sub);
+ font-size:9px;
+ font-weight:800;
+ cursor:pointer;
+ z-index:50
+}
+
+.core-dot{
+ width:7px;
+ height:7px;
+ border-radius:50%;
+ background:var(--sub)
+}
+
+#core-node-status.waiting .core-dot{
+ background:var(--warning)
+}
+
+#core-node-status.connected .core-dot{
+ background:var(--success);
+ box-shadow:0 0 0 3px #34c75920
+}
+
+#core-node-status.error .core-dot{
+ background:var(--danger)
+}
+
+#chat{
+ flex:1;
+ min-height:0;
+ overflow-y:auto;
+ display:flex;
+ flex-direction:column;
+ padding:5px;
+ margin-bottom:10px;
+ scrollbar-width:thin
+}
+
+.bubble{
+ position:relative;
+ max-width:82%;
+ padding:10px 15px;
+ margin-bottom:12px;
+ border-radius:18px;
+ font-size:15px;
+ line-height:1.45;
+ overflow-wrap:anywhere;
+ animation:up .25s ease
+}
+
+.bubble.user{
+ align-self:flex-end;
+ background:var(--user);
+ color:var(--userText);
+ border-bottom-right-radius:4px
+}
+
+.bubble.ai{
+ align-self:flex-start;
+ background:var(--ai);
+ color:var(--text);
+ border-bottom-left-radius:4px
+}
+
+.bubble.system{
+ align-self:center;
+ max-width:92%;
+ background:transparent;
+ color:var(--sub);
+ font-size:12px;
+ text-align:center
+}
+
+.agent-home{
+ width:100%;
+ padding:15px 5px 20px;
+ animation:up .3s ease
+}
+
+.agent-hero{
+ text-align:center;
+ padding:15px 10px
+}
+
+.agent-icon{
+ width:64px;
+ height:64px;
+ margin:auto auto 12px;
+ border-radius:20px;
+ background:var(--ai);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ box-shadow:0 12px 30px var(--shadow)
+}
+
+.agent-icon .material-symbols-rounded{
+ font-size:32px
+}
+
+.agent-title{
+ font-size:25px;
+ font-weight:900
+}
+
+.agent-sub{
+ margin-top:6px;
+ color:var(--sub);
+ font-size:12px;
+ line-height:1.45
+}
+
+.section{
+ margin:8px 4px 10px;
+ color:var(--sub);
+ font-size:10px;
+ font-weight:800;
+ letter-spacing:1px;
+ text-transform:uppercase
+}
+
+.grid{
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px
+}
+
+.card-btn{
+ min-height:120px;
+ padding:13px;
+ border:1px solid var(--border);
+ border-radius:15px;
+ background:var(--ai);
+ color:var(--text);
+ text-align:left;
+ cursor:pointer;
+ transition:.18s
+}
+
+.card-btn:hover{
+ background:var(--card);
+ border-color:var(--text);
+ transform:translateY(-2px)
+}
+
+.list{
+ display:flex;
+ flex-direction:column;
+ gap:7px
+}
+
+.list-btn{
+ display:flex;
+ align-items:center;
+ gap:10px;
+ width:100%;
+ padding:11px;
+ border:1px solid var(--border);
+ border-radius:13px;
+ background:var(--ai);
+ color:var(--text);
+ cursor:pointer;
+ text-align:left
+}
+
+.list-btn:hover{
+ background:var(--card);
+ border-color:var(--text)
+}
+
+.pack-mini{
+ padding:10px;
+ border:1px solid var(--border);
+ border-radius:12px;
+ background:var(--ai);
+ cursor:pointer;
+ transition:.18s
+}
+
+.pack-mini:hover{
+ background:var(--card);
+ border-color:var(--text);
+ transform:translateY(-1px)
+}
+
+.pack-mini-top{
+ display:flex;
+ align-items:center;
+ gap:8px
+}
+
+.pack-mini-icon{
+ width:32px;
+ height:32px;
+ border-radius:9px;
+ background:var(--card);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ color:var(--sub);
+ flex-shrink:0
+}
+
+.pack-mini-name{
+ font-size:12px;
+ font-weight:800;
+ line-height:1.25
+}
+
+.pack-mini-meta{
+ margin-top:5px;
+ color:var(--sub);
+ font-size:9px;
+ line-height:1.35
+}
+
+.pack-badge{
+ display:inline-flex;
+ align-items:center;
+ padding:3px 6px;
+ border-radius:999px;
+ background:#34c75920;
+ color:var(--success);
+ font-size:8px;
+ font-weight:900;
+ margin-left:auto
+}
+
+.pack-badge.warning{
+ background:#ff950020;
+ color:var(--warning)
+}
+
+.pack-result{
+ margin-top:8px;
+ padding:11px;
+ border:1px solid var(--border);
+ border-radius:13px;
+ background:var(--card)
+}
+
+.pack-result-head{
+ display:flex;
+ align-items:center;
+ gap:9px
+}
+
+.pack-result-icon{
+ width:34px;
+ height:34px;
+ border-radius:10px;
+ background:var(--ai);
+ display:flex;
+ align-items:center;
+ justify-content:center
+}
+
+.pack-result-title{
+ flex:1;
+ min-width:0
+}
+
+.pack-result-title b{
+ display:block;
+ font-size:12px
+}
+
+.pack-result-title small{
+ color:var(--sub);
+ font-size:9px
+}
+
+.pack-info{
+ margin-top:9px;
+ padding-top:9px;
+ border-top:1px solid var(--border);
+ color:var(--sub);
+ font-size:10px;
+ line-height:1.5
+}
+
+.pack-info strong{
+ color:var(--text)
+}
+
+.pack-tags{
+ display:flex;
+ flex-wrap:wrap;
+ gap:4px;
+ margin-top:8px
+}
+
+.pack-tag{
+ padding:3px 6px;
+ border-radius:6px;
+ background:var(--ai);
+ color:var(--sub);
+ font-size:8px
+}
+
+.pack-actions{
+ display:flex;
+ gap:6px;
+ margin-top:9px
+}
+
+.pack-action{
+ flex:1;
+ padding:8px;
+ border:1px solid var(--border);
+ border-radius:8px;
+ background:var(--ai);
+ color:var(--text);
+ cursor:pointer;
+ font-size:10px;
+ font-weight:700;
+ text-decoration:none;
+ text-align:center
+}
+
+.pack-action:hover{
+ border-color:var(--text);
+ background:var(--card)
+}
+
+.event{
+ padding:14px;
+ border:1px solid var(--border);
+ border-radius:15px;
+ background:var(--ai)
+}
+
+.event-top{
+ display:flex;
+ align-items:center;
+ gap:9px
+}
+
+.event-icon{
+ width:34px;
+ height:34px;
+ border-radius:10px;
+ background:#34c75920;
+ color:var(--success);
+ display:flex;
+ align-items:center;
+ justify-content:center
+}
+
+.event-status{
+ margin-left:auto;
+ padding:4px 7px;
+ border-radius:999px;
+ background:#34c75920;
+ color:var(--success);
+ font-size:9px;
+ font-weight:800
+}
+
+.event-desc{
+ margin-top:10px;
+ color:var(--sub);
+ font-size:11px;
+ line-height:1.5
+}
+
+.event-action{
+ margin-top:10px;
+ width:100%;
+ padding:9px;
+ border:1px solid var(--border);
+ border-radius:9px;
+ background:var(--card);
+ color:var(--text);
+ cursor:pointer
+}
+
+.builder-types{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:6px
+}
+
+.builder-type{
+ padding:9px 4px;
+ border:1px solid var(--border);
+ border-radius:10px;
+ background:var(--ai);
+ color:var(--text);
+ cursor:pointer;
+ font-size:10px
+}
+
+.builder-type.active{
+ background:var(--text);
+ color:var(--card);
+ border-color:var(--text)
+}
+
+.tip{
+ margin-top:9px;
+ padding:11px;
+ border:1px dashed var(--border);
+ border-radius:12px;
+ color:var(--sub);
+ font-size:10px;
+ line-height:1.45
+}
+
+.msg-actions{
+ position:absolute;
+ right:4px;
+ bottom:-30px;
+ display:flex;
+ gap:5px;
+ opacity:0;
+ pointer-events:none;
+ transition:.2s;
+ z-index:10
+}
+
+.bubble.user:hover .msg-actions,
+.bubble.user:focus-within .msg-actions{
+ opacity:1;
+ pointer-events:auto
+}
+
+.msg-act-btn{
+ width:30px;
+ height:30px;
+ border:1px solid var(--border);
+ border-radius:8px;
+ background:var(--card);
+ color:var(--text);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ cursor:pointer
+}
+
+.input-wrapper{
+ position:relative;
+ width:100%;
+ margin:10px auto;
+ z-index:100;
+ pointer-events:auto
+}
+body.settings-open .input-wrapper,
+body.settings-open #command-popup,
+body.settings-open #plus-menu,
+body.settings-open #agent-popup{
+ visibility:hidden!important;
+ pointer-events:none!important
+}
+body.settings-open #ai-head,
+body.settings-open .controls{
+ pointer-events:none
+}
+
+.input-wrapper.centered{
+ position:absolute;
+ left:50%;
+ top:45%;
+ transform:translate(-50%,-50%);
+ width:calc(100% - 20px);
+ max-width:600px;
+ margin:0
+}
+
+.input-area{
+ display:flex;
+ align-items:flex-end;
+ gap:6px;
+ padding:8px;
+ border:1px solid var(--border);
+ border-radius:24px;
+ background:var(--glass);
+ box-shadow:0 10px 25px var(--shadow);
+ backdrop-filter:blur(16px)
+}
+
+textarea{
+ flex:1;
+ min-width:0;
+ min-height:36px;
+ max-height:180px;
+ resize:none;
+ padding:8px 12px;
+ border:0;
+ outline:0;
+ background:transparent;
+ color:var(--text);
+ font-size:15px;
+ line-height:20px
+}
+
+.bind-btn,.send-btn{
+ flex-shrink:0;
+ width:40px;
+ height:40px;
+ border-radius:50%;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ cursor:pointer;
+ transition:.18s;
+ touch-action:manipulation;
+ -webkit-tap-highlight-color:transparent;
+ position:relative;
+ z-index:5
+}
+.bind-btn .material-symbols-rounded,
+.send-btn .material-symbols-rounded{
+ pointer-events:none;
+ user-select:none
+}
+
+.bind-btn{
+ border:1px solid var(--border);
+ background:transparent;
+ color:var(--sub)
+}
+
+.bind-btn:hover{
+ background:var(--accent);
+ color:var(--card)
+}
+
+.send-btn{
+ background:var(--accent);
+ color:var(--card);
+ opacity:.3;
+ pointer-events:none
+}
+
+.send-btn.active{
+ opacity:1;
+ pointer-events:auto
+}
+
+.send-btn.stop{
+ opacity:1;
+ pointer-events:auto;
+ background:var(--danger)!important;
+ color:#fff!important;
+ animation:pulse 1.3s infinite
+}
+
+#cancel-send-btn{
+ display:none;
+ position:absolute;
+ top:-36px;
+ right:10px;
+ padding:6px 12px;
+ border-radius:12px;
+ background:var(--danger);
+ color:#fff;
+ font-size:11px;
+ font-weight:800;
+ cursor:pointer
+}
+
+#command-popup{
+ position:absolute;
+ left:0;
+ right:0;
+ bottom:calc(100% + 10px);
+ display:none;
+ max-height:280px;
+ overflow:auto;
+ padding:8px;
+ border:1px solid var(--border);
+ border-radius:16px;
+ background:var(--card);
+ box-shadow:0 15px 40px var(--shadow);
+ z-index:30
+}
+
+.command-title{
+ padding:7px 9px;
+ color:var(--sub);
+ font-size:10px;
+ font-weight:800;
+ letter-spacing:1px
+}
+
+.command-item{
+ display:flex;
+ align-items:center;
+ gap:9px;
+ padding:10px;
+ border-radius:9px;
+ color:var(--text);
+ cursor:pointer
+}
+
+.command-item:hover,
+.command-item.selected{
+ background:var(--ai)
+}
+
+.command-icon{
+ width:30px;
+ height:30px;
+ border-radius:9px;
+ background:var(--ai);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ color:var(--sub)
+}
+
+.command-main{
+ flex:1;
+ min-width:0
+}
+
+.command-name{
+ font-size:13px;
+ font-weight:700
+}
+
+.command-desc{
+ font-size:10px;
+ color:var(--sub)
+}
+
+.popup{
+ position:absolute;
+ top:55px;
+ right:15px;
+ width:250px;
+ display:none;
+ padding:8px;
+ border:1px solid var(--border);
+ border-radius:16px;
+ background:var(--card);
+ box-shadow:0 15px 40px var(--shadow);
+ z-index:1000
+}
+
+.menu-item{
+ min-height:40px;
+ display:flex;
+ align-items:center;
+ gap:10px;
+ padding:9px 12px;
+ border-radius:10px;
+ color:var(--text);
+ cursor:pointer
+}
+
+.menu-item:hover{
+ background:var(--ai)
+}
+
+.submenu{
+ margin-top:5px;
+ padding:9px;
+ border-radius:11px;
+ background:var(--bg)
+}
+
+.view-row{
+ display:flex;
+ justify-content:space-around;
+ gap:8px;
+ margin-top:7px
+}
+
+.resize-menu{
+ flex-direction:column;
+ width:220px;
+ top:165px
+}
+
+.resize-menu input{
+ width:100%;
+ padding:10px;
+ border:1px solid var(--border);
+ border-radius:8px;
+ background:var(--bg);
+ color:var(--text);
+ outline:0;
+ text-align:center
+}
+
+.apply{
+ width:100%;
+ padding:10px;
+ border:0;
+ border-radius:8px;
+ background:var(--accent);
+ color:var(--card);
+ font-size:12px;
+ font-weight:800;
+ cursor:pointer
+}
+
+#agent-popup{
+ position:absolute;
+ left:10px;
+ right:10px;
+ bottom:85px;
+ display:none;
+ padding:15px;
+ border:1px solid var(--border);
+ border-radius:16px;
+ background:var(--card);
+ box-shadow:0 15px 35px var(--shadow);
+ z-index:1001
+}
+
+#agent-popup h2{
+ font-size:14px;
+ margin-bottom:8px
+}
+
+.close-btn{
+ position:absolute;
+ top:12px;
+ right:12px;
+ width:26px;
+ height:26px;
+ border:1px solid var(--border);
+ border-radius:7px;
+ background:var(--ai);
+ color:var(--sub);
+ cursor:pointer
+}
+
+.agent-search{
+ width:100%;
+ padding:7px 12px;
+ margin-bottom:10px;
+ border:1px solid var(--border);
+ border-radius:8px;
+ background:var(--bg);
+ color:var(--text);
+ outline:0;
+ font-size:12px
+}
+
+.agent-list{
+ display:flex;
+ flex-direction:column;
+ gap:4px;
+ max-height:220px;
+ overflow:auto
+}
+
+.agent-row{
+ display:flex;
+ align-items:center;
+ gap:8px;
+ padding:9px;
+ border-radius:8px;
+ color:var(--text);
+ cursor:pointer
+}
+
+.agent-row:hover{
+ background:var(--ai)
+}
+
+.event-label{
+ margin-left:auto;
+ padding:2px 6px;
+ border-radius:999px;
+ background:#34c75920;
+ color:var(--success);
+ font-size:9px;
+ font-weight:800
+}
+
+.new-label{
+ background:#007aff20;
+ color:#007aff
+}
+
+#core-panel{
+ position:absolute;
+ top:52px;
+ left:15px;
+ width:330px;
+ max-width:calc(100% - 30px);
+ display:none;
+ padding:14px;
+ border:1px solid var(--border);
+ border-radius:16px;
+ background:var(--card);
+ box-shadow:0 15px 40px var(--shadow);
+ z-index:2001
+}
+
+.core-head{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ margin-bottom:12px
+}
+
+.core-title{
+ display:flex;
+ align-items:center;
+ gap:8px;
+ font-size:14px;
+ font-weight:900
+}
+
+.core-state{
+ padding:4px 7px;
+ border-radius:999px;
+ background:var(--ai);
+ color:var(--sub);
+ font-size:9px;
+ font-weight:800
+}
+
+.core-state.connected{
+ background:#34c75920;
+ color:var(--success)
+}
+
+.core-state.waiting{
+ background:#ff950020;
+ color:var(--warning)
+}
+
+.core-state.error{
+ background:#ff3b3020;
+ color:var(--danger)
+}
+
+.core-info{
+ margin-bottom:12px;
+ color:var(--sub);
+ font-size:11px;
+ line-height:1.5
+}
+
+.core-actions{
+ display:flex;
+ gap:6px
+}
+
+.core-btn{
+ flex:1;
+ padding:9px;
+ border:1px solid var(--border);
+ border-radius:9px;
+ background:var(--ai);
+ color:var(--text);
+ cursor:pointer;
+ font-size:11px;
+ font-weight:700
+}
+
+.core-btn.primary{
+ background:var(--text);
+ color:var(--card)
+}
+
+#whats-new{
+ position:absolute;
+ top:60px;
+ left:15px;
+ width:310px;
+ max-width:calc(100% - 30px);
+ padding:14px;
+ border:1px solid var(--border);
+ border-radius:18px;
+ background:var(--card);
+ z-index:2000;
+ box-shadow:0 18px 45px var(--shadow);
+ animation:in .4s ease
+}
+
+#whats-new.hidden{
+ display:none
+}
+
+.wn-head{
+ display:flex;
+ gap:10px;
+ align-items:center;
+ padding-right:30px;
+ margin-bottom:13px
+}
+
+.wn-icon{
+ width:36px;
+ height:36px;
+ border-radius:11px;
+ background:var(--ai);
+ display:flex;
+ align-items:center;
+ justify-content:center
+}
+
+.wn-title{
+ font-size:14px;
+ font-weight:900
+}
+
+.wn-ver{
+ font-size:10px;
+ color:var(--sub)
+}
+
+.wn-close{
+ position:absolute;
+ right:10px;
+ top:10px;
+ width:25px;
+ height:25px;
+ border:1px solid var(--border);
+ border-radius:7px;
+ background:var(--ai);
+ color:var(--sub);
+ cursor:pointer
+}
+
+.feature{
+ display:flex;
+ gap:10px;
+ align-items:center;
+ padding:8px;
+ border-radius:10px
+}
+
+.feature:hover{
+ background:var(--ai)
+}
+
+.feature .material-symbols-rounded{
+ width:30px;
+ height:30px;
+ border-radius:8px;
+ background:var(--ai);
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ color:var(--sub);
+ font-size:17px
+}
+
+.feature b{
+ display:block;
+ font-size:12px
+}
+
+.feature small{
+ display:block;
+ color:var(--sub);
+ font-size:10px
+}
+
+.wn-footer{
+ margin-top:10px;
+ padding-top:8px;
+ border-top:1px solid var(--border);
+ color:var(--sub);
+ text-align:center;
+ font-size:9px
+}
+
+#alert{
+ position:fixed;
+ left:50%;
+ bottom:120px;
+ transform:translateX(-50%);
+ display:none;
+ padding:15px 20px;
+ border:1px solid var(--border);
+ border-radius:12px;
+ background:var(--card);
+ box-shadow:0 10px 30px var(--shadow);
+ z-index:3000
+}
+
+.typing{
+ display:flex;
+ gap:5px
+}
+
+.typing span{
+ width:5px;
+ height:5px;
+ border-radius:50%;
+ background:var(--sub);
+ animation:t .9s infinite
+}
+
+.typing span:nth-child(2){
+ animation-delay:.15s
+}
+
+.typing span:nth-child(3){
+ animation-delay:.3s
+}
+
+@keyframes up{
+ from{opacity:0;transform:translateY(10px)}
+ to{opacity:1;transform:none}
+}
+
+@keyframes t{
+ 0%,60%,100%{opacity:.25}
+ 30%{opacity:1;transform:translateY(-3px)}
+}
+
+@keyframes pulse{
+ 50%{box-shadow:0 0 0 5px #ff3b3020}
+}
+
+@keyframes in{
+ from{opacity:0;transform:translateY(-12px) scale(.97)}
+ to{opacity:1;transform:none}
+}
+
+@media(max-width:520px){
+ .bubble{max-width:88%}
+ .grid{grid-template-columns:1fr}
+ #whats-new{
+  left:10px;
+  right:10px;
+  width:auto;
+  max-width:none
+ }
+ #core-node-status{left:52px}
+ .menu-btn-left{left:10px}
+ #command-popup{
+  left:-5px;
+  right:-5px
+ }
+}
+
+/* ===== FA 4.4 Sidebar + Settings + Modals ===== */
+.sidebar-overlay{
+ position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:4000;
+ display:none;opacity:0;transition:opacity .2s
+}
+.sidebar-overlay.open{display:block;opacity:1}
+.fa-sidebar{
+ position:fixed;top:0;left:0;bottom:0;width:min(300px,88vw);
+ background:var(--card);border-right:1px solid var(--border);
+ z-index:4001;transform:translateX(-105%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+ display:flex;flex-direction:column;padding:14px 12px 12px;box-shadow:8px 0 32px var(--shadow)
+}
+.fa-sidebar.open{transform:translateX(0)}
+.fa-side-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px}
+.fa-side-head h2{font-size:15px;font-weight:900;margin:0}
+.fa-side-close{
+ width:32px;height:32px;border-radius:10px;border:1px solid var(--border);
+ background:var(--ai);color:var(--sub);cursor:pointer;display:flex;align-items:center;justify-content:center
+}
+.fa-new-chat{
+ width:100%;padding:11px;border-radius:12px;border:1px solid var(--border);
+ background:var(--text);color:var(--card);font-weight:800;font-size:13px;cursor:pointer;
+ display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:12px
+}
+.fa-chats-label{font-size:10px;font-weight:800;letter-spacing:.8px;color:var(--sub);text-transform:uppercase;padding:4px 6px 8px}
+.fa-chats-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-bottom:8px}
+.fa-chat-item{
+ display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;
+ border:1px solid transparent;background:var(--ai);cursor:pointer;text-align:left;color:var(--text);
+ font-size:13px;font-weight:600
+}
+.fa-chat-item:hover{border-color:var(--border);background:var(--card)}
+.fa-chat-item.active{border-color:var(--text);background:var(--card)}
+.fa-chat-item .title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fa-side-foot{border-top:1px solid var(--border);padding-top:10px;margin-top:4px}
+.fa-settings-btn{
+ width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
+ background:var(--ai);color:var(--text);font-weight:800;font-size:13px;cursor:pointer;
+ display:flex;align-items:center;gap:10px
+}
+.fa-settings-btn:hover{background:var(--card);border-color:var(--text)}
+.fa-ctx{
+ position:fixed;z-index:5000;min-width:180px;padding:6px;
+ border:1px solid var(--border);border-radius:14px;background:var(--card);
+ box-shadow:0 16px 40px var(--shadow);display:none
+}
+.fa-ctx button{
+ display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;
+ border:0;border-radius:10px;background:transparent;color:var(--text);
+ font-size:13px;font-weight:600;cursor:pointer;text-align:left
+}
+.fa-ctx button:hover{background:var(--ai)}
+.fa-ctx button.danger{color:var(--danger)}
+.fa-modal-ov{
+ position:fixed;inset:0;z-index:5500;background:rgba(0,0,0,.4);
+ display:none;align-items:center;justify-content:center;padding:20px
+}
+.fa-modal-ov.open{display:flex}
+.fa-modal{
+ width:100%;max-width:360px;padding:18px;border-radius:18px;
+ border:1px solid var(--border);background:var(--card);box-shadow:0 20px 50px var(--shadow)
+}
+.fa-modal h3{margin:0 0 8px;font-size:16px;font-weight:900}
+.fa-modal p{margin:0 0 14px;color:var(--sub);font-size:13px;line-height:1.45}
+.fa-modal input,.fa-modal textarea{
+ width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);
+ background:var(--bg);color:var(--text);outline:0;font-size:14px;margin-bottom:12px
+}
+.fa-modal-actions{display:flex;gap:8px}
+.fa-modal-actions button{
+ flex:1;padding:11px;border-radius:12px;border:1px solid var(--border);
+ font-weight:800;font-size:13px;cursor:pointer
+}
+.fa-modal-actions .cancel{background:var(--ai);color:var(--text)}
+.fa-modal-actions .ok{background:var(--text);color:var(--card);border-color:var(--text)}
+.fa-modal-actions .danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+#settings-panel{
+ position:fixed;inset:0;z-index:4600;
+ display:none;align-items:stretch;justify-content:center;
+ background:rgba(0,0,0,.55);
+ padding:0;overflow:hidden;
+ -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)
+}
+#settings-panel.open{display:flex}
+.settings-inner{
+ width:100%;max-width:500px;height:100%;
+ background:var(--card);color:var(--text);
+ display:flex;flex-direction:column;
+ padding:16px 16px 24px;overflow-y:auto;
+ box-shadow:0 0 40px rgba(0,0,0,.35)
+}
+.settings-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-shrink:0}
+.settings-head h2{font-size:18px;font-weight:900;margin:0}
+.set-card{
+ border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--ai);margin-bottom:12px
+}
+.set-card h4{margin:0 0 6px;font-size:13px;font-weight:800}
+.set-card p{margin:0 0 10px;font-size:11px;color:var(--sub);line-height:1.4}
+.set-row{display:flex;gap:6px;flex-wrap:wrap}
+.set-row button,.set-card .set-btn{
+ padding:9px 12px;border-radius:10px;border:1px solid var(--border);
+ background:var(--card);color:var(--text);font-size:12px;font-weight:700;cursor:pointer
+}
+.set-row button.active{background:var(--text);color:var(--card);border-color:var(--text)}
+.menu-btn-left{
+ position:absolute;top:12px;left:15px;z-index:51
+}
+#core-node-status{left:56px}
+#cancel-send-btn{display:none!important}
+.send-btn.stop .material-symbols-rounded{font-variation-settings:'FILL' 1}
+
+
+/* Custom scrollbars */
+*{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-track{background:transparent}
+*::-webkit-scrollbar-thumb{
+ background:var(--border);border-radius:99px
+}
+*::-webkit-scrollbar-thumb:hover{background:var(--sub)}
+#chat::-webkit-scrollbar{width:5px}
+.fa-chats-list::-webkit-scrollbar,
+.agent-list::-webkit-scrollbar{width:5px}
+
+/* Plus menu */
+#plus-menu{
+ position:absolute;left:0;bottom:calc(100% + 10px);
+ display:none;min-width:220px;padding:8px;
+ border:1px solid var(--border);border-radius:16px;
+ background:var(--card);box-shadow:0 15px 40px var(--shadow);z-index:120
+}
+#plus-menu.open{display:block}
+.plus-item{
+ display:flex;align-items:center;gap:10px;width:100%;
+ padding:11px 12px;border:0;border-radius:12px;
+ background:transparent;color:var(--text);cursor:pointer;
+ font-size:13px;font-weight:700;text-align:left
+}
+.plus-item:hover{background:var(--ai)}
+.plus-item .material-symbols-rounded{color:var(--sub);font-size:20px}
+.plus-item .badge-new{
+ margin-left:auto;padding:3px 7px;border-radius:999px;
+ background:#007aff20;color:#007aff;font-size:9px;font-weight:900
+}
+.plus-divider{height:1px;background:var(--border);margin:6px 4px}
+
+/* Attachment chip above input */
+.attach-chip-row{
+ display:none;align-items:center;gap:8px;margin:0 4px 8px;
+ padding:8px 10px;border-radius:14px;border:1px solid var(--border);
+ background:var(--ai);max-width:100%
+}
+.attach-chip-row.visible{display:flex}
+.attach-chip-row img{
+ width:40px;height:40px;object-fit:cover;border-radius:10px;flex-shrink:0
+}
+.attach-chip-row .attach-meta{flex:1;min-width:0}
+.attach-chip-row .attach-name{
+ font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.attach-chip-row .attach-size{font-size:10px;color:var(--sub)}
+.attach-chip-row .attach-remove{
+ width:28px;height:28px;border-radius:50%;border:1px solid var(--border);
+ background:var(--card);color:var(--sub);cursor:pointer;
+ display:flex;align-items:center;justify-content:center;flex-shrink:0
+}
+.attach-chip-row .attach-remove:hover{color:var(--danger);border-color:var(--danger)}
+
+/* In-bubble attachment */
+.bubble-attach{
+ margin-bottom:8px;border-radius:12px;overflow:hidden;
+ border:1px solid rgba(255,255,255,.15);max-width:220px
+}
+.bubble.user .bubble-attach{border-color:rgba(255,255,255,.2)}
+.bubble-attach img{display:block;width:100%;max-height:180px;object-fit:cover}
+.bubble-attach .file-pill{
+ display:flex;align-items:center;gap:8px;padding:8px 10px;
+ background:rgba(0,0,0,.15);font-size:12px;font-weight:600
+}
+.bubble.user .bubble-attach .file-pill{background:rgba(255,255,255,.12)}
+
+
+#auto-ok-btn{
+ display:none;
+ position:fixed;
+ left:50%;
+ bottom:max(100px, env(safe-area-inset-bottom, 0px) + 88px);
+ transform:translateX(-50%) translateY(12px);
+ padding:12px 18px;
+ border:0;
+ border-radius:999px;
+ background:var(--accent);
+ color:var(--card);
+ font-weight:800;
+ font-size:13px;
+ z-index:6000;
+ align-items:center;
+ gap:8px;
+ box-shadow:0 12px 32px var(--shadow);
+ opacity:0;
+ transition:opacity .25s ease, transform .25s ease;
+ cursor:pointer;
+ touch-action:manipulation;
+ -webkit-tap-highlight-color:transparent;
+}
+#auto-ok-btn.auto-ok-visible{
+ opacity:1;
+ transform:translateX(-50%) translateY(0);
+}
+#auto-ok-btn.auto-ok-closing{
+ opacity:0;
+ transform:translateX(-50%) translateY(8px) scale(.96);
+ transition:opacity .5s ease, transform .5s ease;
+}
+body.auto-ok-running .popup,
+body.auto-ok-running #agent-popup,
+body.auto-ok-running #plus-menu,
+body.auto-ok-running #command-popup,
+body.auto-ok-running #core-panel,
+body.auto-ok-running .fa-sidebar,
+body.auto-ok-running #settings-panel,
+body.auto-ok-running .fa-modal-ov{
+ transition:opacity .6s ease, transform .6s ease !important;
+ opacity:0 !important;
+}
+
+</style>
+</head>
+
+<body data-theme="light">
+
+<div class="card" id="main-card">
+
+<button class="icon-btn menu-btn-left" id="sidebar-open-btn" title="Чаты">
+ <span class="material-symbols-rounded">menu</span>
+</button>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+<aside class="fa-sidebar" id="fa-sidebar">
+ <div class="fa-side-head">
+  <h2>Чаты</h2>
+  <button type="button" class="fa-side-close" id="sidebar-close-btn">
+   <span class="material-symbols-rounded">close</span>
+  </button>
+ </div>
+ <button type="button" class="fa-new-chat" id="fa-new-chat-btn">
+  <span class="material-symbols-rounded">add</span> Новый чат
+ </button>
+ <div class="fa-chats-label">Недавние · ПКМ для опций</div>
+ <div class="fa-chats-list" id="fa-chats-list"></div>
+ <div class="fa-side-foot">
+  <button type="button" class="fa-settings-btn" id="fa-open-settings">
+   <span class="material-symbols-rounded">settings</span>
+   Настройки
+  </button>
+ </div>
+</aside>
+
+<div class="fa-ctx" id="fa-ctx-menu">
+ <button type="button" data-act="rename"><span class="material-symbols-rounded">edit</span> Переименовать</button>
+ <button type="button" data-act="share"><span class="material-symbols-rounded">share</span> Поделиться</button>
+ <button type="button" class="danger" data-act="delete"><span class="material-symbols-rounded">delete</span> Удалить</button>
+</div>
+
+<div class="fa-modal-ov" id="fa-modal-rename">
+ <div class="fa-modal">
+  <h3>Переименовать чат</h3>
+  <p>Новое название сессии</p>
+  <input id="fa-rename-input" maxlength="80" placeholder="Название">
+  <div class="fa-modal-actions">
+   <button type="button" class="cancel" id="fa-rename-cancel">Отмена</button>
+   <button type="button" class="ok" id="fa-rename-ok">Сохранить</button>
+  </div>
+ </div>
+</div>
+
+<div class="fa-modal-ov" id="fa-modal-delete">
+ <div class="fa-modal">
+  <h3>Удалить чат?</h3>
+  <p id="fa-delete-text">Чат будет удалён без возможности восстановления.</p>
+  <div class="fa-modal-actions">
+   <button type="button" class="cancel" id="fa-delete-cancel">Отмена</button>
+   <button type="button" class="danger" id="fa-delete-ok">Удалить</button>
+  </div>
+ </div>
+</div>
+
+<div class="fa-modal-ov" id="fa-modal-share">
+ <div class="fa-modal">
+  <h3>Поделиться чатом</h3>
+  <p>Ссылка только для этого устройства (снимок в localStorage). Для полного шаринга откройте Core Node.</p>
+  <input id="fa-share-input" readonly>
+  <div class="fa-modal-actions">
+   <button type="button" class="cancel" id="fa-share-close">Закрыть</button>
+   <button type="button" class="ok" id="fa-share-copy">Копировать</button>
+  </div>
+ </div>
+</div>
+
+<div id="settings-panel">
+ <div class="settings-inner">
+ <div class="settings-head">
+  <h2>Настройки</h2>
+  <button type="button" class="icon-btn" id="settings-close-btn"><span class="material-symbols-rounded">close</span></button>
+ </div>
+ <div class="set-card">
+  <h4>Персонализация</h4>
+  <p>Тема интерфейса Fast Assistant</p>
+  <div class="set-row">
+   <button type="button" data-theme-set="light" id="set-theme-light">Светлая</button>
+   <button type="button" data-theme-set="dark" id="set-theme-dark">Тёмная</button>
+  </div>
+ </div>
+ <div class="set-card">
+  <h4>API</h4>
+  <p>Локальный AI работает без ключа. Для Gemini / ChatGPT / Claude подключайте ключи в <b>Core Node → Сторонние API</b> (поддержка AQ.).</p>
+  <button type="button" class="set-btn" id="set-open-core-api">Открыть Core Node API</button>
+ </div>
+ <div class="set-card">
+  <h4>Связь с Core Node</h4>
+  <p>Импорт чатов и обмен через postMessage. URL: oracle-ai-pro.github.io/oracle</p>
+  <div class="set-row">
+   <button type="button" class="set-btn" id="set-core-connect">Подключить</button>
+   <button type="button" class="set-btn" id="set-core-import">Импорт в Core Node</button>
+  </div>
+  <p style="margin-top:10px" id="set-core-status-line">Статус: offline</p>
+ </div>
+ <div class="set-card">
+  <h4>О приложении</h4>
+  <p>Fast Assistant <b>4.4</b> · Bridge PRO · satellite для Core Node 2.6 PRO</p>
+ </div>
+ </div>
+</div>
+
+
+
+<div id="core-node-status">
+ <span class="core-dot"></span>
+ <span id="core-status-text">CORE NODE: OFFLINE</span>
+</div>
+
+<div id="ai-head">FAST ASSISTANT • LOCAL COMMAND CENTER</div>
+
+<div class="controls">
+ <button class="icon-btn" id="menu-btn">
+  <span class="material-symbols-rounded">more_vert</span>
+ </button>
+</div>
+
+<!-- ================= WHAT'S NEW ================= -->
+
+<div id="whats-new">
+
+ <button class="wn-close" id="wn-close">✕</button>
+
+ <div class="wn-head">
+  <div class="wn-icon">
+   <span class="material-symbols-rounded">auto_awesome</span>
+  </div>
+
+  <div>
+   <div class="wn-title">Что нового?</div>
+   <div class="wn-ver">Fast Assistant 4.4</div>
+  </div>
+ </div>
+
+ <div class="feature">
+  <span class="material-symbols-rounded">menu</span>
+  <div>
+   <b>Чаты и боковое меню</b>
+   <small>ПКМ: переименовать, поделиться, удалить · Настройки внизу</small>
+  </div>
+ </div>
+ <div class="feature">
+  <span class="material-symbols-rounded">smart_toy</span>
+  <div>
+   <b>Agent Home</b>
+   <small>У каждого агента свой стартовый экран</small>
+  </div>
+ </div>
+
+ <div class="feature">
+  <span class="material-symbols-rounded">search</span>
+  <div>
+   <b>AI Search Packs</b>
+   <small>Новая база из 13 паков Kosmo Level</small>
+  </div>
+ </div>
+
+ <div class="feature">
+  <span class="material-symbols-rounded">database</span>
+  <div>
+   <b>Pack Intelligence</b>
+   <small>Поиск по версиям, комнатам, мирам, тегам и описаниям</small>
+  </div>
+ </div>
+
+ <div class="feature">
+  <span class="material-symbols-rounded">event</span>
+  <div>
+   <b>Ask Event</b>
+   <small>Актуальные события</small>
+  </div>
+ </div>
+
+ <div class="feature">
+  <span class="material-symbols-rounded">construction</span>
+  <div>
+   <b>BUILDER</b>
+   <small>Создание контента по запросу</small>
+  </div>
+ </div>
+
+ <div class="feature">
+  <span class="material-symbols-rounded">hub</span>
+  <div>
+   <b>Core Node</b>
+   <small>Bridge через postMessage</small>
+  </div>
+ </div>
+
+ <div class="feature">
+  <span class="material-symbols-rounded">terminal</span>
+  <div>
+   <b>// Commands</b>
+   <small>Быстрое меню команд</small>
+  </div>
+ </div>
+
+ <div class="wn-footer">
+  Fast Assistant 4.4 • AI Search Packs
+ </div>
+
+</div>
+
+<!-- ================= CORE PANEL ================= -->
+
+<div id="core-panel">
+
+ <div class="core-head">
+
+  <div class="core-title">
+   <span class="material-symbols-rounded">hub</span>
+   Core Node
+  </div>
+
+  <div class="core-state" id="core-state">
+   OFFLINE
+  </div>
+
+ </div>
+
+ <div class="core-info">
+  Core Node подключается через двусторонний postMessage Bridge.
+ </div>
+
+ <div class="core-actions">
+  <button class="core-btn primary" id="core-connect">
+   Подключить
+  </button>
+
+  <button class="core-btn" id="core-import">
+   Импорт
+  </button>
+ </div>
+
+</div>
+
+<!-- ================= MENU ================= -->
+
+<div class="popup" id="menu">
+
+ <div class="menu-item" id="clear-action">
+  <span class="material-symbols-rounded">delete</span>
+  Очистить
+ </div>
+
+ <div class="menu-item" id="commands-action">
+  <span class="material-symbols-rounded">terminal</span>
+  Быстрые команды
+ </div>
+
+ <div class="menu-item" id="core-action">
+  <span class="material-symbols-rounded">hub</span>
+  Core Node Bridge
+ </div>
+
+ <div class="menu-item" id="auto-ok-action" style="justify-content:space-between">
+
+  <span>Авто ОК</span>
+
+  <div id="auto-ok-switch"
+       style="width:36px;height:20px;background:var(--border);border-radius:10px;position:relative">
+
+   <div id="switch-thumb"
+        style="width:16px;height:16px;background:#fff;border-radius:50%;position:absolute;left:2px;top:2px">
+   </div>
+
+  </div>
+
+ </div>
+
+ <div class="submenu">
+
+  <div style="font-size:11px;font-weight:800;color:var(--sub)">
+   ВИД И НАСТРОЙКИ
+  </div>
+
+  <div class="view-row">
+
+   <button class="icon-btn" id="theme-btn">
+    <span class="material-symbols-rounded" id="theme-icon">
+     dark_mode
+    </span>
+   </button>
+
+   <button class="icon-btn" id="resize-btn">
+    <span class="material-symbols-rounded">
+     aspect_ratio
+    </span>
+   </button>
+
+  </div>
+
+ </div>
+
+</div>
+
+<!-- ================= RESIZE ================= -->
+
+<div class="popup resize-menu" id="resize-menu">
+
+ <input type="number"
+        id="custom-w"
+        min="400"
+        max="2000"
+        step="10"
+        value="500"
+        placeholder="Ширина (400–2000)">
+
+ <button class="apply" id="apply-size">
+  Применить
+ </button>
+
+ <div class="menu-item" id="fullscreen-action">
+  <span class="material-symbols-rounded">open_in_full</span>
+  Fullscreen
+ </div>
+
+ <div class="menu-item" id="reset-size">
+  <span class="material-symbols-rounded">restart_alt</span>
+  Дефолт
+ </div>
+
+</div>
+
+<!-- ================= CHAT ================= -->
+
+<div id="chat">
+ <div class="agent-home" id="default-home"></div>
+</div>
+
+<!-- ================= SELECTED AGENT ================= -->
+
+<div class="selected-agent"
+     id="selected-agent-box"
+     style="display:none;align-items:center;justify-content:space-between;margin:0 10px 8px;padding:8px 12px;border-radius:12px;background:var(--ai);font-size:13px;font-weight:700">
+
+ <span id="agent-label"></span>
+
+ <span class="material-symbols-rounded"
+       id="clear-agent"
+       style="cursor:pointer">
+  close
+ </span>
+
+</div>
+
+<!-- ================= AGENT POPUP ================= -->
+
+<div id="agent-popup">
+
+ <button class="close-btn" id="close-agent">
+  ✕
+ </button>
+
+ <h2>Выбор ИИ-Агента</h2>
+
+ <input class="agent-search"
+        id="agent-search"
+        placeholder="Поиск агента...">
+
+ <div class="agent-list">
+
+  <div class="agent-row"
+       data-agent="AI Reader"
+       data-icon="chrome_reader_mode">
+
+   <span class="material-symbols-rounded">
+    chrome_reader_mode
+   </span>
+
+   AI Reader
+
+  </div>
+
+  <div class="agent-row"
+       data-agent="AI Search Packs"
+       data-icon="search">
+
+   <span class="material-symbols-rounded">
+    search
+   </span>
+
+   AI Search Packs
+
+   <span class="event-label new-label">
+    НОВИНКА
+   </span>
+
+  </div>
+
+  <div class="agent-row"
+       data-agent="Worldpack AI"
+       data-icon="public">
+
+   <span class="material-symbols-rounded">
+    public
+   </span>
+
+   Worldpack AI
+
+  </div>
+
+  <div class="agent-row"
+       data-agent="Core Node"
+       data-icon="hub">
+
+   <span class="material-symbols-rounded">
+    hub
+   </span>
+
+   Core Node
+
+  </div>
+
+  <div class="agent-row"
+       data-agent="Конструктор Авторов"
+       data-icon="construction">
+
+   <span class="material-symbols-rounded">
+    construction
+   </span>
+
+   Конструктор Авторов
+
+  </div>
+
+  <div class="agent-row"
+       data-agent="Ask Event"
+       data-icon="event">
+
+   <span class="material-symbols-rounded">
+    event
+   </span>
+
+   Ask Event
+
+   <span class="event-label">
+    EVENT
+   </span>
+
+  </div>
+
+ </div>
+
+</div>
+
+<button type="button" id="auto-ok-btn" title="Закрыть все окна">
+ <span class="material-symbols-rounded">done_all</span>
+ <span>Авто ОК</span>
+</button>
+
+<!-- ================= INPUT ================= -->
+
+<div class="input-wrapper centered" id="input-wrapper">
+
+ <div id="command-popup">
+
+  <div class="command-title">
+   COMMANDS
+  </div>
+
+  <div id="command-list"></div>
+
+ </div>
+
+ <div id="plus-menu" role="menu">
+  <button type="button" class="plus-item" id="plus-attach">
+   <span class="material-symbols-rounded">attach_file</span>
+   Прикрепить Файл
+   <span class="badge-new">НОВИНКА</span>
+  </button>
+  <div class="plus-divider"></div>
+  <button type="button" class="plus-item" id="plus-agent">
+   <span class="material-symbols-rounded">smart_toy</span>
+   Выбрать Агента
+  </button>
+ </div>
+
+ <input type="file" id="fa-file-input" accept="image/*,.pdf,.txt,.json,.md,.csv,.zip,.doc,.docx" hidden>
+
+ <div class="attach-chip-row" id="attach-chip-row">
+  <img id="attach-preview-img" alt="" style="display:none">
+  <div class="attach-meta">
+   <div class="attach-name" id="attach-name">file</div>
+   <div class="attach-size" id="attach-size"></div>
+  </div>
+  <button type="button" class="attach-remove" id="attach-remove" title="Убрать">
+   <span class="material-symbols-rounded" style="font-size:18px">close</span>
+  </button>
+ </div>
+
+ <div class="input-area">
+
+  <button type="button" class="bind-btn" id="add-btn" aria-label="Меню">
+   <span class="material-symbols-rounded">
+    add
+   </span>
+  </button>
+
+  <textarea id="ai-q"
+            rows="1"
+            placeholder="Спросить..."
+            autocomplete="off"
+            spellcheck="false"></textarea>
+
+  <button class="send-btn" id="send-btn">
+
+   <span class="material-symbols-rounded"
+         id="send-icon">
+    arrow_upward
+   </span>
+
+  </button>
+
+ </div>
+
+</div>
+
+</div>
+
+<div id="alert">
+ <span id="alert-text">
+  Готово
+ </span>
+</div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   CONFIG
+========================================================= */
+
+const CONFIG={
+ version:"4.4",
+ coreUrl:"https://oracle-ai-pro.github.io/oracle/",
+ channel:"fast-assistant-core-node",
+ maxLocal:150,
+ whatsNew:"4.4",
+ /* Общие ключи с Core Node (один origin = общий localStorage) */
+ keys:{
+  sessions:"oracle_chat_sessions",
+  current:"oracle_current_session",
+  faChats:"fastAssistant.chats.v1",
+  faCurrent:"fastAssistant.currentChat",
+  bridgeMeta:"oracle_fa_bridge_meta"
+ }
+};
+
+/* =========================================================
+   KOSMO VERSIONS
+========================================================= */
+
+const versions=[
+ ["3.4.1","Patch: исправления Mini Virus"],
+ ["3.4","Kosmo Level 3.4"],
+ ["3.3","Kosmo Level 3.3"]
+];
+
+/* =========================================================
+   AI SEARCH PACKS DATABASE
+========================================================= */
+
+const packsData=[
+
+ {
+  id:"kosmo-1.0",
+  name:"Kosmo Level 1.0",
+  nickname:"Classic Pioneer",
+  version:"1.0",
+  developer:"KosmoLevel",
+  size:"N/A",
+  status:"Safe",
+  rooms:"15 комнат",
+  worlds:"3 мира",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["1.0","классический","первый","kosmolevel"],
+  desc:"Первый легендарный классический выпуск Kosmo Level. Содержит 15 комнат и 3 мира.",
+  qa:{
+   rooms:"15 комнат.",
+   developer:"Разработчик — KosmoLevel."
+  }
+ },
+
+ {
+  id:"kosmo-2.0",
+  name:"Kosmo Level 2.0",
+  nickname:"Extended Expansion",
+  version:"2.0",
+  developer:"KosmoLevel",
+  size:"N/A",
+  status:"Safe",
+  rooms:"30 комнат",
+  worlds:"5 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["2.0","расширение","kosmolevel"],
+  desc:"Второе крупное обновление Kosmo Level с расширением количества комнат и миров.",
+  qa:{
+   rooms:"30 комнат.",
+   worlds:"5 миров."
+  }
+ },
+
+ {
+  id:"kosmo-2.2",
+  name:"Kosmo Level 2.2",
+  nickname:"Stable Balance Update",
+  version:"2.2",
+  developer:"KosmoLevel",
+  size:"N/A",
+  status:"Safe",
+  rooms:"36 комнат",
+  worlds:"6 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["2.2","баланс","kosmolevel"],
+  desc:"Обновление с балансировкой и оптимизацией Kosmo Level.",
+  qa:{
+   new:"Балансировка и оптимизация."
+  }
+ },
+
+ {
+  id:"kosmo-2.5",
+  name:"Kosmo Level 2.5",
+  nickname:"World Expansion Pack",
+  version:"2.5",
+  developer:"KosmoLevel",
+  size:"N/A",
+  status:"Safe",
+  rooms:"45 комнат",
+  worlds:"8 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["2.5","миры","kosmolevel"],
+  desc:"Расширенный выпуск с большим количеством новых миров.",
+  qa:{
+   rooms:"45 комнат."
+  }
+ },
+
+ {
+  id:"kosmo-2.8",
+  name:"Kosmo Level 2.8",
+  nickname:"Pre-Modern Era",
+  version:"2.8",
+  developer:"KosmoLevel",
+  size:"N/A",
+  status:"Safe",
+  rooms:"54 комнаты",
+  worlds:"9 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["2.8","премодерн","kosmolevel"],
+  desc:"Версия переходного периода перед современной эпохой Kosmo Level.",
+  qa:{
+   worlds:"9 миров."
+  }
+ },
+
+ {
+  id:"kosmo-2.8.1",
+  name:"Kosmo Level 2.8.1",
+  nickname:"Halloween Edition 1.0 & KLL Only",
+  version:"2.8.1",
+  developer:"KosmoLevel",
+  size:"243 КБ",
+  status:"Not Secured",
+  rooms:"N/A",
+  worlds:"N/A",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["2.8.1","хеллоуин","kll","аналоговый","ностальгия"],
+  desc:"Старая аналоговая Halloween-версия. Предназначена только для KLL.",
+  qa:{
+   kll:"Нет. Пак предназначен только для KLL.",
+   size:"243 КБ."
+  }
+ },
+
+ {
+  id:"kosmo-2.9",
+  name:"Kosmo Level 2.9",
+  nickname:"Advanced Mechanics Era",
+  version:"2.9",
+  developer:"KosmoLevel",
+  size:"N/A",
+  status:"Safe",
+  rooms:"60 комнат",
+  worlds:"10 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["2.9","механики","kosmolevel"],
+  desc:"Эпоха новых и более продвинутых игровых механик.",
+  qa:{
+   rooms:"60 комнат."
+  }
+ },
+
+ {
+  id:"kosmo-3.0",
+  name:"Kosmo Level 3.0",
+  nickname:"NextGen Overhaul",
+  version:"3.0",
+  developer:"Team2013",
+  size:"N/A",
+  status:"Safe",
+  rooms:"64 комнаты",
+  worlds:"10 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["3.0","nextgen","team2013","переработка"],
+  desc:"Глобальная переработка Kosmo Level и переход к NextGen-эпохе.",
+  qa:{
+   developer:"Разработчик — Team2013."
+  }
+ },
+
+ {
+  id:"kosmo-3.1",
+  name:"Kosmo Level 3.1",
+  nickname:"Refined Story Edition",
+  version:"3.1",
+  developer:"Team2013",
+  size:"N/A",
+  status:"Safe",
+  rooms:"68 комнат",
+  worlds:"11 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["3.1","сюжет","team2013"],
+  desc:"Версия с улучшенной сюжетной частью.",
+  qa:{
+   rooms:"68 комнат.",
+   worlds:"11 миров."
+  }
+ },
+
+ {
+  id:"kosmo-3.2",
+  name:"Kosmo Level 3.2",
+  nickname:"Expanded Universe",
+  version:"3.2",
+  developer:"Team2013",
+  size:"N/A",
+  status:"Safe",
+  rooms:"70 комнат",
+  worlds:"11 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["3.2","расширение","team2013"],
+  desc:"Расширенная вселенная Kosmo Level.",
+  qa:{
+   rooms:"70 комнат."
+  }
+ },
+
+ {
+  id:"kosmo-3.3",
+  name:"Kosmo Level 3.3",
+  nickname:"Traitor Origins",
+  version:"3.3",
+  developer:"Team2013",
+  size:"N/A",
+  status:"Safe",
+  rooms:"72 комнаты",
+  worlds:"12 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["3.3","traitor","team2013"],
+  desc:"Версия, посвящённая происхождению истории Traitor.",
+  qa:{
+   rooms:"72 комнаты.",
+   worlds:"12 миров."
+  }
+ },
+
+ {
+  id:"kosmo-3.3.1",
+  name:"Kosmo Level 3.3.1",
+  nickname:"Traitor Return & Insider Edition",
+  version:"3.3.1",
+  developer:"Team2013",
+  size:"1,7 МБ",
+  status:"Safe",
+  rooms:"72 комнаты",
+  worlds:"12 миров",
+  download:"https://sites.google.com/view/kosmo-level",
+  tags:["3.3.1","insider","traitor 2.1","аналоговый","team2013"],
+  desc:"Insider-версия с возвращением Traitor Level 2.1, исправлениями ошибок и сюжета, а также пасхалкой Murzik.",
+  qa:{
+   new:"Возвращение Traitor Level 2.1, исправления и дополнительные сюжетные элементы.",
+   easter:"Есть пасхалка Murzik."
+  }
+ },
+
+ {
+  id:"kosmo-3.4",
+  name:"Kosmo Level 3.4",
+  nickname:"Secret Story Scenes & Extended Playtime",
+  version:"3.4",
+  developer:"Team2013",
+  size:"1,9 МБ",
+  status:"Safe",
+  rooms:"87 комнат",
+  worlds:"13 миров",
+  download:"https://oracle-ai-pro.github.io/oracle/packs/Kosmo_Level_3.4.worldpack",
+  tags:["3.4","финал","секретные сцены","полиция","ассистент","team2013"],
+  desc:"Крупнейшая версия Kosmo Level: 87 комнат и 13 миров. В конце есть секретная сцена с полицией и сцена «Я могу себя контролировать».",
+  qa:{
+   police:"После «Пак пройден» нужно подождать около 2 секунд, чтобы появилась секретная сцена.",
+   playtime:"Примерное прохождение — от 57 минут до 1 часа 20 минут."
+  }
+ }
+
+];
+
+/* =========================================================
+   STORIES
+========================================================= */
+
+const stories=[
+ ["location_searching","Потерянный Люми","Город, который меняет своё место каждую ночь.","Люми потерялся в огромном городе, где каждый дом меняет своё место."],
+ ["door_open","Секретный уровень","Дверь, которой не должно было быть.","Люми открывает старую дверь и попадает на неизвестный уровень."],
+ ["travel_explore","Мир без гравитации","Правила физики больше не работают.","Команда героев находит портал в мир без гравитации."],
+ ["chat","Сообщение из будущего","Кто оставил странное сообщение?","Люми получает сообщение от неизвестного помощника, который знает будущее."]
+];
+
+/* =========================================================
+   EVENT
+========================================================= */
+
+const event={
+ name:"Cosmo Aleksandr Merch (Beta)",
+ desc:"The merch collection is officially starting on the site. Products will be added gradually during the Beta phase."
+};
+
+/* =========================================================
+   COMMANDS
+========================================================= */
+
+const commands=[
+ ["//help","help","Показать команды"],
+ ["//theme","dark_mode","Переключить тему"],
+ ["//clear","delete","Очистить чат"],
+ ["//fullscreen","open_in_full","Fullscreen"],
+ ["//time","schedule","Текущее время"],
+ ["//agent","smart_toy","Выбрать агента"],
+ ["//packs","search","Открыть AI Search Packs"],
+ ["//event","event","Текущее событие"],
+ ["//askevent","event_available","Активировать Ask Event"],
+ ["//core","hub","Открыть Core Node"],
+ ["//coreconnect","lan","Подключить Core Node"],
+ ["//corestatus","network_check","Статус Core Node"],
+ ["//status","monitor_heart","Статус системы"],
+ ["//install","download","Kosmo Level 3.4"]
+];
+
+/* =========================================================
+   STATE
+========================================================= */
+
+const state={
+ agent:null,
+ sending:false,
+ request:0,
+ width:null,
+ autoOk:false,
+ autoTimer:null,
+ builderType:"Story",
+ core:false,
+ coreWindow:null,
+ coreTimer:null,
+ clearBackup:null,
+ commandIndex:0,
+ home:true,
+ pendingAttach:null
+};
+
+const $=id=>document.getElementById(id);
+
+const chat=$("chat");
+const input=$("ai-q");
+const inputWrap=$("input-wrapper");
+const sendBtn=$("send-btn");
+const sendIcon=$("send-icon");
+const commandPopup=$("command-popup");
+const commandList=$("command-list");
+const menu=$("menu");
+const resizeMenu=$("resize-menu");
+const agentPopup=$("agent-popup");
+const corePanel=$("core-panel");
+
+/* =========================================================
+   UTIL
+========================================================= */
+
+function esc(v){
+ return String(v)
+  .replace(/&/g,"&amp;")
+  .replace(/</g,"&lt;")
+  .replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;")
+  .replace(/'/g,"&#039;");
+}
+
+function emptyChat(){
+ return !chat.querySelector(".bubble");
+}
+
+function scroll(){
+ requestAnimationFrame(()=>{
+  chat.scrollTop=chat.scrollHeight;
+ });
+}
+
+function saveChat(){
+ try{
+  localStorage.setItem("fastAssistant.chat",chat.innerHTML);
+ }catch{}
+ try{
+  if(typeof loadFaChats==="function"){
+   const id=ensureCurrentChat();
+   const map=loadFaChats();
+   if(!map[id]) map[id]={title:"Новый чат",html:"",updated:Date.now()};
+   map[id].html=chat.innerHTML;
+   map[id].updated=Date.now();
+   if(!map[id].title||map[id].title==="Новый чат"){
+    const u=chat.querySelector(".bubble.user .text-content");
+    if(u&&u.textContent.trim()) map[id].title=u.textContent.trim().slice(0,48);
+   }
+   saveFaChats(map);
+   // Общий ключ с Core Node
+   try{ syncChatToCoreNodeStorage(id, map[id].title, map[id].html); }catch(err){}
+   if(typeof renderFaChatsList==="function") renderFaChatsList();
+  }
+ }catch(e){}
+}
+
+function saveSettings(){
+ try{
+  localStorage.setItem(
+   "fastAssistant.settings",
+   JSON.stringify({
+    theme:document.body.dataset.theme,
+    agent:state.agent,
+    width:state.width,
+    autoOk:state.autoOk,
+    builderType:state.builderType
+   })
+  );
+ }catch{}
+}
+
+function showAlert(text){
+ $("alert-text").textContent=text;
+ $("alert").style.display="block";
+
+ setTimeout(()=>{
+  $("alert").style.display="none";
+ },1800);
+}
+
+/* =========================================================
+   HOME
+========================================================= */
+
+function clearHome(){
+ chat.querySelectorAll(".agent-home").forEach(x=>x.remove());
+ chat.querySelectorAll("#default-home").forEach(x=>x.remove());
+}
+
+function setInputCentered(v){
+ inputWrap.classList.toggle("centered",v);
+}
+
+function renderHome(){
+
+ clearHome();
+
+ const a=state.agent?.name;
+
+ if(!a){
+  renderDefaultHome();
+  return;
+ }
+
+ if(a==="AI Reader")
+  renderReaderHome();
+
+ else if(a==="Worldpack AI")
+  renderWorldpackHome();
+
+ else if(a==="Конструктор Авторов")
+  renderBuilderHome();
+
+ else if(a==="Ask Event")
+  renderEventHome();
+
+ else if(a==="Core Node")
+  renderCoreHome();
+
+ else if(a==="AI Search Packs")
+  renderSearchPacksHome();
+
+ else
+  renderDefaultHome();
+
+ function homeHero(icon,title,sub){
+  return `
+   <div class="agent-hero">
+
+    <div class="agent-icon">
+     <span class="material-symbols-rounded">
+      ${icon}
+     </span>
+    </div>
+
+    <div class="agent-title">
+     ${title}
+    </div>
+
+    <div class="agent-sub">
+     ${sub}
+    </div>
+
+   </div>
+  `;
+ }
+
+ function renderDefaultHome(){
+
+  clearHome();
+
+  const h=document.createElement("div");
+
+  h.className="agent-home";
+
+  h.innerHTML=
+   homeHero(
+    "auto_awesome",
+    "Fast Assistant",
+    "Выбери агента, чтобы открыть его специальный экран."
+   );
+
+  chat.appendChild(h);
+
+  state.home=true;
+ }
+
+ function renderReaderHome(){
+
+  const h=document.createElement("div");
+
+  h.className="agent-home";
+
+  h.innerHTML=
+   homeHero(
+    "auto_stories",
+    "AI Reader",
+    "Выбери историю — она сразу появится в чате."
+   )+
+
+   `<div class="section">
+     Истории, которые могут тебе понравиться
+    </div>
+
+    <div class="grid">
+
+     ${stories.map((s,i)=>`
+
+      <button class="card-btn story"
+              data-index="${i}">
+
+       <span class="material-symbols-rounded">
+        ${s[0]}
+       </span>
+
+       <div style="margin-top:12px;font-size:13px;font-weight:800">
+        ${s[1]}
+       </div>
+
+       <div style="margin-top:4px;color:var(--sub);font-size:10px">
+        ${s[2]}
+       </div>
+
+      </button>
+
+     `).join("")}
+
+    </div>`;
+
+  chat.appendChild(h);
+
+  h.querySelectorAll(".story").forEach(b=>{
+
+   b.onclick=()=>{
+
+    const s=stories[Number(b.dataset.index)];
+
+    inputWrap.classList.remove("centered");
+
+    clearHome();
+
+    state.home=false;
+
+    sendUserMessage(
+     "AI Reader: "+s[3]
+    );
+
+   };
+
+  });
+
+ }
+
+ function renderWorldpackHome(){
+
+  const h=document.createElement("div");
+
+  h.className="agent-home";
+
+  h.innerHTML=
+   homeHero(
+    "public",
+    "Worldpack AI",
+    "Выбери версию Kosmo Level."
+   )+
+
+   `<div class="section">
+     Версии Kosmo Level
+    </div>
+
+    <div class="list">
+
+     ${versions.map(v=>`
+
+      <button class="list-btn"
+              data-url="${v[0]}">
+
+       <span class="material-symbols-rounded">
+        package_2
+       </span>
+
+       <span style="flex:1">
+        <b>Kosmo Level ${v[0]}</b><br>
+        <small style="color:var(--sub)">
+         ${v[1]}
+        </small>
+       </span>
+
+       <span class="material-symbols-rounded">
+        arrow_forward_ios
+       </span>
+
+      </button>
+
+     `).join("")}
+
+    </div>`;
+
+  chat.appendChild(h);
+
+  h.querySelectorAll(".list-btn").forEach((b,i)=>{
+
+   b.onclick=()=>window.open(
+    versions[i][0]==="3.3"
+     ?"https://oracle-ai-pro.github.io/oracle/packs/Kosmo_Level_3.3.worldpack"
+     :CONFIG.coreUrl,
+    "_blank",
+    "noopener"
+   );
+
+  });
+
+ }
+
+ function renderBuilderHome(){
+
+  const h=document.createElement("div");
+
+  h.className="agent-home";
+
+  h.innerHTML=
+   homeHero(
+    "construction",
+    "BUILDER",
+    "Создавай что угодно по своему запросу."
+   )+
+
+   `<div class="section">
+     Тип результата
+    </div>
+
+    <div class="builder-types">
+
+     <button class="builder-type active"
+             data-type="Story">
+      История
+     </button>
+
+     <button class="builder-type"
+             data-type="Level">
+      Уровень
+     </button>
+
+     <button class="builder-type"
+             data-type="Idea">
+      Идея
+     </button>
+
+    </div>
+
+    <div class="tip">
+     💡 Выбери тип и напиши ниже, что хочешь создать.
+    </div>`;
+
+  chat.appendChild(h);
+
+  h.querySelectorAll(".builder-type").forEach(b=>{
+
+   b.onclick=()=>{
+
+    h.querySelectorAll(".builder-type")
+     .forEach(x=>x.classList.remove("active"));
+
+    b.classList.add("active");
+
+    state.builderType=b.dataset.type;
+
+    saveSettings();
+
+   };
+
+  });
+
+ }
+
+ function renderEventHome(){
+
+  const h=document.createElement("div");
+
+  h.className="agent-home";
+
+  h.innerHTML=
+   homeHero(
+    "event",
+    "Ask Event",
+    "Актуальные события прямо на главном экране."
+   )+
+
+   `<div class="section">
+     Актуальные события
+    </div>
+
+    <div class="event">
+
+     <div class="event-top">
+
+      <div class="event-icon">
+       <span class="material-symbols-rounded">
+        shopping_bag
+       </span>
+      </div>
+
+      <div>
+       <b style="font-size:13px">
+        ${event.name}
+       </b>
+      </div>
+
+      <div class="event-status">
+       ACTIVE
+      </div>
+
+     </div>
+
+     <div class="event-desc">
+      ${event.desc}
+     </div>
+
+     <button class="event-action"
+             id="event-btn">
+      Спросить об этом событии
+     </button>
+
+    </div>`;
+
+  chat.appendChild(h);
+
+  $("event-btn").onclick=()=>{
+   input.focus();
+  };
+
+ }
+
+ function renderCoreHome(){
+
+  const h=document.createElement("div");
+
+  h.className="agent-home";
+
+  h.innerHTML=
+   homeHero(
+    "hub",
+    "Core Node",
+    "Центральный узел Fast Assistant. Подключение запускается автоматически."
+   )+
+
+   `<div class="event" style="text-align:center">
+
+    <div class="event-icon"
+         style="margin:auto auto 10px">
+
+     <span class="material-symbols-rounded">
+      lan
+     </span>
+
+    </div>
+
+    <b>Core Node Bridge</b>
+
+    <div class="event-desc">
+     Состояние соединения видно слева сверху.
+    </div>
+
+   </div>`;
+
+  chat.appendChild(h);
+
+ }
+
+ function renderSearchPacksHome(){
+
+  const h=document.createElement("div");
+
+  h.className="agent-home";
+
+  h.innerHTML=
+   homeHero(
+    "search",
+    "AI Search Packs",
+    "Интеллектуальный поиск по базе Kosmo Level."
+   )+
+
+   `<div class="section">
+     База знаний • ${packsData.length} паков
+    </div>
+
+    <div class="tip"
+         style="margin-bottom:12px">
+
+     🔍 Напиши, например:
+     <br><br>
+     <code>Kosmo 3.4</code>
+     <code>сколько миров в 3.3</code>
+     <code>пасхалка</code>
+     <code>Halloween</code>
+
+    </div>
+
+    <div class="list">
+
+     ${packsData.slice().reverse().slice(0,5).map(pack=>`
+
+      <button class="pack-mini"
+              data-pack="${pack.id}">
+
+       <div class="pack-mini-top">
+
+        <div class="pack-mini-icon">
+         <span class="material-symbols-rounded">
+          package_2
+         </span>
+        </div>
+
+        <div style="flex:1;min-width:0">
+
+         <div class="pack-mini-name">
+          ${esc(pack.name)}
+         </div>
+
+         <div class="pack-mini-meta">
+          v${esc(pack.version)} • ${esc(pack.rooms)} • ${esc(pack.worlds)}
+         </div>
+
+        </div>
+
+        <span class="pack-badge">
+         ${esc(pack.status)}
+        </span>
+
+       </div>
+
+      </button>
+
+     `).join("")}
+
+    </div>`;
+
+  chat.appendChild(h);
+
+  h.querySelectorAll(".pack-mini").forEach(btn=>{
+
+   btn.onclick=()=>{
+
+    const pack=packsData.find(
+     p=>p.id===btn.dataset.pack
+    );
+
+    if(!pack)return;
+
+    inputWrap.classList.remove("centered");
+
+    clearHome();
+
+    state.home=false;
+
+    sendUserMessage(
+     `Расскажи подробно про ${pack.name}`
+    );
+
+   };
+
+  });
+
+ }
+}
+
+/* =========================================================
+   AGENTS
+========================================================= */
+
+function updateAgentUI(){
+
+ if(!state.agent){
+
+  if($("selected-agent-box")) $("selected-agent-box").style.display="none";
+
+  if($("add-btn")) $("add-btn").style.display="flex";
+
+  if(input) input.placeholder="Спросить...";
+
+  return;
+ }
+
+ if($("selected-agent-box")) $("selected-agent-box").style.display="flex";
+
+ if($("agent-label")) $("agent-label").innerHTML=
+  `<span class="material-symbols-rounded"
+         style="font-size:16px">
+    ${esc(state.agent.icon)}
+   </span>
+   Агент: ${esc(state.agent.name)}`;
+
+ $("add-btn").style.display="flex";
+
+ input.placeholder=
+  state.agent.name==="Ask Event"
+   ?"Ask about Event..."
+   :state.agent.name==="Конструктор Авторов"
+   ?"Что создаём?"
+   :state.agent.name==="AI Search Packs"
+   ?"Поиск по пакам..."
+   :"Спросить...";
+}
+
+function selectAgent(name,icon,persist=true){
+
+ state.agent={
+  name,
+  icon
+ };
+
+ updateAgentUI();
+
+ agentPopup.style.display="none";
+
+ $("auto-ok-btn").style.display="none";
+
+ if(emptyChat()){
+
+  state.home=true;
+
+  setInputCentered(false);
+
+  renderHome();
+
+ }else{
+
+  state.home=false;
+
+  setInputCentered(false);
+
+ }
+
+ if(persist)
+  saveSettings();
+
+ broadcastCore({
+  type:"agent-changed",
+  agent:state.agent
+ });
+
+ if(name==="Core Node")
+  setTimeout(connectCore,100);
+}
+
+function clearAgent(){
+
+ state.agent=null;
+
+ updateAgentUI();
+
+ if(emptyChat()){
+
+  setInputCentered(true);
+
+  renderDefaultHome();
+
+ }else{
+
+  setInputCentered(false);
+
+ }
+
+ saveSettings();
+
+ broadcastCore({
+  type:"agent-cleared"
+ });
+}
+
+/* =========================================================
+   AUTO OK — кнопка через 5с при открытых окнах, закрывает всё ~1с
+========================================================= */
+
+function isOverlayOpen(){
+ const shown = el => {
+  if(!el) return false;
+  const st = getComputedStyle(el);
+  if(st.display==="none" || st.visibility==="hidden") return false;
+  if(el.classList.contains("open")) return true;
+  if(st.display==="block" || st.display==="flex") return true;
+  return false;
+ };
+ return !!(
+  shown(agentPopup) ||
+  shown($("plus-menu")) ||
+  (commandPopup && commandPopup.style.display==="block") ||
+  shown(menu) ||
+  shown(resizeMenu) ||
+  shown(corePanel) ||
+  $("fa-sidebar")?.classList.contains("open") ||
+  $("settings-panel")?.classList.contains("open") ||
+  $("fa-modal-rename")?.classList.contains("open") ||
+  $("fa-modal-delete")?.classList.contains("open") ||
+  $("fa-modal-share")?.classList.contains("open") ||
+  ($("whats-new") && !$("whats-new").classList.contains("hidden") && $("whats-new").style.display!=="none")
+ );
+}
+
+function syncAutoOkSwitchUI(){
+ const thumb=$("switch-thumb");
+ const sw=$("auto-ok-switch");
+ if(thumb) thumb.style.left = state.autoOk ? "18px" : "2px";
+ if(sw) sw.style.background = state.autoOk ? "var(--accent)" : "var(--border)";
+}
+
+function toggleAutoOk(){
+ state.autoOk = !state.autoOk;
+ syncAutoOkSwitchUI();
+ saveSettings();
+ if(!state.autoOk){
+  hideAutoOk();
+ }else{
+  scheduleAutoOk();
+ }
+}
+
+function hideAutoOk(){
+ clearTimeout(state.autoTimer);
+ state.autoTimer = null;
+ const btn=$("auto-ok-btn");
+ if(btn){
+  btn.classList.remove("auto-ok-visible","auto-ok-closing");
+  btn.style.display="none";
+ }
+}
+
+/** Показать кнопку через 5с, если тумблер ON и есть открытые окна */
+function scheduleAutoOk(){
+ clearTimeout(state.autoTimer);
+ state.autoTimer = null;
+ const btn=$("auto-ok-btn");
+ if(btn){
+  btn.classList.remove("auto-ok-visible","auto-ok-closing");
+  btn.style.display="none";
+ }
+ if(!state.autoOk) return;
+ state.autoTimer = setTimeout(()=>{
+  if(!state.autoOk) return;
+  if(!isOverlayOpen()) return;
+  const b=$("auto-ok-btn");
+  if(!b) return;
+  b.style.display="flex";
+  requestAnimationFrame(()=> b.classList.add("auto-ok-visible"));
+ }, 5000);
+}
+
+function closeAllOverlaysInstant(){
+ try{ if(agentPopup) agentPopup.style.display="none"; }catch(e){}
+ try{ closePlusMenu(); }catch(e){}
+ try{ if(commandPopup) commandPopup.style.display="none"; }catch(e){}
+ try{ if(menu) menu.style.display="none"; }catch(e){}
+ try{ if(resizeMenu) resizeMenu.style.display="none"; }catch(e){}
+ try{ if(corePanel) corePanel.style.display="none"; }catch(e){}
+ try{ closeSidebar(); }catch(e){}
+ try{ closeSettings(); }catch(e){}
+ try{ closeFaCtx(); }catch(e){}
+ ["fa-modal-rename","fa-modal-delete","fa-modal-share"].forEach(id=>{
+  $(id)?.classList.remove("open");
+ });
+ try{
+  const wn=$("whats-new");
+  if(wn){ wn.classList.add("hidden"); }
+ }catch(e){}
+ try{ hideAutoOk(); }catch(e){}
+}
+
+/** Нажатие АвтоОК: за ~1с закрыть все окна и спрятать кнопку */
+function runAutoOk(){
+ if(!state.autoOk) return;
+ const btn=$("auto-ok-btn");
+ if(btn){
+  btn.classList.add("auto-ok-closing");
+  btn.style.pointerEvents="none";
+ }
+ // лёгкое затемнение/схлопывание
+ document.body.classList.add("auto-ok-running");
+ setTimeout(()=>{
+  closeAllOverlaysInstant();
+  document.body.classList.remove("auto-ok-running");
+  if(btn){
+   btn.classList.remove("auto-ok-visible","auto-ok-closing");
+   btn.style.display="none";
+   btn.style.pointerEvents="";
+  }
+ }, 900);
+}
+
+// legacy onclick replaced below after DOM wires
+
+
+/* =========================================================
+   COMMANDS
+========================================================= */
+
+function renderCommands(filter=""){
+
+ commandList.innerHTML="";
+
+ const q=filter.toLowerCase();
+
+ const list=commands.filter(c=>
+  c[0].toLowerCase().includes(q)
+ );
+
+ list.forEach((c,i)=>{
+
+  const d=document.createElement("div");
+
+  d.className=
+   "command-item"+
+   (i===state.commandIndex?" selected":"");
+
+  d.dataset.command=c[0];
+
+  d.innerHTML=`
+   <div class="command-icon">
+    <span class="material-symbols-rounded">
+     ${c[1]}
+    </span>
+   </div>
+
+   <div class="command-main">
+    <div class="command-name">
+     ${esc(c[0])}
+    </div>
+
+    <div class="command-desc">
+     ${esc(c[2])}
+    </div>
+   </div>`;
+
+  d.onclick=()=>useCommand(c[0]);
+
+  commandList.appendChild(d);
+
+ });
+
+}
+
+function updateCommands(){
+
+ const v=input.value;
+
+ if(v.startsWith("//")&&!v.includes(" ")){
+
+  commandPopup.style.display="block";
+
+  state.commandIndex=0;
+
+  renderCommands(v.slice(2));
+
+ }else{
+
+  commandPopup.style.display="none";
+
+ }
+
+}
+
+function useCommand(cmd){
+
+ input.value=cmd;
+
+ commandPopup.style.display="none";
+
+ updateSend();
+
+ input.focus();
+}
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+function autoResize(){
+
+ input.style.height="36px";
+
+ input.style.height=
+  Math.min(input.scrollHeight,180)+"px";
+}
+
+function updateSend(){
+
+ if(state.sending){
+
+  sendBtn.classList.add("stop","active");
+
+  sendIcon.textContent="stop";
+
+  return;
+ }
+
+ sendBtn.classList.remove("stop");
+
+ sendIcon.textContent=
+  input.value.length>CONFIG.maxLocal
+   ?"rocket_launch"
+   :"arrow_upward";
+
+ sendBtn.classList.toggle(
+  "active",
+  !!(input.value.trim()||state.pendingAttach)
+ );
+}
+
+/* =========================================================
+   ASK EVENT
+========================================================= */
+
+function askEvent(q){
+
+ const x=q.toLowerCase();
+
+ if(x.includes("beta"))
+  return "It is marked as Beta because products will be added very slowly, and users are expected to create physical items using the provided graphics.";
+
+ if(
+  x.includes("change")||
+  x.includes("bring")||
+  x.includes("update")
+ )
+  return "This update officially launches the Cosmo Aleksandr merch collection on the site. Since it is in Beta, users need to apply the design materials to physical items manually.";
+
+ if(
+  x.includes("slow")||
+  x.includes("gradual")
+ )
+  return "Yes. Product additions will be gradual while the merch formats are being refined during the Beta phase.";
+
+ if(
+  x.includes("cup")||
+  x.includes("mug")||
+  x.includes("shirt")||
+  x.includes("hoodie")||
+  x.includes("product")||
+  x.includes("merch")
+ )
+  return "Currently, you can use the graphics for DIY items such as cups, mugs, t-shirts, hoodies, and more.";
+
+ return `
+  The current event is
+  <b>${esc(event.name)}</b>.
+  <br><br>
+  ${event.desc}
+ `;
+}
+
+/* =========================================================
+   BUILDER
+========================================================= */
+
+function builder(q){
+
+ return `
+  <b>🏗️ BUILDER → ${esc(state.builderType.toUpperCase())}</b>
+  <br><br>
+
+  Query:
+  <br>
+  <code>${esc(q)}</code>
+
+  <br><br>
+
+  Status: Ready for generation
+ `;
+}
+
+/* =========================================================
+   PACK DATABASE HELPERS
+========================================================= */
+
+function normalizeSearch(v){
+
+ return String(v||"")
+  .toLowerCase()
+  .replace(/ё/g,"е")
+  .replace(/[^\p{L}\p{N}.]+/gu," ")
+  .trim();
+}
+
+function packSearchText(pack){
+
+ return normalizeSearch([
+  pack.name,
+  pack.nickname,
+  pack.version,
+  pack.developer,
+  pack.size,
+  pack.status,
+  pack.rooms,
+  pack.worlds,
+  pack.desc,
+  ...(pack.tags||[]),
+  ...Object.values(pack.qa||{})
+ ].join(" "));
+}
+
+function findExactPack(q){
+
+ const x=normalizeSearch(q);
+
+ return packsData.find(pack=>{
+
+  const name=normalizeSearch(pack.name);
+  const version=normalizeSearch(pack.version);
+
+  return(
+   x===name||
+   x===version||
+   x.includes(name)||
+   name.includes(x)
+  );
+
+ });
+}
+
+function scorePack(pack,q){
+
+ const x=normalizeSearch(q);
+
+ if(!x)return 0;
+
+ const words=x.split(/\s+/).filter(Boolean);
+
+ const text=packSearchText(pack);
+
+ let score=0;
+
+ if(text.includes(x))
+  score+=12;
+
+ if(normalizeSearch(pack.name).includes(x))
+  score+=20;
+
+ if(normalizeSearch(pack.version)===x)
+  score+=30;
+
+ if(normalizeSearch(pack.nickname).includes(x))
+  score+=15;
+
+ words.forEach(word=>{
+
+  if(word.length<2)return;
+
+  if(normalizeSearch(pack.name).includes(word))
+   score+=8;
+
+  if(normalizeSearch(pack.nickname).includes(word))
+   score+=5;
+
+  if(normalizeSearch(pack.developer).includes(word))
+   score+=5;
+
+  if(normalizeSearch(pack.desc).includes(word))
+   score+=4;
+
+  if((pack.tags||[]).some(tag=>
+   normalizeSearch(tag).includes(word)
+  ))
+   score+=6;
+
+ });
+
+ return score;
+}
+
+function searchPacks(q){
+
+ const exact=findExactPack(q);
+
+ if(exact)
+  return [exact];
+
+ return packsData
+  .map(pack=>({
+   pack,
+   score:scorePack(pack,q)
+  }))
+  .filter(x=>x.score>0)
+  .sort((a,b)=>b.score-a.score)
+  .slice(0,5)
+  .map(x=>x.pack);
+}
+
+function packCard(pack){
+
+ const tags=(pack.tags||[])
+  .map(tag=>`
+   <span class="pack-tag">
+    ${esc(tag)}
+   </span>
+  `)
+  .join("");
+
+ const download=pack.download
+  ?`
+   <a class="pack-action"
+      href="${esc(pack.download)}"
+      target="_blank"
+      rel="noopener">
+    Скачать
+   </a>
+  `
+  :"";
+
+ return `
+  <div class="pack-result">
+
+   <div class="pack-result-head">
+
+    <div class="pack-result-icon">
+     <span class="material-symbols-rounded">
+      package_2
+     </span>
+    </div>
+
+    <div class="pack-result-title">
+
+     <b>
+      ${esc(pack.name)}
+     </b>
+
+     <small>
+      ${esc(pack.nickname)} • v${esc(pack.version)}
+     </small>
+
+    </div>
+
+    <span class="pack-badge ${pack.status!=="Safe"?"warning":""}">
+     ${esc(pack.status)}
+    </span>
+
+   </div>
+
+   <div class="pack-info">
+
+    <strong>Разработчик:</strong>
+    ${esc(pack.developer)}
+    <br>
+
+    <strong>Размер:</strong>
+    ${esc(pack.size)}
+    <br>
+
+    <strong>Комнаты:</strong>
+    ${esc(pack.rooms)}
+    <br>
+
+    <strong>Миры:</strong>
+    ${esc(pack.worlds)}
+
+    <br><br>
+
+    ${esc(pack.desc)}
+
+   </div>
+
+   <div class="pack-tags">
+    ${tags}
+   </div>
+
+   <div class="pack-actions">
+    ${download}
+
+    <button class="pack-action"
+            onclick="sendUserMessage('Подробнее про ${esc(pack.name)}')">
+     Подробнее
+    </button>
+   </div>
+
+  </div>
+ `;
+}
+
+function getPackDetailedAnswer(pack){
+
+ const qa=pack.qa||{};
+
+ return `
+  <b>🔍 ${esc(pack.name)}</b>
+  <br>
+  <small>${esc(pack.nickname)}</small>
+
+  <br><br>
+
+  📦 <b>Версия:</b> ${esc(pack.version)}
+  <br>
+  👤 <b>Разработчик:</b> ${esc(pack.developer)}
+  <br>
+  🏠 <b>Комнаты:</b> ${esc(pack.rooms)}
+  <br>
+  🌍 <b>Миры:</b> ${esc(pack.worlds)}
+  <br>
+  💾 <b>Размер:</b> ${esc(pack.size)}
+  <br>
+  🛡️ <b>Статус:</b> ${esc(pack.status)}
+
+  <br><br>
+
+  ${esc(pack.desc)}
+
+  ${
+   Object.keys(qa).length
+    ?`
+     <br><br>
+     <b>Дополнительно:</b>
+     <br>
+     ${Object.entries(qa)
+       .map(([key,value])=>
+        `• ${esc(value)}`
+       )
+       .join("<br>")}
+    `
+    :""
+  }
+
+  ${packCard(pack)}
+ `;
+}
+
+function searchPacksAI(q){
+
+ const x=normalizeSearch(q);
+
+ /* ================= ОБЩИЕ ВОПРОСЫ ================= */
+
+ if(
+  x.includes("сколько пак")||
+  x.includes("сколько версий")||
+  x.includes("сколько в базе")||
+  x.includes("количество пак")
+ ){
+  return `
+   🔍 <b>AI Search Packs</b>
+   <br><br>
+   В базе сейчас
+   <b>${packsData.length} паков Kosmo Level</b>.
+   <br><br>
+   Диапазон:
+   <b>1.0 → 3.4</b>
+  `;
+ }
+
+ /* ================= ПОСЛЕДНЯЯ ВЕРСИЯ ================= */
+
+ if(
+  x.includes("последн")||
+  x.includes("новейш")||
+  x.includes("самая новая")||
+  x.includes("актуальн")
+ ){
+  const pack=packsData[packsData.length-1];
+
+  return `
+   🔍 <b>Последний пак в базе</b>
+   <br><br>
+   ${packCard(pack)}
+  `;
+ }
+
+ /* ================= РАЗРАБОТЧИК ================= */
+
+ if(
+  x.includes("разработчик")||
+  x.includes("кто сделал")||
+  x.includes("автор")
+ ){
+
+  const kosmo=packsData
+   .filter(p=>p.developer==="KosmoLevel")
+   .map(p=>p.name);
+
+  const team=packsData
+   .filter(p=>p.developer==="Team2013")
+   .map(p=>p.name);
+
+  return `
+   👤 <b>Разработчики Kosmo Level</b>
+
+   <br><br>
+
+   <b>KosmoLevel:</b>
+   <br>
+   ${kosmo.map(esc).join("<br>")}
+
+   <br><br>
+
+   <b>Team2013:</b>
+   <br>
+   ${team.map(esc).join("<br>")}
+  `;
+ }
+
+ /* ================= КОМНАТЫ ================= */
+
+ if(
+  x.includes("комнат")||
+  x.includes("rooms")
+ ){
+
+  const matches=packsData
+   .filter(p=>p.rooms!=="N/A")
+   .sort((a,b)=>{
+    const na=parseInt(a.rooms);
+    const nb=parseInt(b.rooms);
+    return nb-na;
+   });
+
+  return `
+   🏠 <b>Количество комнат</b>
+   <br><br>
+   ${matches.map(p=>
+    `• <b>${esc(p.name)}</b> — ${esc(p.rooms)}`
+   ).join("<br>")}
+  `;
+ }
+
+ /* ================= МИРЫ ================= */
+
+ if(
+  x.includes("мир")||
+  x.includes("world")
+ ){
+
+  const matches=packsData
+   .filter(p=>p.worlds!=="N/A")
+   .sort((a,b)=>{
+    const na=parseInt(a.worlds);
+    const nb=parseInt(b.worlds);
+    return nb-na;
+   });
+
+  return `
+   🌍 <b>Количество миров</b>
+   <br><br>
+   ${matches.map(p=>
+    `• <b>${esc(p.name)}</b> — ${esc(p.worlds)}`
+   ).join("<br>")}
+  `;
+ }
+
+ /* ================= HALLOWEEN ================= */
+
+ if(
+  x.includes("halloween")||
+  x.includes("хеллоуин")||
+  x.includes("kll")
+ ){
+
+  const pack=packsData.find(
+   p=>p.id==="kosmo-2.8.1"
+  );
+
+  return `
+   🎃 <b>Halloween Pack</b>
+   <br><br>
+   ${packCard(pack)}
+  `;
+ }
+
+ /* ================= MURZIK ================= */
+
+ if(
+  x.includes("мурзик")||
+  x.includes("пасхалк")||
+  x.includes("easter")
+ ){
+
+  const matches=packsData.filter(p=>
+   p.desc.toLowerCase().includes("murzik")||
+   JSON.stringify(p.qa).toLowerCase().includes("murzik")||
+   p.tags.some(t=>t.toLowerCase().includes("аналог"))
+  );
+
+  return `
+   🐾 <b>Пасхалки и дополнительные элементы</b>
+   <br><br>
+   ${matches.map(packCard).join("")}
+  `;
+ }
+
+ /* ================= POLICE ================= */
+
+ if(
+  x.includes("полици")||
+  x.includes("police")||
+  x.includes("контрол")
+ ){
+
+  const pack=packsData.find(
+   p=>p.id==="kosmo-3.4"
+  );
+
+  return `
+   🚨 <b>Секретная сцена</b>
+   <br><br>
+   ${packCard(pack)}
+   <br>
+   После «Пак пройден» нужно подождать примерно
+   <b>2 секунды</b>, чтобы появилась секретная сцена.
+  `;
+ }
+
+ /* ================= TRAITOR ================= */
+
+ if(
+  x.includes("traitor")||
+  x.includes("предател")||
+  x.includes("траитор")
+ ){
+
+  const matches=packsData.filter(p=>
+   p.tags.some(t=>
+    t.toLowerCase().includes("traitor")
+   )||
+   p.desc.toLowerCase().includes("traitor")
+  );
+
+  return `
+   🎭 <b>Traitor Pack Intelligence</b>
+   <br><br>
+   ${matches.map(packCard).join("")}
+  `;
+ }
+
+ /* ================= SIZE ================= */
+
+ if(
+  x.includes("размер")||
+  x.includes("мб")||
+  x.includes("kb")||
+  x.includes("кб")
+ ){
+
+  return `
+   💾 <b>Размеры паков</b>
+   <br><br>
+   ${packsData.map(p=>
+    `• <b>${esc(p.name)}</b> — ${esc(p.size)}`
+   ).join("<br>")}
+  `;
+ }
+
+ /* ================= EXACT / SEARCH ================= */
+
+ const results=searchPacks(q);
+
+ if(!results.length){
+
+  return `
+   🔍 <b>AI Search Packs</b>
+   <br><br>
+   По запросу
+   <code>${esc(q)}</code>
+   ничего не найдено.
+   <br><br>
+   Попробуй:
+   <br>
+   • <code>Kosmo 3.4</code>
+   <br>
+   • <code>3.3.1</code>
+   <br>
+   • <code>пасхалка</code>
+   <br>
+   • <code>Halloween</code>
+   <br>
+   • <code>сколько комнат</code>
+   <br>
+   • <code>кто разработчик</code>
+  `;
+ }
+
+ return `
+  🔍 <b>AI Search Packs</b>
+  <br>
+  Найдено: <b>${results.length}</b>
+  <br><br>
+
+  ${results.map(packCard).join("")}
+ `;
+}
+
+/* =========================================================
+   LOCAL AI
+========================================================= */
+
+function localAI(q){
+
+ const x=q.toLowerCase().trim();
+
+ if(state.agent?.name==="Ask Event")
+  return askEvent(q);
+
+ if(state.agent?.name==="Конструктор Авторов")
+  return builder(q);
+
+ if(state.agent?.name==="AI Search Packs")
+  return searchPacksAI(q);
+
+ if(x==="//help")
+  return `
+   <b>⚡ Commands</b>
+   <br><br>
+   ${commands.map(c=>
+    `<code>${c[0]}</code>`
+   ).join("<br>")}
+  `;
+
+ if(x==="//theme"){
+  toggleTheme();
+  return "🌗 Тема переключена.";
+ }
+
+ if(x==="//clear"){
+  clearChat();
+  return "🧹 Чат очищен.";
+ }
+
+ if(x==="//fullscreen"){
+  setFullscreen();
+  return "🖥️ Fullscreen активирован.";
+ }
+
+ if(x==="//time")
+  return `
+   🕒 <b>
+   ${esc(new Date().toLocaleString("ru-RU"))}
+   </b>
+  `;
+
+ if(x==="//agent"){
+  toggleAgentPopup();
+  return "🤖 Открыл выбор агента.";
+ }
+
+ if(x==="//packs"){
+  selectAgent("AI Search Packs","search");
+  return `
+   🔍 <b>AI Search Packs</b> активирован.
+   <br><br>
+   В базе:
+   <b>${packsData.length} паков Kosmo Level</b>.
+  `;
+ }
+
+ if(x==="//askevent"){
+  selectAgent("Ask Event","event");
+  return `
+   🟢 <b>Ask Event</b> активирован.
+  `;
+ }
+
+ if(x==="//event")
+  return `
+   <b>🟢 Current Event</b>
+   <br><br>
+   <b>${esc(event.name)}</b>
+   <br><br>
+   ${event.desc}
+  `;
+
+ if(x==="//core"){
+  toggleCorePanel();
+  return "🔗 Core Node Bridge открыт.";
+ }
+
+ if(x==="//coreconnect"){
+  connectCore();
+  return "🔗 Подключаю Core Node.";
+ }
+
+ if(x==="//corestatus")
+  return coreStatus();
+
+ if(x==="//status")
+  return `
+   <b>FAST ASSISTANT STATUS</b>
+   <br><br>
+
+   🟢 Local AI: online
+   <br>
+   🟢 UI: online
+   <br>
+   🟢 Storage: online
+   <br>
+   ${state.core?"🟢":"⚪"}
+   Core Node:
+   ${state.core?"connected":"offline"}
+   <br>
+   🤖 Agent:
+   ${state.agent
+    ?esc(state.agent.name)
+    :"none"}
+  `;
+
+ if(x==="//install")
+  return `
+   <a href="https://oracle-ai-pro.github.io/oracle/packs/Kosmo_Level_3.4.worldpack"
+      target="_blank"
+      rel="noopener">
+    Скачать Kosmo Level 3.4
+   </a>
+  `;
+
+ if(
+  x.includes("привет")||
+  x.includes("йоу")||
+  x.includes("здарова")
+ )
+  return `
+   Привет! 👋
+   <br><br>
+   Я <b>Fast Assistant 4.3</b>.
+  `;
+
+ if(
+  x.includes("кто ты")||
+  x.includes("что ты умеешь")
+ )
+  return `
+   Я <b>Fast Assistant 4.3</b> —
+   локальный командный центр.
+   <br><br>
+
+   📖 AI Reader
+   <br>
+   🔍 AI Search Packs
+   <br>
+   🌍 Worldpack AI
+   <br>
+   🏗️ BUILDER
+   <br>
+   📅 Ask Event
+   <br>
+   🔗 Core Node
+   <br>
+   ⌘ Commands //
+  `;
+
+ if(
+  state.agent?.name==="Worldpack AI"&&
+  (
+   x.includes("version")||
+   x.includes("kosmo")||
+   x.includes("верси")
+  )
+ )
+  return `
+   <b>🌍 Kosmo Level</b>
+   <br><br>
+   ${versions.map(v=>
+    `• <b>${v[0]}</b> — ${v[1]}`
+   ).join("<br>")}
+  `;
+
+ return `
+  Интересный запрос 👀
+  <br><br>
+  Попробуй <code>//help</code>
+  или выбери агента.
+ `;
+}
+
+/* =========================================================
+   SEND
+========================================================= */
+
+function triggerSend(){
+
+ if(state.sending){
+  stopSend();
+  return;
+ }
+
+ const text=input.value.trim();
+
+ if(!text&&!state.pendingAttach)return;
+
+ commandPopup.style.display="none";
+ closePlusMenu();
+
+ setInputCentered(false);
+
+ clearHome();
+
+ state.home=false;
+
+ sendUserMessage(text||(state.pendingAttach?"📎 "+state.pendingAttach.name:""));
+}
+
+function sendUserMessage(text){
+
+ if(state.sending)return;
+
+ addUser(text);
+
+ input.value="";
+
+ input.style.height="36px";
+
+ updateSend();
+
+ broadcastCore({
+  type:"request",
+  requestType:"chat",
+  requestId:createId(),
+  text,
+  agent:state.agent,
+  builderType:state.builderType,
+  timestamp:Date.now()
+ });
+
+ state.sending=true;
+
+ const id=++state.request;
+
+ updateSend();
+ try{const ic=$("send-icon");if(ic)ic.textContent="stop";}catch(e){}
+
+
+ addTyping();
+
+ setTimeout(()=>{
+
+  if(id!==state.request)
+   return;
+
+  $("typing-indicator")?.remove();
+
+  /*
+   Главное исправление:
+   localAI вызывается только один раз.
+  */
+  const answer=localAI(text);
+
+  addAI(answer);
+
+  state.sending=false;
+
+  /* stop via send btn */
+
+  updateSend();
+
+  saveChat();
+
+  broadcastCore({
+   type:"local-response",
+   requestId:id,
+   text:answer,
+   agent:state.agent,
+   timestamp:Date.now()
+  });
+
+ },850);
+}
+
+function stopSend(){
+
+ if(!state.sending)return;
+
+ state.request++;
+
+ state.sending=false;
+
+ $("typing-indicator")?.remove();
+
+ /* stop via send btn */
+
+ updateSend();
+
+ addAI("⛔ Ответ остановлен.");
+
+ broadcastCore({
+  type:"generation-stopped",
+  timestamp:Date.now()
+ });
+}
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+function addUser(text){
+
+ const b=document.createElement("div");
+
+ b.className="bubble user";
+
+ const att=state.pendingAttach;
+
+ if(att){
+  const wrap=document.createElement("div");
+  wrap.className="bubble-attach";
+  if(att.isImage&&att.dataUrl){
+   const im=document.createElement("img");
+   im.src=att.dataUrl;
+   im.alt=att.name||"image";
+   wrap.appendChild(im);
+  }else{
+   const pill=document.createElement("div");
+   pill.className="file-pill";
+   pill.innerHTML='<span class="material-symbols-rounded" style="font-size:18px">draft</span><span></span>';
+   pill.querySelector("span:last-child").textContent=att.name||"файл";
+   wrap.appendChild(pill);
+  }
+  b.appendChild(wrap);
+ }
+
+ const c=document.createElement("span");
+
+ c.className="text-content";
+
+ c.textContent=text;
+
+ const a=document.createElement("div");
+
+ a.className="msg-actions";
+
+ const copy=document.createElement("button");
+
+ copy.className="msg-act-btn";
+
+ copy.title="Копировать";
+
+ copy.innerHTML=
+  '<span class="material-symbols-rounded">content_copy</span>';
+
+ copy.onclick=()=>{
+  copyText(text);
+ };
+
+ const edit=document.createElement("button");
+
+ edit.className="msg-act-btn";
+
+ edit.title="Изменить";
+
+ edit.innerHTML=
+  '<span class="material-symbols-rounded">edit</span>';
+
+ edit.onclick=()=>{
+
+  input.value=text;
+
+  b.remove();
+
+  autoResize();
+
+  updateSend();
+
+  input.focus();
+
+  saveChat();
+
+ };
+
+ a.append(copy,edit);
+
+ b.append(c,a);
+
+ chat.appendChild(b);
+
+ clearPendingAttach();
+
+ scroll();
+
+ saveChat();
+}
+
+function addAI(html){
+
+ const b=document.createElement("div");
+
+ b.className="bubble ai";
+
+ b.innerHTML=html;
+
+ chat.appendChild(b);
+
+ scroll();
+
+ saveChat();
+}
+
+function addTyping(){
+
+ $("typing-indicator")?.remove();
+
+ const b=document.createElement("div");
+
+ b.className="bubble ai";
+
+ b.id="typing-indicator";
+
+ b.innerHTML=
+  '<div class="typing"><span></span><span></span><span></span></div>';
+
+ chat.appendChild(b);
+
+ scroll();
+}
+
+async function copyText(text){
+
+ try{
+
+  await navigator.clipboard.writeText(text);
+
+  showAlert("Текст скопирован.");
+
+ }catch{
+
+  const t=document.createElement("textarea");
+
+  t.value=text;
+
+  document.body.appendChild(t);
+
+  t.select();
+
+  try{
+   document.execCommand("copy");
+  }catch{}
+
+  t.remove();
+
+  showAlert("Текст скопирован.");
+ }
+}
+
+/* =========================================================
+   CLEAR
+========================================================= */
+
+function clearChat(){
+
+ state.clearBackup=chat.innerHTML;
+
+ chat.innerHTML="";
+
+ state.request++;
+
+ state.sending=false;
+ try{const ic=$("send-icon");if(ic)ic.textContent="arrow_upward";}catch(e){}
+ updateSend();
+
+ state.home=true;
+
+ setInputCentered(!state.agent);
+
+ renderHome();
+
+ saveChat();
+
+ showAlert("Чат очищен.");
+
+ broadcastCore({
+  type:"chat-cleared",
+  timestamp:Date.now()
+ });
+}
+
+/* =========================================================
+   THEME
+========================================================= */
+
+function updateThemeIcon(){
+
+ $("theme-icon").textContent=
+  document.body.dataset.theme==="dark"
+   ?"light_mode"
+   :"dark_mode";
+}
+
+function toggleTheme(){
+
+ document.body.dataset.theme=
+  document.body.dataset.theme==="dark"
+   ?"light"
+   :"dark";
+
+ updateThemeIcon();
+
+ saveSettings();
+
+ menu.style.display="none";
+}
+
+/* =========================================================
+   MENUS
+========================================================= */
+
+function toggleMenu(){
+ resizeMenu.style.display="none";
+ menu.style.display=
+  menu.style.display==="block"
+   ?"none"
+   :"block";
+ scheduleAutoOk();
+}
+
+function toggleResize(){
+
+ menu.style.display="none";
+
+ resizeMenu.style.display=
+  resizeMenu.style.display==="flex"
+   ?"none"
+   :"flex";
+}
+
+function toggleAgentPopup(){
+
+ agentPopup.style.display=
+  agentPopup.style.display==="block"
+   ?"none"
+   :"block";
+
+ if(agentPopup.style.display==="block"){
+  $("agent-search")?.focus();
+  scheduleAutoOk();
+ }else{
+  hideAutoOk();
+  scheduleAutoOk();
+ }
+}
+
+/* =========================================================
+   SIZE
+========================================================= */
+
+const FA_MIN_WIDTH=400;
+const FA_MAX_WIDTH=2000;
+
+function clampFaWidth(n){
+ const raw=Number(n);
+ if(!Number.isFinite(raw)) return null;
+ const screenMax=Math.max(FA_MIN_WIDTH, Math.min(FA_MAX_WIDTH, window.innerWidth||FA_MIN_WIDTH));
+ // не уже 400, не шире экрана и не больше 2000
+ return Math.min(Math.max(FA_MIN_WIDTH, Math.round(raw)), screenMax);
+}
+
+function applyCardWidth(w){
+ const card=$("main-card");
+ if(!card) return;
+ card.classList.remove("fullscreen");
+ if(w==null){
+  card.classList.remove("sized");
+  card.style.width="";
+  card.style.maxWidth="";
+  card.style.minWidth="";
+  return;
+ }
+ const safe=clampFaWidth(w);
+ if(safe==null) return;
+ state.width=safe;
+ card.classList.add("sized");
+ card.style.width=safe+"px";
+ card.style.maxWidth="none";
+ card.style.minWidth=Math.min(FA_MIN_WIDTH, safe)+"px";
+ const inp=$("custom-w");
+ if(inp) inp.value=String(safe);
+}
+
+function applyWidth(){
+ const n=Number(($("custom-w")||{}).value);
+ if(!Number.isFinite(n) || n<=0){
+  showAlert("Укажите ширину от "+FA_MIN_WIDTH+" до "+FA_MAX_WIDTH);
+  return;
+ }
+ const safe=clampFaWidth(n);
+ if(safe==null) return;
+ applyCardWidth(safe);
+ saveSettings();
+ if(resizeMenu) resizeMenu.style.display="none";
+ showAlert("Ширина: "+safe+"px");
+}
+
+function setFullscreen(){
+ const card=$("main-card");
+ if(!card) return;
+ card.style.width="";
+ card.style.maxWidth="";
+ card.style.minWidth="";
+ card.classList.remove("sized");
+ card.classList.add("fullscreen");
+ if(resizeMenu) resizeMenu.style.display="none";
+}
+
+function resetSize(){
+ state.width=null;
+ applyCardWidth(null);
+ saveSettings();
+ if(resizeMenu) resizeMenu.style.display="none";
+ showAlert("Размер сброшен (по умолчанию)");
+}
+
+/* =========================================================
+   CORE NODE
+========================================================= */
+
+function createId(){
+
+ return Date.now().toString(36)+
+  "-"+
+  Math.random().toString(36).slice(2,9);
+}
+
+function setCore(status){
+
+ state.core=
+  status==="connected";
+
+ $("core-node-status").className=
+  status==="connected"
+   ?"connected"
+   :status==="waiting"
+   ?"waiting"
+   :status==="error"
+   ?"error"
+   :"";
+
+ $("core-status-text").textContent=
+  "CORE NODE: "+
+  status.toUpperCase();
+
+ $("core-state").textContent=
+  status.toUpperCase();
+
+ $("core-state").className=
+  "core-state "+status;
+
+ $("core-connect").textContent=
+  status==="connected"
+   ?"Переподключить"
+   :status==="waiting"
+   ?"Подключение..."
+   :"Подключить";
+ const line=$("set-core-status-line");
+ if(line) line.textContent="Статус: "+status;
+}
+
+function connectCore(){
+
+ clearTimeout(state.coreTimer);
+
+ if(
+  state.coreWindow&&
+  !state.coreWindow.closed
+ ){
+
+  state.coreWindow.focus();
+
+  setCore("waiting");
+
+  helloCore();
+
+  return;
+ }
+
+ setCore("waiting");
+
+ state.coreWindow=window.open(
+  CONFIG.coreUrl,
+  "FastAssistantCoreNode",
+  "width=1100,height=750,resizable=yes,scrollbars=yes"
+ );
+
+ if(!state.coreWindow){
+
+  setCore("error");
+
+  showAlert(
+   "Браузер заблокировал окно Core Node."
+  );
+
+  return;
+ }
+
+ let tries=0;
+
+ const timer=setInterval(()=>{
+
+  tries++;
+
+  if(
+   !state.coreWindow||
+   state.coreWindow.closed
+  ){
+
+   clearInterval(timer);
+
+   setCore("offline");
+
+   return;
+  }
+
+  helloCore();
+
+  if(
+   state.core||
+   tries>=14
+  )
+   clearInterval(timer);
+
+ },500);
+
+ state.coreTimer=setTimeout(()=>{
+
+  clearInterval(timer);
+
+  if(!state.core){
+
+   setCore("error");
+
+   addSystemMessage(
+    "⚠️ Core Node не ответил."
+   );
+
+  }
+
+ },7500);
+}
+
+function helloCore(){
+
+ if(
+  !state.coreWindow||
+  state.coreWindow.closed
+ )
+  return;
+
+ try{
+
+  state.coreWindow.postMessage({
+   channel:CONFIG.channel,
+   source:"Fast Assistant",
+   type:"hello",
+   version:CONFIG.version,
+   keys:CONFIG.keys,
+   timestamp:Date.now()
+  },"*");
+
+ }catch{}
+}
+
+function broadcastCore(payload){
+
+ const packet={
+  channel:CONFIG.channel,
+  source:"Fast Assistant",
+  version:CONFIG.version,
+  ...payload
+ };
+
+ if(
+  state.coreWindow&&
+  !state.coreWindow.closed
+ ){
+
+  try{
+   state.coreWindow.postMessage(
+    packet,
+    "*"
+   );
+  }catch{}
+
+ }
+
+ try{
+
+  if(
+   window.parent&&
+   window.parent!==window
+  )
+   window.parent.postMessage(
+    packet,
+    "*"
+   );
+
+ }catch{}
+}
+
+function handleCore(e){
+
+ const d=e.data;
+
+ if(
+  !d||
+  typeof d!=="object"||
+  d.channel!==CONFIG.channel||
+  d.source==="Fast Assistant"
+ )
+  return;
+
+ switch(d.type){
+
+  case"core-ready":
+  case"core-pong":
+
+   clearTimeout(state.coreTimer);
+
+   setCore("connected");
+
+   addSystemMessage(
+    "🔗 Core Node подключён."
+   );
+
+   break;
+
+  case"core-disconnected":
+
+   setCore("offline");
+
+   addSystemMessage(
+    "Core Node отключён."
+   );
+
+   break;
+
+  case"core-command":
+
+   if(typeof d.command==="string"){
+
+    input.value=d.command;
+
+    updateSend();
+
+    triggerSend();
+
+   }
+
+   break;
+
+  case"core-request-agent":
+
+   {
+
+    const row=[
+     ...document.querySelectorAll(".agent-row")
+    ].find(
+     x=>x.dataset.agent===d.agent
+    );
+
+    if(row)
+     selectAgent(
+      row.dataset.agent,
+      row.dataset.icon
+     );
+
+   }
+
+   break;
+
+  case"core-request-clear":
+
+   clearChat();
+
+   break;
+
+  case"core-import-message":
+
+   if(typeof d.text==="string")
+    addAI(esc(d.text));
+
+   break;
+
+  case"core-response":
+
+   if(typeof d.text==="string")
+    addAI(d.text);
+
+   break;
+
+ }
+}
+
+function coreStatus(){
+
+ return state.core
+
+  ?`
+   🔗 <b>Core Node</b>
+   <br><br>
+   🟢 Connection: active
+   <br>
+   🟢 Bridge: online
+   <br>
+   🟢 Protocol: postMessage
+  `
+
+  :`
+   🔗 <b>Core Node</b>
+   <br><br>
+   ⚪ Connection: offline
+   <br>
+   🟡 Fast Assistant работает локально.
+   <br><br>
+   <code>//coreconnect</code>
+  `;
+}
+
+function toggleCorePanel(){
+ corePanel.style.display=
+  corePanel.style.display==="block"
+   ?"none"
+   :"block";
+ scheduleAutoOk();
+}
+
+function importCore(){
+ // 1) Всегда пишем в общие ключи localStorage (если тот же origin)
+ let pushed=0;
+ try{ pushed=pushAllFaChatsToCoreNode(); }catch(e){}
+
+ // 2) postMessage если окно Core открыто
+ const payload={
+  version:CONFIG.version,
+  agent:state.agent,
+  builderType:state.builderType,
+  text:chat.innerText,
+  chats:loadFaChats(),
+  timestamp:new Date().toISOString()
+ };
+
+ if(state.core){
+  broadcastCore({ type:"import", payload });
+  showAlert("Передано в Core Node: "+pushed+" чат(ов) + live bridge");
+ }else{
+  showAlert(
+   pushed
+    ?"Сохранено в общий ключ oracle_chat_sessions ("+pushed+"). Откройте Core Node на этом же сайте — чаты появятся."
+    :"Нет чатов для экспорта. Подключите Core Node для live-bridge."
+  );
+  // всё равно пробуем открыть Core
+  try{ connectCore(); }catch(e){}
+ }
+}
+
+/* =========================================================
+   SYSTEM MESSAGE
+========================================================= */
+
+function addSystemMessage(text){
+
+ const b=document.createElement("div");
+
+ b.className="bubble system";
+
+ b.textContent=text;
+
+ chat.appendChild(b);
+
+ scroll();
+}
+
+/* =========================================================
+   LOAD
+========================================================= */
+
+function loadSettings(){
+
+ try{
+
+  const s=JSON.parse(
+   localStorage.getItem(
+    "fastAssistant.settings"
+   )||"null"
+  );
+
+  if(!s)
+   return;
+
+  if(
+   s.theme==="dark"||
+   s.theme==="light"
+  ){
+
+   document.body.dataset.theme=s.theme;
+
+   updateThemeIcon();
+  }
+
+  if(Number.isFinite(Number(s.width)) && Number(s.width)>0){
+   const safe=clampFaWidth(s.width);
+   if(safe!=null) applyCardWidth(safe);
+  }
+
+  if(s.autoOk){
+   state.autoOk=true;
+   syncAutoOkSwitchUI();
+  }
+
+  if(s.builderType)
+   state.builderType=s.builderType;
+
+  if(s.agent){
+
+   state.agent=s.agent;
+
+   updateAgentUI();
+  }
+
+ }catch{}
+}
+
+function loadChat(){
+
+ try{
+
+  const saved=
+   localStorage.getItem(
+    "fastAssistant.chat"
+   );
+
+  if(saved){
+
+   chat.innerHTML=saved;
+
+   state.home=false;
+
+   setInputCentered(false);
+  }
+
+ }catch{}
+}
+
+/* =========================================================
+   EVENTS
+========================================================= */
+
+$("menu-btn").onclick=e=>{
+
+ e.stopPropagation();
+
+ toggleMenu();
+};
+
+$("theme-btn").onclick=toggleTheme;
+
+$("resize-btn").onclick=toggleResize;
+
+$("clear-action").onclick=clearChat;
+
+$("commands-action").onclick=()=>{
+
+ menu.style.display="none";
+
+ addAI(
+  localAI("//help")
+ );
+
+};
+
+$("core-action").onclick=()=>{
+
+ menu.style.display="none";
+
+ toggleCorePanel();
+};
+
+$("auto-ok-action").onclick=(e)=>{ e.stopPropagation(); toggleAutoOk(); };
+$("auto-ok-btn")?.addEventListener("click",(e)=>{ e.stopPropagation(); runAutoOk(); });
+$("auto-ok-btn")?.addEventListener("touchend",(e)=>{ e.preventDefault(); e.stopPropagation(); runAutoOk(); },{passive:false});
+
+
+$("apply-size").onclick=applyWidth;
+
+$("fullscreen-action").onclick=setFullscreen;
+
+$("reset-size").onclick=resetSize;
+
+function wirePlusControls(){
+  const btn=document.getElementById("add-btn");
+  if(!btn) return;
+  if(btn.dataset.wired==="1") return;
+  btn.dataset.wired="1";
+  let lastOpen=0;
+  btn.addEventListener("click", function(e){
+    e.preventDefault();
+    e.stopPropagation();
+    if(document.body.classList.contains("settings-open")) return;
+    const now=Date.now();
+    if(now-lastOpen<300) return;
+    lastOpen=now;
+    togglePlusMenu();
+  });
+  // touch devices: click is enough if we don't also bind touchend with preventDefault
+  document.getElementById("plus-attach")?.addEventListener("click", function(e){
+    e.preventDefault(); e.stopPropagation();
+    pickFile();
+  });
+  document.getElementById("plus-agent")?.addEventListener("click", function(e){
+    e.preventDefault(); e.stopPropagation();
+    closePlusMenu();
+    setTimeout(function(){
+      const ap=document.getElementById("agent-popup");
+      if(ap){ ap.style.display="block"; document.getElementById("agent-search")?.focus(); }
+      try{ scheduleAutoOk(); }catch(err){}
+    }, 10);
+  });
+  document.getElementById("attach-remove")?.addEventListener("click", function(e){
+    e.stopPropagation(); clearPendingAttach();
+  });
+  document.getElementById("fa-file-input")?.addEventListener("change", onFilePicked);
+}
+// bind after DOM ready
+if(document.readyState==="loading"){
+  document.addEventListener("DOMContentLoaded", wirePlusControls);
+}else{
+  wirePlusControls();
+}
+window.addEventListener("load", wirePlusControls);
+
+
+$("close-agent").onclick=()=>{
+
+ agentPopup.style.display="none";
+
+ hideAutoOk();
+};
+
+$("clear-agent").onclick=clearAgent;
+
+$("core-node-status").onclick=toggleCorePanel;
+
+$("core-connect").onclick=connectCore;
+
+$("core-import").onclick=importCore;
+
+
+
+$("send-btn").onclick=triggerSend;
+
+$("wn-close").onclick=()=>{
+
+ $("whats-new").classList.add("hidden");
+
+ localStorage.setItem(
+  "fastAssistant.whatsNew",
+  CONFIG.whatsNew
+ );
+
+};
+
+document.querySelectorAll(".agent-row")
+ .forEach(row=>{
+
+  row.onclick=()=>{
+
+   selectAgent(
+    row.dataset.agent,
+    row.dataset.icon
+   );
+
+  };
+
+ });
+
+$("agent-search").oninput=function(){
+
+ const q=this.value.toLowerCase();
+
+ document.querySelectorAll(".agent-row")
+  .forEach(r=>{
+
+   r.style.display=
+    r.textContent.toLowerCase().includes(q)
+     ?"flex"
+     :"none";
+
+  });
+
+};
+
+input.addEventListener("input",()=>{
+
+ autoResize();
+
+ updateSend();
+
+ updateCommands();
+
+});
+
+input.addEventListener("keydown",e=>{
+
+ if(e.key==="Escape"){
+
+  commandPopup.style.display="none";
+
+  return;
+ }
+
+ if(
+  commandPopup.style.display==="block"
+ ){
+
+  const items=
+   commandList.querySelectorAll(
+    ".command-item"
+   );
+
+  if(e.key==="ArrowDown"){
+
+   e.preventDefault();
+
+   state.commandIndex=
+    Math.min(
+     state.commandIndex+1,
+     items.length-1
+    );
+
+   renderCommands(
+    input.value.slice(2)
+   );
+
+   return;
+  }
+
+  if(e.key==="ArrowUp"){
+
+   e.preventDefault();
+
+   state.commandIndex=
+    Math.max(
+     state.commandIndex-1,
+     0
+    );
+
+   renderCommands(
+    input.value.slice(2)
+   );
+
+   return;
+  }
+
+  if(
+   e.key==="Enter"&&
+   items[state.commandIndex]
+  ){
+
+   e.preventDefault();
+
+   useCommand(
+    items[state.commandIndex].dataset.command
+   );
+
+   return;
+  }
+ }
+
+ if(
+  e.key==="Enter"&&
+  !e.shiftKey
+ ){
+
+  e.preventDefault();
+
+  triggerSend();
+ }
+
+});
+
+document.addEventListener("click",e=>{
+
+ if(
+  !e.target.closest("#plus-menu")&&
+  !e.target.closest("#add-btn")
+ ){
+  // slight delay so + click is not cancelled by same event cycle
+  setTimeout(closePlusMenu, 0);
+ }
+
+ if(
+  menu&&!menu.contains(e.target)&&
+  !e.target.closest("#menu-btn")
+ )
+  menu.style.display="none";
+
+ if(
+  resizeMenu&&!resizeMenu.contains(e.target)&&
+  !e.target.closest("#resize-btn")
+ )
+  resizeMenu.style.display="none";
+
+ if(
+  !agentPopup.contains(e.target)&&
+  !e.target.closest("#add-btn")&&
+  !e.target.closest("#plus-menu")&&
+  !e.target.closest("#plus-agent")
+ ){
+
+  agentPopup.style.display="none";
+
+  hideAutoOk();
+ }
+
+ if(
+  corePanel&&!corePanel.contains(e.target)&&
+  !e.target.closest("#core-node-status")&&
+  !e.target.closest("#core-action")&&
+  !e.target.closest("#set-core-connect")
+ )
+  corePanel.style.display="none";
+
+});
+
+window.addEventListener(
+ "message",
+ handleCore
+);
+
+window.addEventListener("resize",()=>{
+ if(!state.width) return;
+ const card=$("main-card");
+ if(!card||card.classList.contains("fullscreen")) return;
+ // сохраняем выбранную ширину, поджимаем только если окно стало уже
+ const safe=clampFaWidth(state.width);
+ if(safe!=null){
+  state.width=safe; // если экран уже — уменьшаем preferred, но ≥400
+  card.classList.add("sized");
+  card.style.width=safe+"px";
+  card.style.maxWidth="none";
+  card.style.minWidth=Math.min(FA_MIN_WIDTH,safe)+"px";
+ }
+});
+
+/* =========================================================
+   START
+========================================================= */
+
+window.addEventListener("load",()=>{
+
+ loadSettings();
+
+ loadChat();
+
+ if(emptyChat()){
+
+  renderHome();
+
+  setInputCentered(
+   !state.agent
+  );
+
+ }
+
+ if(
+  localStorage.getItem(
+   "fastAssistant.whatsNew"
+  )===CONFIG.whatsNew
+ )
+  $("whats-new").classList.add("hidden");
+
+ updateSend();
+
+ input.focus();
+ if(state.autoOk) scheduleAutoOk();
+
+});
+
+/* =========================================================
+   PUBLIC API
+========================================================= */
+
+
+/* =========================================================
+   FA 4.4 — CHATS SIDEBAR + SETTINGS
+========================================================= */
+
+const FA_CHATS_KEY=(CONFIG.keys&&CONFIG.keys.faChats)||"fastAssistant.chats.v1";
+const FA_CURRENT_KEY=(CONFIG.keys&&CONFIG.keys.faCurrent)||"fastAssistant.currentChat";
+
+/* =========================================================
+   BRIDGE — общие ключи FA ↔ Core Node
+========================================================= */
+
+function readOracleSessions(){
+ try{ return JSON.parse(localStorage.getItem(CONFIG.keys.sessions)||"{}")||{}; }
+ catch(e){ return {}; }
+}
+function writeOracleSessions(map){
+ try{ localStorage.setItem(CONFIG.keys.sessions, JSON.stringify(map)); }catch(e){}
+}
+function markBridgeMeta(extra){
+ try{
+  const m=Object.assign(
+   JSON.parse(localStorage.getItem(CONFIG.keys.bridgeMeta)||"{}")||{},
+   { lastSync:Date.now(), from:"FastAssistant", version:CONFIG.version },
+   extra||{}
+  );
+  localStorage.setItem(CONFIG.keys.bridgeMeta, JSON.stringify(m));
+ }catch(e){}
+}
+
+/** Пишет текущий FA-чат в oracle_chat_sessions (формат Core Node) */
+function syncChatToCoreNodeStorage(id, title, html){
+ if(!id) return;
+ const map=readOracleSessions();
+ const key=id.startsWith("fa_")||id.startsWith("session_")?id:("fa_"+id);
+ map[key]={
+  title: title||"Чат из Fast Assistant",
+  html: html||"",
+  updated: Date.now(),
+  source: "fast-assistant"
+ };
+ writeOracleSessions(map);
+ markBridgeMeta({ lastChatId:key });
+ return key;
+}
+
+/** Тянет чаты Core Node в список FA (только id session_* без source fa) */
+function pullCoreNodeChatsIntoFa(){
+ const oracle=readOracleSessions();
+ const fa=loadFaChats();
+ let n=0;
+ Object.keys(oracle).forEach(id=>{
+  const s=oracle[id];
+  if(!s||typeof s!=="object") return;
+  if(fa[id]) return; // already
+  fa[id]={
+   title:(s.title||"Core Node чат"),
+   html:s.html||"",
+   updated:s.updated||Date.now(),
+   source:"core-node"
+  };
+  n++;
+ });
+ if(n) saveFaChats(fa);
+ return n;
+}
+
+function pushAllFaChatsToCoreNode(){
+ const fa=loadFaChats();
+ const oracle=readOracleSessions();
+ let n=0;
+ Object.keys(fa).forEach(id=>{
+  const c=fa[id];
+  if(!c) return;
+  const key=id.startsWith("session_")?id:(id.startsWith("fa_")?id:("fa_"+id));
+  oracle[key]={
+   title:c.title||"FA чат",
+   html:c.html||"",
+   updated:c.updated||Date.now(),
+   source:"fast-assistant"
+  };
+  n++;
+ });
+ writeOracleSessions(oracle);
+ markBridgeMeta({ pushed:n });
+ return n;
+}
+
+
+function loadFaChats(){
+ try{return JSON.parse(localStorage.getItem(FA_CHATS_KEY)||"{}")||{};}
+ catch(e){return {};}
+}
+function saveFaChats(map){
+ localStorage.setItem(FA_CHATS_KEY,JSON.stringify(map));
+}
+function getCurrentChatId(){
+ return localStorage.getItem(FA_CURRENT_KEY)||null;
+}
+function setCurrentChatId(id){
+ if(id) localStorage.setItem(FA_CURRENT_KEY,id);
+ else localStorage.removeItem(FA_CURRENT_KEY);
+}
+
+function ensureCurrentChat(){
+ let id=getCurrentChatId();
+ const map=loadFaChats();
+ if(id&&map[id]) return id;
+ id="fa_"+Date.now().toString(36);
+ map[id]={title:"Новый чат",html:"",updated:Date.now()};
+ saveFaChats(map);
+ setCurrentChatId(id);
+ return id;
+}
+
+function renderFaChatsList(){
+ const list=$("fa-chats-list");
+ if(!list) return;
+ const map=loadFaChats();
+ const cur=getCurrentChatId();
+ const ids=Object.keys(map).sort((a,b)=>(map[b].updated||0)-(map[a].updated||0));
+ list.innerHTML="";
+ if(!ids.length){
+  list.innerHTML='<div style="padding:12px;color:var(--sub);font-size:12px">Нет чатов — создайте новый</div>';
+  return;
+ }
+ ids.forEach(id=>{
+  const item=document.createElement("button");
+  item.type="button";
+  item.className="fa-chat-item"+(id===cur?" active":"");
+  item.dataset.id=id;
+  item.innerHTML='<span class="material-symbols-rounded" style="font-size:18px;color:var(--sub)">chat</span><span class="title"></span>';
+  item.querySelector(".title").textContent=map[id].title||"Чат";
+  item.onclick=()=>openFaChat(id);
+  item.oncontextmenu=(e)=>{
+   e.preventDefault();
+   openFaCtx(e.clientX,e.clientY,id);
+  };
+  list.appendChild(item);
+ });
+}
+
+function openFaChat(id){
+ const map=loadFaChats();
+ if(!map[id]) return;
+ // save current first
+ try{saveChat();}catch(e){}
+ setCurrentChatId(id);
+ chat.innerHTML=map[id].html||"";
+ state.home=!chat.querySelector(".bubble");
+ if(state.home){
+  try{renderHome();}catch(e){}
+  setInputCentered(!state.agent);
+ }else{
+  setInputCentered(false);
+ }
+ closeSidebar();
+ renderFaChatsList();
+ showAlert("Чат: "+(map[id].title||""));
+}
+
+function newFaChat(){
+ try{saveChat();}catch(e){}
+ const id="fa_"+Date.now().toString(36);
+ const map=loadFaChats();
+ map[id]={title:"Новый чат",html:"",updated:Date.now()};
+ saveFaChats(map);
+ setCurrentChatId(id);
+ chat.innerHTML="";
+ state.home=true;
+ state.agent=null;
+ try{updateAgentUI();}catch(e){}
+ setInputCentered(true);
+ renderHome();
+ renderFaChatsList();
+ closeSidebar();
+ showAlert("Новый чат");
+}
+
+let _ctxChatId=null;
+function openFaCtx(x,y,id){
+ _ctxChatId=id;
+ const m=$("fa-ctx-menu");
+ if(!m) return;
+ m.style.display="block";
+ const pad=8;
+ const w=m.offsetWidth||180,h=m.offsetHeight||120;
+ m.style.left=Math.min(x,window.innerWidth-w-pad)+"px";
+ m.style.top=Math.min(y,window.innerHeight-h-pad)+"px";
+}
+function closeFaCtx(){
+ const m=$("fa-ctx-menu");
+ if(m) m.style.display="none";
+ _ctxChatId=null;
+}
+
+function openSidebar(){
+ $("fa-sidebar")?.classList.add("open");
+ $("sidebar-overlay")?.classList.add("open");
+ renderFaChatsList();
+ scheduleAutoOk();
+}
+function closeSidebar(){
+ $("fa-sidebar")?.classList.remove("open");
+ $("sidebar-overlay")?.classList.remove("open");
+ closeFaCtx();
+}
+function openSettings(){
+ closeSidebar();
+ closePlusMenu();
+ try{commandPopup.style.display="none";}catch(e){}
+ try{agentPopup.style.display="none";}catch(e){}
+ document.body.classList.add("settings-open");
+ $("settings-panel")?.classList.add("open");
+ scheduleAutoOk();
+ const th=document.body.dataset.theme||"light";
+ $("set-theme-light")?.classList.toggle("active",th==="light");
+ $("set-theme-dark")?.classList.toggle("active",th==="dark");
+ const st=$("set-core-status-line");
+ if(st) st.textContent="Статус: "+(state.core?"connected":"offline");
+}
+function closeSettings(){
+ $("settings-panel")?.classList.remove("open");
+ document.body.classList.remove("settings-open");
+}
+
+// wire DOM
+document.addEventListener("DOMContentLoaded",()=>{});
+window.addEventListener("load",()=>{
+ // migrate single chat into map once
+ try{
+  const map=loadFaChats();
+  if(!Object.keys(map).length){
+   const saved=localStorage.getItem("fastAssistant.chat");
+   if(saved){
+    const id="fa_migrated";
+    map[id]={title:"Основной чат",html:saved,updated:Date.now()};
+    saveFaChats(map);
+    setCurrentChatId(id);
+   }
+  }
+  ensureCurrentChat();
+  try{ pullCoreNodeChatsIntoFa(); }catch(e){}
+  renderFaChatsList();
+  const hash=location.hash||"";
+  if(hash.startsWith("#fa-chat=")){
+   const id=decodeURIComponent(hash.slice(9));
+   if(loadFaChats()[id]) openFaChat(id);
+  }
+ }catch(e){}
+
+ $("sidebar-open-btn")?.addEventListener("click",openSidebar);
+ $("sidebar-close-btn")?.addEventListener("click",closeSidebar);
+ $("sidebar-overlay")?.addEventListener("click",closeSidebar);
+ $("fa-new-chat-btn")?.addEventListener("click",newFaChat);
+ $("fa-open-settings")?.addEventListener("click",openSettings);
+ $("settings-close-btn")?.addEventListener("click",closeSettings);
+ $("settings-panel")?.addEventListener("click",(e)=>{
+  if(e.target===$("settings-panel")) closeSettings();
+ });
+
+
+ $("fa-ctx-menu")?.querySelectorAll("button").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+   const act=btn.dataset.act;
+   const id=_ctxChatId;
+   closeFaCtx();
+   if(!id) return;
+   if(act==="rename"){
+    const map=loadFaChats();
+    $("fa-rename-input").value=map[id]?.title||"";
+    $("fa-modal-rename").classList.add("open");
+    $("fa-modal-rename").dataset.id=id;
+    setTimeout(()=>$("fa-rename-input")?.focus(),50);
+   }
+   if(act==="delete"){
+    const map=loadFaChats();
+    $("fa-delete-text").textContent='Удалить «'+(map[id]?.title||"чат")+'» без возможности восстановления?';
+    $("fa-modal-delete").classList.add("open");
+    $("fa-modal-delete").dataset.id=id;
+   }
+   if(act==="share"){
+    const link=location.href.split("#")[0]+"#fa-chat="+encodeURIComponent(id);
+    $("fa-share-input").value=link;
+    $("fa-modal-share").classList.add("open");
+    $("fa-modal-share").dataset.id=id;
+   }
+  });
+ });
+
+ $("fa-rename-cancel")?.addEventListener("click",()=>$("fa-modal-rename").classList.remove("open"));
+ $("fa-rename-ok")?.addEventListener("click",()=>{
+  const id=$("fa-modal-rename").dataset.id;
+  const title=($("fa-rename-input").value||"").trim()||"Без названия";
+  const map=loadFaChats();
+  if(map[id]){map[id].title=title;map[id].updated=Date.now();saveFaChats(map);}
+  $("fa-modal-rename").classList.remove("open");
+  renderFaChatsList();
+  showAlert("Название сохранено");
+ });
+
+ $("fa-delete-cancel")?.addEventListener("click",()=>$("fa-modal-delete").classList.remove("open"));
+ $("fa-delete-ok")?.addEventListener("click",()=>{
+  const id=$("fa-modal-delete").dataset.id;
+  const map=loadFaChats();
+  delete map[id];
+  saveFaChats(map);
+  $("fa-modal-delete").classList.remove("open");
+  if(getCurrentChatId()===id){
+   const ids=Object.keys(map);
+   if(ids.length) openFaChat(ids.sort((a,b)=>(map[b].updated||0)-(map[a].updated||0))[0]);
+   else newFaChat();
+  }else renderFaChatsList();
+  showAlert("Чат удалён");
+ });
+
+ $("fa-share-close")?.addEventListener("click",()=>$("fa-modal-share").classList.remove("open"));
+ $("fa-share-copy")?.addEventListener("click",()=>{
+  const v=$("fa-share-input").value;
+  navigator.clipboard?.writeText(v).then(()=>showAlert("Ссылка скопирована")).catch(()=>showAlert(v));
+ });
+
+ document.querySelectorAll("[data-theme-set]").forEach(b=>{
+  b.addEventListener("click",()=>{
+   document.body.dataset.theme=b.dataset.themeSet;
+   updateThemeIcon();
+   saveSettings();
+   openSettings();
+  });
+ });
+ $("set-core-connect")?.addEventListener("click",()=>{connectCore();openSettings();});
+ $("set-core-import")?.addEventListener("click",()=>{importCore();});
+ $("set-open-core-api")?.addEventListener("click",()=>{
+  window.open(CONFIG.coreUrl,"FastAssistantCoreNode");
+  showAlert("Откройте в Core Node: Настройки → Сторонние API");
+ });
+
+ document.addEventListener("click",(e)=>{
+  if(!$("fa-ctx-menu")?.contains(e.target)) closeFaCtx();
+ });
+});
+
+
+
+/* =========================================================
+   ATTACHMENTS + PLUS MENU
+========================================================= */
+
+function formatBytes(n){
+ if(n<1024) return n+" B";
+ if(n<1048576) return (n/1024).toFixed(1)+" KB";
+ return (n/1048576).toFixed(1)+" MB";
+}
+
+function clearPendingAttach(){
+ state.pendingAttach=null;
+ const row=$("attach-chip-row");
+ const img=$("attach-preview-img");
+ if(row) row.classList.remove("visible");
+ if(img){img.src="";img.style.display="none";}
+ const fi=$("fa-file-input");
+ if(fi) fi.value="";
+ try{updateSend();}catch(e){}
+}
+
+function showPendingAttach(file,dataUrl){
+ state.pendingAttach={
+  name:file.name,
+  size:file.size,
+  type:file.type||"application/octet-stream",
+  dataUrl:dataUrl||null,
+  isImage:!!(file.type&&file.type.startsWith("image/"))
+ };
+ const row=$("attach-chip-row");
+ const img=$("attach-preview-img");
+ const nameEl=$("attach-name");
+ const sizeEl=$("attach-size");
+ if(nameEl) nameEl.textContent=file.name;
+ if(sizeEl) sizeEl.textContent=formatBytes(file.size);
+ if(img){
+  if(state.pendingAttach.isImage&&dataUrl){
+   img.src=dataUrl;
+   img.style.display="block";
+  }else{
+   img.removeAttribute("src");
+   img.style.display="none";
+  }
+ }
+ if(row) row.classList.add("visible");
+ try{updateSend();}catch(e){}
+}
+
+function openPlusMenu(forceToggle){
+ try{ if(agentPopup) agentPopup.style.display="none"; }catch(e){}
+ const m=document.getElementById("plus-menu");
+ if(!m) return;
+ if(forceToggle){
+  m.classList.toggle("open");
+ }else if(m.classList.contains("open")){
+  m.classList.remove("open");
+ }else{
+  m.classList.add("open");
+ }
+ try{
+  if(m.classList.contains("open")) scheduleAutoOk();
+  else { hideAutoOk(); }
+ }catch(e){}
+}
+function closePlusMenu(){
+ document.getElementById("plus-menu")?.classList.remove("open");
+}
+function togglePlusMenu(){
+ openPlusMenu(true);
+}
+
+function pickFile(){
+ closePlusMenu();
+ $("fa-file-input")?.click();
+}
+
+function onFilePicked(e){
+ const file=e.target.files&&e.target.files[0];
+ if(!file) return;
+ const max=12*1024*1024; // 12 MB client-side
+ if(file.size>max){
+  showAlert("Файл больше 12 МБ");
+  e.target.value="";
+  return;
+ }
+ if(file.type&&file.type.startsWith("image/")){
+  const reader=new FileReader();
+  reader.onload=()=>showPendingAttach(file,reader.result);
+  reader.onerror=()=>showAlert("Не удалось прочитать файл");
+  reader.readAsDataURL(file);
+ }else{
+  showPendingAttach(file,null);
+ }
+}
+
+// override add-btn to open plus menu instead of agents directly
+
+window.FastAssistant={
+
+ status:()=>({
+  version:CONFIG.version,
+  localAI:true,
+  sending:state.sending,
+  agent:state.agent,
+  coreNode:state.core,
+  packs:packsData.length
+ }),
+
+ connectCore,
+
+ disconnectCore:()=>{
+  setCore("offline");
+ },
+
+ clearStorage:()=>{
+
+  localStorage.removeItem(
+   "fastAssistant.settings"
+  );
+
+  localStorage.removeItem(
+   "fastAssistant.chat"
+  );
+
+  localStorage.removeItem(
+   "fastAssistant.whatsNew"
+  );
+
+  location.reload();
+ },
+
+ packs:packsData
+
+};
+
+</script>
+
+</body>
+</html>
