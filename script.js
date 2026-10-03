@@ -1224,6 +1224,8 @@ function getSavedMatteTheme() {
 }
 
 function applyVisualTheme() {
+        /* halloween overrides tokens via CSS class — skip if active */
+
     const target = document.body;
     const isLight = target.classList.contains('light-theme');
     const isTrueBlack = target.classList.contains('true-black-theme');
@@ -1313,7 +1315,8 @@ function applyVisualTheme() {
     }
 }
 
-function changeOracleTheme(primary, container, variant) {
+function changeOracleTheme(_p,_c,_v){ try{clearHalloweenIfThemeChange();}catch(e){} return _changeOracleThemeImpl(_p,_c,_v); }
+function _changeOracleThemeImpl(primary, container, variant) {
         const theme = {
             primary: /^#[0-9a-f]{6}$/i.test(primary) ? primary : '#adc6ff',
             container: /^#[0-9a-f]{6}$/i.test(container) ? container : '#254487',
@@ -1622,12 +1625,14 @@ function createAiMessageElement(content) {
     aiMsgDiv.className = 'msg ai-msg';
     const body = document.createElement('div');
     body.className = 'ai-md-body';
-    // if already HTML-ish from system, detect
-    if (typeof content === 'string' && content.includes('<') && content.includes('>') && !content.includes('```')) {
-        // trusted internal HTML fragments only for our system notes — still prefer text
-        body.innerHTML = renderAiMarkdown(content.replace(/<[^>]+>/g, ''));
+    const str = typeof content === 'string' ? content : String(content || '');
+    // Trusted internal HTML (Halloween easter egg / meta footer)
+    if (str.includes('ai-meta-foot') || str.includes('Kosmo Level · Halloween')) {
+        body.innerHTML = str;
+    } else if (str.includes('<') && str.includes('>') && !str.includes('```')) {
+        body.innerHTML = renderAiMarkdown(str.replace(/<[^>]+>/g, ''));
     } else {
-        body.innerHTML = renderAiMarkdown(content);
+        body.innerHTML = renderAiMarkdown(str);
     }
     aiMsgDiv.appendChild(body);
     return aiMsgDiv;
@@ -4300,9 +4305,100 @@ function copyAiText(btn) {
     const t = msg?.innerText || '';
     navigator.clipboard?.writeText(t).then(() => showToast('Скопировано', 'success')).catch(() => showToast('Не удалось', 'error'));
 }
+let _aiFeedback = { btn: null, value: 0, reason: '' };
+
+const FB_REASONS_UP = [
+    'Точный ответ', 'Полезно', 'Хороший стиль', 'Быстро понял задачу', 'Другое'
+];
+const FB_REASONS_DOWN = [
+    'Ошибка / неверно', 'Не по теме', 'Слишком длинно', 'Галлюцинация', 'Другое'
+];
+
 function rateAi(btn, v) {
-    showToast(v ? 'Спасибо за оценку' : 'Учтём', 'success');
+    _aiFeedback = { btn: btn, value: v, reason: '' };
+    const modal = document.getElementById('ai-feedback-modal');
+    const icon = document.getElementById('ai-fb-icon');
+    const title = document.getElementById('ai-fb-title');
+    const box = document.getElementById('ai-fb-reasons');
+    const custom = document.getElementById('ai-fb-custom');
+    if (icon) icon.textContent = v ? 'thumb_up' : 'thumb_down';
+    if (title) title.textContent = v ? 'Почему ответ понравился?' : 'Что не так с ответом?';
+    if (custom) custom.value = '';
+    if (box) {
+        box.innerHTML = '';
+        (v ? FB_REASONS_UP : FB_REASONS_DOWN).forEach(label => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'fb-reason-chip';
+            b.textContent = label;
+            b.onclick = () => {
+                box.querySelectorAll('.fb-reason-chip').forEach(x => x.classList.remove('active'));
+                b.classList.add('active');
+                _aiFeedback.reason = label;
+            };
+            box.appendChild(b);
+        });
+    }
+    if (modal) modal.classList.add('active');
+    else showToast(v ? 'Спасибо за оценку' : 'Учтём', 'success');
 }
+
+function closeAiFeedbackModal(submit) {
+    const modal = document.getElementById('ai-feedback-modal');
+    const custom = document.getElementById('ai-fb-custom');
+    if (submit) {
+        const extra = (custom?.value || '').trim();
+        if (extra) _aiFeedback.reason = extra;
+        const v = _aiFeedback.value;
+        const reason = _aiFeedback.reason || '';
+        try {
+            const key = 'oracle_ai_feedback_log';
+            const log = JSON.parse(localStorage.getItem(key) || '[]');
+            log.push({ at: Date.now(), like: !!v, reason, session: currentSessionId || null });
+            localStorage.setItem(key, JSON.stringify(log.slice(-200)));
+        } catch (e) {}
+        const btn = _aiFeedback.btn;
+        if (btn) {
+            btn.classList.add('active');
+            const bar = btn.closest('.ai-actions');
+            bar?.querySelectorAll('.ai-act-like, .ai-act-dislike').forEach(b => {
+                if (b !== btn) b.classList.remove('active');
+            });
+        }
+        showToast(v ? (reason ? 'Спасибо · ' + reason : 'Спасибо, модель учтёт') : (reason ? 'Учтём · ' + reason : 'Учтём для обучения'), 'success');
+    }
+    modal?.classList.remove('active');
+    _aiFeedback = { btn: null, value: 0, reason: '' };
+}
+
+function setLogoAnimNew(on) {
+    localStorage.setItem('oracle_logo_anim_new', on ? '1' : '0');
+    applyLogoAnimPref();
+    if (typeof showToast === 'function') {
+        showToast(on ? 'Новая анимация логотипа (бета)' : 'Классические блобы', 'success');
+    }
+}
+
+function applyLogoAnimPref() {
+    const on = localStorage.getItem('oracle_logo_anim_new') !== '0';
+    document.body.classList.toggle('logo-anim-legacy', !on);
+    const t = document.getElementById('toggle-logo-anim-new');
+    if (t) t.checked = on;
+    // try show image only if loaded
+    const img = document.querySelector('.core-logo');
+    const wrap = document.querySelector('.core-logo-wrap');
+    if (img && wrap) {
+        if (img.complete && img.naturalWidth > 0) wrap.classList.add('has-logo-img');
+        else {
+            img.onload = () => wrap.classList.add('has-logo-img');
+            img.onerror = () => wrap.classList.remove('has-logo-img');
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', applyLogoAnimPref);
+if (document.readyState !== 'loading') setTimeout(applyLogoAnimPref, 0);
+
 function speakAi(btn) {
     const msg = btn.closest('.msg');
     const t = msg?.cloneNode(true);
@@ -5548,7 +5644,80 @@ async function callExternalProvider(userMsg) {
     }
 }
 
+
+/* ===== HALLOWEEN EASTER EGG (Core Node) ===== */
+const HALLOWEEN_SOURCE = 'https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000008';
+let _extWarnUrl = null;
+
+function isHalloweenQuery(msg) {
+    const x = String(msg || '').toLowerCase().replace(/ё/g, 'е');
+    const keys = [
+        'оранжев', 'что с интерфейс', 'что с сайт', 'почему сайт', 'почему интерфейс',
+        'баг интерфейс', 'сломал', 'что случилось с сайт', 'что случилось с интерфейс',
+        'halloween', 'хеллоуин', 'хэллоуин', 'хелловин', 'хеллоуинск',
+        'kosmo level halloween', 'kosmo halloween', '2 дроп', 'второй дроп',
+        'предрегистрац', 'предрегистр', 'релиз halloween', 'релиз хеллоуин',
+        'тыкв', 'обои чата', 'когда релиз', 'halloween version'
+    ];
+    return keys.some(k => x.includes(k));
+}
+
+function applyHalloweenTheme() {
+    document.body.classList.add('halloween-mode');
+    try { localStorage.setItem('oracle_halloween_mode', '1'); } catch (e) {}
+}
+
+function halloweenEasterAnswer() {
+    applyHalloweenTheme();
+    const thinkSec = (1.2 + Math.random() * 2.8).toFixed(1);
+    return (
+        '🎃 <b>Kosmo Level · Halloween</b><br><br>' +
+        '3.10.2026 официально стала доступна <b>предрегистрация на 2 дроп</b> хеллоуинской версии, а <b>31 октября</b> будет релиз этой версии. Важно знать, что интерфейс будет оранжевым примерно до <b>середины ноября</b>.<br><br>' +
+        'Также известны несколько спойлеров о 2 дропе и 1:<br>' +
+        '• <b>1 дроп</b> будет обновлён до стиля <b>Kosmo Level 3.4</b>, будут исправлены <b>все</b> до мельчайших проблем;<br>' +
+        '• <b>2 дроп</b> станет новинкой года — известно, что там будут <b>каньоны</b>, <b>падающие шипы</b> и сложности по типу <b>«не ошибись»</b>. Больше ничего не известно.<br><br>' +
+        'А вы уже смотрели спойлеры?' +
+        '<div class="ai-meta-foot">' +
+        '<div>модель думала ' + thinkSec + ' секунд на размышление</div>' +
+        '<div style="margin-top:6px">Источник: ' +
+        '<a class="src-link" href="#" data-ext-url="' + HALLOWEEN_SOURCE + '" onclick="return openExternalWarn(event)">' +
+        '<span class="material-symbols-rounded">link</span> blogs-kosmo-level…/post.html?id=0000008' +
+        '</a></div></div>'
+    );
+}
+
+function openExternalWarn(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const a = e && e.currentTarget;
+    _extWarnUrl = (a && a.getAttribute('data-ext-url')) || HALLOWEEN_SOURCE;
+    document.getElementById('ext-warn-modal')?.classList.add('active');
+    return false;
+}
+function closeExternalWarn() {
+    document.getElementById('ext-warn-modal')?.classList.remove('active');
+    _extWarnUrl = null;
+}
+function confirmExternalWarn() {
+    const url = _extWarnUrl || HALLOWEEN_SOURCE;
+    closeExternalWarn();
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        if (localStorage.getItem('oracle_halloween_mode') === '1') {
+            document.body.classList.add('halloween-mode');
+        }
+    } catch (e) {}
+    const m = document.getElementById('ext-warn-modal');
+    if (m) m.addEventListener('click', (e) => { if (e.target === m) closeExternalWarn(); });
+});
+
+
 async function resolveAiResponse(msg) {
+    if (typeof isHalloweenQuery === 'function' && isHalloweenQuery(msg)) {
+        return { ok: true, text: halloweenEasterAnswer(), external: false, halloween: true };
+    }
     const s = loadCustomApiState();
     if (s.enabled && s.key) {
         CoreState._lastApiUserMsg = msg;
@@ -5805,3 +5974,528 @@ window.addEventListener('storage', function(e) {
     if (typeof renderSidebarChats === 'function') renderSidebarChats();
   } catch (err) {}
 });
+
+
+// ===== PROJECT TREE: folders → branches → chats + fixed sources =====
+if (typeof escapeHtml !== 'function') {
+    window.escapeHtml = function(value) {
+        return String(value ?? '').replace(/[&<>"']/g, ch => ({
+            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+        }[ch]));
+    };
+}
+
+
+const TREE_KEY = 'oracle_project_tree_v2';
+let projectTree = { folders: {} };
+let currentFolderId = null;
+let _moveChatId = null;
+
+function loadProjectTree() {
+    try {
+        const raw = localStorage.getItem(TREE_KEY);
+        if (raw) projectTree = JSON.parse(raw) || { folders: {} };
+    } catch (e) { projectTree = { folders: {} }; }
+    if (!projectTree.folders || typeof projectTree.folders !== 'object') projectTree.folders = {};
+    // migrate old v1 tree once: keep only folder titles + flatten chat ids
+    try {
+        if (!localStorage.getItem('oracle_tree_v2_migrated')) {
+            const old = localStorage.getItem('oracle_project_tree');
+            if (old) {
+                const o = JSON.parse(old);
+                if (o && o.folders) {
+                    Object.keys(o.folders).forEach(fid => {
+                        const f = o.folders[fid];
+                        const chatIds = [];
+                        if (Array.isArray(f.chatIds)) chatIds.push(...f.chatIds);
+                        if (f.branches) {
+                            Object.values(f.branches).forEach(b => {
+                                if (Array.isArray(b.chatIds)) chatIds.push(...b.chatIds);
+                            });
+                        }
+                        projectTree.folders[fid] = {
+                            title: f.title || 'Папка',
+                            open: f.open !== false,
+                            chatIds: [...new Set(chatIds)],
+                            files: Array.isArray(f.files) ? f.files : []
+                        };
+                    });
+                    saveProjectTree();
+                }
+            }
+            localStorage.setItem('oracle_tree_v2_migrated', '1');
+        }
+    } catch (e) {}
+}
+
+function saveProjectTree() {
+    try { localStorage.setItem(TREE_KEY, JSON.stringify(projectTree)); } catch (e) {}
+}
+
+function getLinkedChatIds() {
+    const linked = new Set();
+    Object.values(projectTree.folders || {}).forEach(f => {
+        (f.chatIds || []).forEach(id => linked.add(id));
+    });
+    return linked;
+}
+
+function getOrphanChatIds() {
+    const linked = getLinkedChatIds();
+    return Object.keys(chatSessions || {}).filter(id => !linked.has(id));
+}
+
+function renderProjectTree() {
+    const list = document.getElementById('chats-list');
+    if (!list) return;
+    loadProjectTree();
+    list.innerHTML = '';
+
+    const folderIds = Object.keys(projectTree.folders || {});
+    const orphans = getOrphanChatIds();
+    const hasAnything = folderIds.length > 0 || orphans.length > 0;
+
+    if (!hasAnything) {
+        list.innerHTML = `
+            <div class="tree-empty-state">
+                <span class="material-symbols-rounded">chat_bubble_outline</span>
+                <div class="tree-empty-title">Создайте Первый Чат</div>
+                <div class="tree-empty-sub">Кнопка «Чат» ниже или вверху меню. Папки — по желанию, через +</div>
+                <button type="button" class="tree-empty-cta" onclick="createNewChatSession()">
+                    <span class="material-symbols-rounded">edit_square</span> Новый чат
+                </button>
+            </div>`;
+        return;
+    }
+
+    // Folders
+    folderIds.forEach(fid => {
+        const folder = projectTree.folders[fid];
+        if (!folder) return;
+        const fEl = document.createElement('div');
+        fEl.className = 'tree-folder' + (folder.open === false ? ' collapsed' : '');
+        fEl.dataset.folderId = fid;
+
+        const head = document.createElement('div');
+        head.className = 'tree-folder-head';
+        const nChats = (folder.chatIds || []).filter(id => chatSessions[id]).length;
+        const nFiles = (folder.files || []).length;
+        head.innerHTML = `
+            <span class="material-symbols-rounded tf-arrow">expand_more</span>
+            <span class="material-symbols-rounded">folder</span>
+            <span class="tree-branch-title">${escapeHtml(folder.title || 'Папка')}</span>
+            <span class="tree-src-badge" title="Чаты и файлы">${nChats}·${nFiles}</span>`;
+        head.onclick = () => {
+            folder.open = folder.open === false;
+            saveProjectTree();
+            renderProjectTree();
+        };
+        head.oncontextmenu = (e) => {
+            e.preventDefault();
+            showFolderCtx(e, fid);
+        };
+        fEl.appendChild(head);
+
+        const body = document.createElement('div');
+        body.className = 'tree-folder-body';
+
+        // chats in folder
+        (folder.chatIds || []).forEach(cid => {
+            const s = chatSessions[cid];
+            if (!s) return;
+            body.appendChild(buildSimpleChatItem(cid, s, fid));
+        });
+
+        // files in folder
+        (folder.files || []).forEach((file, fi) => {
+            const row = document.createElement('div');
+            row.className = 'tree-chat-item tree-file-item';
+            row.innerHTML = `<span class="material-symbols-rounded">draft</span><span class="tree-branch-title">${escapeHtml(file.name || 'Файл')}</span>`;
+            row.title = 'Файл в папке';
+            row.oncontextmenu = (e) => {
+                e.preventDefault();
+                if (confirm('Убрать файл из папки?')) {
+                    folder.files.splice(fi, 1);
+                    saveProjectTree();
+                    renderProjectTree();
+                }
+            };
+            body.appendChild(row);
+        });
+
+        if (!(folder.chatIds || []).length && !(folder.files || []).length) {
+            const empty = document.createElement('div');
+            empty.style.cssText = 'font-size:11px;color:var(--on-surface-variant);padding:6px 8px;';
+            empty.textContent = 'Пустая папка — перенесите чат (ПКМ) или добавьте файл';
+            body.appendChild(empty);
+        }
+
+        const addChat = document.createElement('div');
+        addChat.className = 'tree-chat-item';
+        addChat.style.opacity = '0.75';
+        addChat.innerHTML = `<span class="material-symbols-rounded">add</span><span>Чат в этой папке</span>`;
+        addChat.onclick = () => createChatInFolder(fid);
+        body.appendChild(addChat);
+
+        fEl.appendChild(body);
+        list.appendChild(fEl);
+    });
+
+    // Root chats (no folder)
+    if (orphans.length) {
+        const wrap = document.createElement('div');
+        wrap.className = 'tree-orphan';
+        if (folderIds.length) {
+            wrap.innerHTML = '<div class="tree-orphan-label">Без папки</div>';
+        }
+        orphans.forEach(id => {
+            const s = chatSessions[id];
+            if (!s) return;
+            wrap.appendChild(buildSimpleChatItem(id, s, null));
+        });
+        list.appendChild(wrap);
+    }
+}
+
+function buildSimpleChatItem(id, session, folderId) {
+    const item = document.createElement('div');
+    item.className = 'tree-chat-item' + (id === currentSessionId ? ' active-session' : '');
+    item.dataset.sessionId = id;
+    item.dataset.itemType = 'chat';
+    if (folderId) item.dataset.folderId = folderId;
+    item.innerHTML = `<span class="material-symbols-rounded">chat</span><span class="tree-branch-title">${escapeHtml(session.title || 'Чат')}</span>`;
+    item.onclick = () => {
+        currentFolderId = folderId;
+        loadChatSession(id);
+        renderProjectTree();
+    };
+    item.oncontextmenu = (e) => {
+        if (typeof showContextMenu === 'function') showContextMenu(e, item, 'chat');
+        else {
+            e.preventDefault();
+            openMoveFolderModal(id);
+        }
+    };
+    return item;
+}
+
+function createChatInFolder(folderId) {
+    const id = 'session_' + Date.now();
+    chatSessions[id] = { title: 'Новый чат', html: '', updated: Date.now() };
+    try { localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions)); } catch (e) {}
+    const folder = projectTree.folders[folderId];
+    if (folder) {
+        if (!folder.chatIds) folder.chatIds = [];
+        folder.chatIds.push(id);
+        folder.open = true;
+        saveProjectTree();
+    }
+    currentFolderId = folderId;
+    currentSessionId = id;
+    if (typeof CoreState !== 'undefined') CoreState.isFirstMsgInSession = true;
+    localStorage.setItem('oracle_current_session', id);
+    const chatFlow = document.getElementById('chat-flow');
+    const welcome = document.getElementById('welcome-block');
+    if (chatFlow) chatFlow.innerHTML = '';
+    if (welcome) welcome.classList.remove('hidden');
+    renderProjectTree();
+    if (typeof switchScreen === 'function') switchScreen('chat');
+    if (typeof updateChatEmptyState === 'function') updateChatEmptyState();
+    showToast('Чат создан в папке', 'success');
+}
+
+function openCreateFolderModal() {
+    const modal = document.getElementById('tree-create-modal');
+    const title = document.getElementById('tree-create-title');
+    const sub = document.getElementById('tree-create-sub');
+    const icon = document.getElementById('tree-create-icon');
+    const input = document.getElementById('tree-create-input');
+    const pick = document.getElementById('tree-create-folder-pick');
+    if (title) title.textContent = 'Новая папка';
+    if (sub) sub.textContent = 'В папке можно хранить чаты и файлы проекта';
+    if (icon) icon.textContent = 'folder';
+    if (input) input.value = '';
+    if (pick) pick.style.display = 'none';
+    window._treeCreateMode = 'folder';
+    modal?.classList.add('active');
+    setTimeout(() => input?.focus(), 40);
+}
+
+function closeTreeCreateModal() {
+    document.getElementById('tree-create-modal')?.classList.remove('active');
+}
+
+function confirmTreeCreate() {
+    const name = (document.getElementById('tree-create-input')?.value || '').trim();
+    if (!name) {
+        showToast('Введите название', 'warning');
+        return;
+    }
+    loadProjectTree();
+    const id = 'folder_' + Date.now().toString(36);
+    projectTree.folders[id] = { title: name, open: true, chatIds: [], files: [] };
+    saveProjectTree();
+    closeTreeCreateModal();
+    renderProjectTree();
+    showToast('Папка «' + name + '»', 'success');
+}
+
+function showFolderCtx(e, folderId) {
+    e.preventDefault();
+    const act = prompt('Папка: 1 — переименовать, 2 — удалить (чаты останутся без папки)', '1');
+    const folder = projectTree.folders[folderId];
+    if (!folder) return;
+    if (act === '1') {
+        const n = prompt('Новое имя', folder.title || '');
+        if (n && n.trim()) {
+            folder.title = n.trim();
+            saveProjectTree();
+            renderProjectTree();
+        }
+    } else if (act === '2') {
+        if (confirm('Удалить папку? Чаты не удалятся — станут «без папки».')) {
+            delete projectTree.folders[folderId];
+            if (currentFolderId === folderId) currentFolderId = null;
+            saveProjectTree();
+            renderProjectTree();
+        }
+    }
+}
+
+function cmMoveToFolder() {
+    const node = typeof currentContextNode !== 'undefined' ? currentContextNode : null;
+    const id = node?.dataset?.sessionId || currentSessionId;
+    document.getElementById('context-menu') && (document.getElementById('context-menu').style.display = 'none');
+    if (!id) {
+        showToast('Сначала выберите чат', 'warning');
+        return;
+    }
+    openMoveFolderModal(id);
+}
+
+function openMoveFolderModal(chatId) {
+    loadProjectTree();
+    _moveChatId = chatId;
+    const modal = document.getElementById('move-folder-modal');
+    const list = document.getElementById('move-folder-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // option: no folder
+    const noneBtn = document.createElement('button');
+    noneBtn.type = 'button';
+    noneBtn.className = 'tree-mini-btn';
+    noneBtn.style.cssText = 'width:100%;justify-content:flex-start;padding:12px 14px;';
+    noneBtn.innerHTML = '<span class="material-symbols-rounded">folder_off</span> Без папки';
+    noneBtn.onclick = () => moveChatToFolder(chatId, null);
+    list.appendChild(noneBtn);
+
+    const ids = Object.keys(projectTree.folders || {});
+    if (!ids.length) {
+        const hint = document.createElement('div');
+        hint.style.cssText = 'font-size:12px;color:var(--on-surface-variant);padding:8px;';
+        hint.textContent = 'Папок пока нет — создайте через + у «Чаты и папки».';
+        list.appendChild(hint);
+    }
+    ids.forEach(fid => {
+        const f = projectTree.folders[fid];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tree-mini-btn';
+        btn.style.cssText = 'width:100%;justify-content:flex-start;padding:12px 14px;';
+        btn.innerHTML = `<span class="material-symbols-rounded">folder</span> ${escapeHtml(f.title || 'Папка')}`;
+        btn.onclick = () => moveChatToFolder(chatId, fid);
+        list.appendChild(btn);
+    });
+
+    modal?.classList.add('active');
+}
+
+function closeMoveFolderModal() {
+    document.getElementById('move-folder-modal')?.classList.remove('active');
+    _moveChatId = null;
+}
+
+function moveChatToFolder(chatId, folderId) {
+    loadProjectTree();
+    // remove from all folders
+    Object.values(projectTree.folders || {}).forEach(f => {
+        if (!f.chatIds) return;
+        f.chatIds = f.chatIds.filter(id => id !== chatId);
+    });
+    if (folderId && projectTree.folders[folderId]) {
+        if (!projectTree.folders[folderId].chatIds) projectTree.folders[folderId].chatIds = [];
+        projectTree.folders[folderId].chatIds.push(chatId);
+        projectTree.folders[folderId].open = true;
+        currentFolderId = folderId;
+        showToast('Чат в папке «' + (projectTree.folders[folderId].title || '') + '»', 'success');
+    } else {
+        currentFolderId = null;
+        showToast('Чат без папки', 'info');
+    }
+    saveProjectTree();
+    closeMoveFolderModal();
+    renderProjectTree();
+}
+
+// Patch sidebar render
+(function patchSidebarTree() {
+    window.renderSidebarChats = function() {
+        try { renderProjectTree(); } catch (e) {
+            console.warn('tree', e);
+        }
+    };
+    const boot = () => {
+        try { loadProjectTree(); renderProjectTree(); } catch (e) {}
+    };
+    document.addEventListener('DOMContentLoaded', boot);
+    if (document.readyState !== 'loading') setTimeout(boot, 0);
+})();
+
+
+// (removed) branch sources inject — currentBranchId no longer used after simple folders
+
+// ===== Tree feature intro modal =====
+function closeTreeFeatureModal(openSidebar) {
+    document.getElementById('tree-feature-modal')?.classList.remove('active');
+    localStorage.setItem('oracle_tree_feature_seen_v1', 'true');
+    if (openSidebar) {
+        document.getElementById('sidebar-archive')?.classList.add('open');
+        try { renderProjectTree(); } catch (e) {}
+        if (typeof showToast === 'function') showToast('Проекты и ветки — в боковом меню', 'success');
+    }
+}
+function maybeShowTreeFeatureModal() {
+    if (localStorage.getItem('oracle_tree_feature_seen_v1') === 'true') return;
+    // wait for consent/pin if any
+    setTimeout(() => {
+        if (localStorage.getItem('oracle_tree_feature_seen_v1') === 'true') return;
+        const consent = document.getElementById('consent-modal');
+        if (consent && consent.classList.contains('active')) return;
+        document.getElementById('tree-feature-modal')?.classList.add('active');
+    }, 1600);
+}
+document.addEventListener('DOMContentLoaded', maybeShowTreeFeatureModal);
+if (document.readyState !== 'loading') setTimeout(maybeShowTreeFeatureModal, 500);
+
+
+// Material Expensive 3 welcome toast
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('oracle_me3_seen') === '1') return;
+    setTimeout(() => {
+        if (localStorage.getItem('oracle_me3_seen') === '1') return;
+        localStorage.setItem('oracle_me3_seen', '1');
+        if (typeof showToast === 'function') {
+            showToast('Material Expensive 3 · премиум стекло и анимации', 'success', 4200);
+        }
+    }, 2800);
+});
+
+function openCreateBranchModal() { openCreateFolderModal(); }
+function openBranchSourcesPanel() {}
+function closeBranchSourcesPanel() {}
+function updateActiveBranchBar() {
+    const bar = document.getElementById('active-branch-bar');
+    if (bar) bar.style.display = 'none';
+}
+
+
+// ===== Temp chat: long-press on Chat (mobile) / no overlap with nav =====
+function isMobileTempChatUi() {
+    return window.matchMedia('(max-width: 600px)').matches;
+}
+
+function wireTempChatLongPress() {
+    const targets = [
+        document.getElementById('btn-tab-chat'),
+        ...document.querySelectorAll('.sidebar-nav-tab')
+    ].filter(Boolean);
+
+    // only Chat-related sidebar tabs
+    const chatTargets = targets.filter(el => {
+        if (el.id === 'btn-tab-chat') return true;
+        const t = (el.textContent || '').toLowerCase();
+        return t.includes('chat') || t.includes('чат');
+    });
+
+    chatTargets.forEach(el => {
+        if (el.dataset.tempHoldWired) return;
+        el.dataset.tempHoldWired = '1';
+
+        let timer = null;
+        let moved = false;
+        const start = (e) => {
+            if (!isMobileTempChatUi()) return;
+            moved = false;
+            timer = setTimeout(() => {
+                timer = null;
+                if (typeof toggleTempChat === 'function') toggleTempChat();
+                el.classList.add('temp-hold-hint');
+                setTimeout(() => el.classList.remove('temp-hold-hint'), 400);
+                if (typeof showToast === 'function') {
+                    showToast(
+                        document.body.classList.contains('temp-chat-mode')
+                            ? 'Временный чат включён (удержание Chat)'
+                            : 'Временный чат выключен',
+                        'info'
+                    );
+                }
+                // prevent click after long-press
+                el.dataset.skipClick = '1';
+            }, 520);
+        };
+        const cancel = () => {
+            if (timer) { clearTimeout(timer); timer = null; }
+        };
+        el.addEventListener('touchstart', start, { passive: true });
+        el.addEventListener('touchend', cancel, { passive: true });
+        el.addEventListener('touchmove', () => { moved = true; cancel(); }, { passive: true });
+        el.addEventListener('touchcancel', cancel, { passive: true });
+        el.addEventListener('mousedown', (e) => {
+            if (!isMobileTempChatUi()) return;
+            if (e.button !== 0) return;
+            start(e);
+        });
+        el.addEventListener('mouseup', cancel);
+        el.addEventListener('mouseleave', cancel);
+        el.addEventListener('click', (e) => {
+            if (el.dataset.skipClick === '1') {
+                e.preventDefault();
+                e.stopPropagation();
+                el.dataset.skipClick = '0';
+            }
+        }, true);
+    });
+}
+
+// sync active state class on mobile chat tab
+(function patchTempBtnActiveMobile() {
+    const sync = () => {
+        const on = document.body.classList.contains('temp-chat-mode');
+        document.getElementById('btn-tab-chat')?.classList.toggle('temp-active-mobile', on && isMobileTempChatUi());
+        document.querySelectorAll('.sidebar-nav-tab').forEach(el => {
+            const t = (el.textContent || '').toLowerCase();
+            if (t.includes('chat') || t.includes('чат')) el.classList.toggle('temp-active-mobile', on && isMobileTempChatUi());
+        });
+    };
+    const prevEnter = typeof enterTempChat === 'function' ? enterTempChat : null;
+    const prevExit = typeof exitTempChat === 'function' ? exitTempChat : null;
+    if (prevEnter && !window._tempMobilePatched) {
+        window._tempMobilePatched = true;
+        window.enterTempChat = function() { prevEnter(); sync(); };
+        window.exitTempChat = function() { prevExit(); sync(); };
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+        wireTempChatLongPress();
+        sync();
+    });
+    if (document.readyState !== 'loading') {
+        setTimeout(() => { wireTempChatLongPress(); sync(); }, 0);
+    }
+})();
+
+
+function clearHalloweenIfThemeChange() {
+    document.body.classList.remove('halloween-mode');
+    try { localStorage.removeItem('oracle_halloween_mode'); } catch (e) {}
+}
