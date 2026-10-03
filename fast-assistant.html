@@ -1394,6 +1394,126 @@ body.auto-ok-running .fa-modal-ov{
  opacity:0 !important;
 }
 
+
+/* ===== Halloween Easter Egg theme ===== */
+body.halloween-mode{
+ --bg:#1a0a00;
+ --card:#2a1205;
+ --text:#ffe8d0;
+ --ai:#3d1c08;
+ --user:#ff6b00;
+ --userText:#1a0800;
+ --accent:#ff8c00;
+ --border:#6b3a12;
+ --sub:#d4a574;
+ --danger:#ff453a;
+ --success:#34c759;
+ --warning:#ff9500;
+ --shadow:rgba(0,0,0,.45);
+ --glass:rgba(42,18,5,.88);
+ background:
+  radial-gradient(ellipse at 20% 0%, rgba(255,120,0,.18), transparent 50%),
+  radial-gradient(ellipse at 80% 100%, rgba(255,60,0,.12), transparent 45%),
+  var(--bg) !important;
+}
+body.halloween-mode .card{
+ background:var(--card);
+}
+body.halloween-mode #chat{
+ background-image:
+  radial-gradient(circle at 12% 18%, rgba(255,140,0,.07) 0 2px, transparent 3px),
+  radial-gradient(circle at 78% 42%, rgba(255,100,0,.06) 0 2px, transparent 3px),
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Ctext x='10' y='40' font-size='28' opacity='0.14'%3E🎃%3C/text%3E%3Ctext x='70' y='95' font-size='22' opacity='0.1'%3E🎃%3C/text%3E%3Ctext x='55' y='50' font-size='16' opacity='0.08'%3E👻%3C/text%3E%3C/svg%3E");
+ background-size: auto, auto, 120px 120px;
+ background-repeat: repeat;
+}
+body.halloween-mode .bubble.ai{
+ border:1px solid rgba(255,140,0,.25);
+}
+body.halloween-mode .bubble.user{
+ background:linear-gradient(135deg,#ff7a00,#e85d04);
+}
+body.halloween-mode .send-btn.active{
+ background:linear-gradient(135deg,#ff8c00,#ff5e00);
+}
+body.halloween-mode #core-node-status.connected .core-dot{
+ background:#ff8c00;
+ box-shadow:0 0 0 3px #ff8c0030;
+}
+.ai-meta-foot{
+ margin-top:12px;
+ padding-top:10px;
+ border-top:1px solid var(--border);
+ font-size:11px;
+ color:var(--sub);
+ line-height:1.5;
+}
+.ai-meta-foot .src-link{
+ color:var(--accent);
+ text-decoration:underline;
+ cursor:pointer;
+ font-weight:700;
+ display:inline-flex;
+ align-items:center;
+ gap:4px;
+}
+.ai-meta-foot .src-link .material-symbols-rounded{
+ font-size:14px;
+}
+.ext-warn-modal{
+ position:fixed;inset:0;z-index:9000;
+ background:rgba(0,0,0,.55);
+ display:none;align-items:center;justify-content:center;
+ padding:20px;
+}
+.ext-warn-modal.open{display:flex}
+.ext-warn-card{
+ max-width:360px;width:100%;
+ background:var(--card);color:var(--text);
+ border:1px solid var(--border);border-radius:18px;
+ padding:18px;box-shadow:0 20px 50px var(--shadow);
+}
+.ext-warn-card h3{font-size:15px;margin:0 0 8px;display:flex;align-items:center;gap:8px}
+.ext-warn-card p{font-size:12px;color:var(--sub);line-height:1.5;margin:0 0 14px}
+.ext-warn-actions{display:flex;gap:8px}
+.ext-warn-actions button{
+ flex:1;padding:10px;border-radius:12px;font-weight:800;font-size:12px;cursor:pointer
+}
+.ext-warn-cancel{background:var(--ai);color:var(--text);border:1px solid var(--border)}
+.ext-warn-go{background:var(--accent);color:var(--card);border:0}
+body.halloween-mode .ext-warn-go{color:#1a0800}
+
+
+/* FA purge / trash modal */
+#fa-modal-purge .fa-modal{ max-width:420px; width:100%; }
+.purge-warn{
+ margin:0 0 10px; padding:10px 12px; border-radius:12px;
+ background:#ff3b3020; border:1px solid #ff3b3040;
+ color:var(--danger); font-size:12px; font-weight:800; line-height:1.4;
+}
+.purge-list{
+ max-height:160px; overflow:auto; margin:0 0 12px; padding:8px 10px;
+ border:1px solid var(--border); border-radius:12px; background:var(--bg);
+ font-size:12px; line-height:1.5;
+}
+.purge-list li{ margin:0 0 4px; color:var(--text); }
+.purge-think{
+ text-align:center; font-size:11px; font-weight:900; letter-spacing:.4px;
+ color:var(--warning); margin:8px 0 12px;
+}
+.fa-modal-actions.purge-actions{
+ flex-direction:column; gap:8px;
+}
+.fa-modal-actions.purge-actions button{
+ width:100%; justify-content:center;
+}
+#fa-purge-delete[disabled]{
+ opacity:.45; pointer-events:none; cursor:not-allowed;
+}
+#fa-purge-cookies{
+ background:var(--ai); color:var(--text); border:1px solid var(--border);
+}
+
 </style>
 </head>
 
@@ -1503,6 +1623,22 @@ body.auto-ok-running .fa-modal-ov{
 </div>
 
 
+
+
+<div class="fa-modal-ov" id="fa-modal-purge">
+ <div class="fa-modal">
+  <h3>Вы уверены?</h3>
+  <div class="purge-warn">Отменить это действие невозможно! Чаты <b>не будут</b> удалены из Core Node.</div>
+  <p style="margin-bottom:6px;font-weight:800;font-size:12px;color:var(--text)">Вот какие чаты удалятся:</p>
+  <ul class="purge-list" id="fa-purge-chat-list"></ul>
+  <div class="purge-think">ПОДУМАЙТЕ ПРЕЖДЕ ЧЕМ ВЫБИРАТЬ!</div>
+  <div class="fa-modal-actions purge-actions">
+   <button type="button" class="cancel" id="fa-purge-cancel">Отмена</button>
+   <button type="button" id="fa-purge-cookies">Удалить мусор и куки (чаты не считаются)</button>
+   <button type="button" class="danger" id="fa-purge-delete" disabled>Удалить (10)</button>
+  </div>
+ </div>
+</div>
 
 <div id="core-node-status">
  <span class="core-dot"></span>
@@ -1678,15 +1814,21 @@ body.auto-ok-running .fa-modal-ov{
 
   <div class="view-row">
 
-   <button class="icon-btn" id="theme-btn">
+   <button class="icon-btn" id="theme-btn" title="Тема">
     <span class="material-symbols-rounded" id="theme-icon">
      dark_mode
     </span>
    </button>
 
-   <button class="icon-btn" id="resize-btn">
+   <button class="icon-btn" id="resize-btn" title="Ширина окна">
     <span class="material-symbols-rounded">
      aspect_ratio
+    </span>
+   </button>
+
+   <button class="icon-btn" id="purge-btn" title="Корзина / удалить данные" style="color:var(--danger)">
+    <span class="material-symbols-rounded">
+     delete
     </span>
    </button>
 
@@ -3742,9 +3884,98 @@ function searchPacksAI(q){
    LOCAL AI
 ========================================================= */
 
+
+/* =========================================================
+   HALLOWEEN EASTER EGG (Kosmo Level)
+========================================================= */
+const HALLOWEEN_SOURCE = "https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000008";
+let _extWarnUrl = null;
+
+function isHalloweenQuery(q){
+  const x = String(q||"").toLowerCase().replace(/ё/g,"е").trim();
+  const keys = [
+    "оранжев","что с интерфейс","что с сайт","почему сайт","почему интерфейс",
+    "баг интерфейс","сломал","что случилось с сайт","что случилось с интерфейс",
+    "halloween","хеллоуин","хэллоуин","хелловин",
+    "kosmo level halloween","kosmo halloween","2 дроп","второй дроп",
+    "предрегистрац","предрегистр","релиз halloween","релиз хеллоуин",
+    "тыкв","обои чата","когда релиз","halloween version","хеллоуинск"
+  ];
+  return keys.some(k => x.includes(k));
+}
+
+function applyHalloweenTheme(){
+  document.body.classList.add("halloween-mode");
+  try{ localStorage.setItem("fastAssistant.halloween","1"); }catch(e){}
+}
+
+function restoreThemeFromHalloween(){
+  /* theme stays halloween until mid-Nov story — user can toggle dark/light in settings which may clear */
+}
+
+function halloweenEasterAnswer(){
+  applyHalloweenTheme();
+  const thinkSec = (1.2 + Math.random() * 2.8).toFixed(1);
+  return `
+🎃 <b>Kosmo Level · Halloween</b><br><br>
+3.10.2026 официально стала доступна <b>предрегистрация на 2 дроп</b> хеллоуинской версии, а <b>31 октября</b> будет релиз этой версии. Важно знать, что интерфейс будет оранжевым примерно до <b>середины ноября</b>.<br><br>
+Также известны несколько спойлеров о 2 дропе и 1:<br>
+• <b>1 дроп</b> будет обновлён до стиля <b>Kosmo Level 3.4</b>, будут исправлены <b>все</b> до мельчайших проблем;<br>
+• <b>2 дроп</b> станет новинкой года — известно, что там будут <b>каньоны</b>, <b>падающие шипы</b> и сложности по типу <b>«не ошибись»</b>. Больше ничего не известно.<br><br>
+А вы уже смотрели спойлеры?
+<div class="ai-meta-foot">
+  <div>модель думала ${thinkSec} секунд на размышление</div>
+  <div style="margin-top:6px">Источник:
+    <a class="src-link" href="#" data-ext-url="${HALLOWEEN_SOURCE}" onclick="return openExternalWarn(event)">
+      <span class="material-symbols-rounded">link</span>
+      blogs-kosmo-level…/post.html?id=0000008
+    </a>
+  </div>
+</div>`;
+}
+
+function openExternalWarn(e){
+  if(e){ e.preventDefault(); e.stopPropagation(); }
+  const a = e && e.currentTarget;
+  _extWarnUrl = (a && a.getAttribute("data-ext-url")) || HALLOWEEN_SOURCE;
+  const m = document.getElementById("ext-warn-modal");
+  if(m) m.classList.add("open");
+  return false;
+}
+
+function closeExternalWarn(){
+  document.getElementById("ext-warn-modal")?.classList.remove("open");
+  _extWarnUrl = null;
+}
+
+function confirmExternalWarn(){
+  const url = _extWarnUrl || HALLOWEEN_SOURCE;
+  closeExternalWarn();
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("ext-warn-cancel")?.addEventListener("click", closeExternalWarn);
+  document.getElementById("ext-warn-go")?.addEventListener("click", confirmExternalWarn);
+  document.getElementById("ext-warn-modal")?.addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "ext-warn-modal") closeExternalWarn();
+  });
+  try{
+    if(localStorage.getItem("fastAssistant.halloween")==="1"){
+      document.body.classList.add("halloween-mode");
+    }
+  }catch(e){}
+});
+
+
 function localAI(q){
 
  const x=q.toLowerCase().trim();
+
+ /* Halloween easter egg — UI + lore */
+ if(isHalloweenQuery(q)){
+  return halloweenEasterAnswer();
+ }
 
  if(state.agent?.name==="Ask Event")
   return askEvent(q);
@@ -4231,6 +4462,16 @@ function updateThemeIcon(){
 }
 
 function toggleTheme(){
+ /* Если Halloween активен — сначала выключаем его (как просили), затем обычный light/dark */
+ if(document.body.classList.contains("halloween-mode")){
+  document.body.classList.remove("halloween-mode");
+  try{ localStorage.removeItem("fastAssistant.halloween"); }catch(e){}
+  try{ showAlert("Halloween-тема выключена"); }catch(e){}
+  updateThemeIcon();
+  saveSettings();
+  if(menu) menu.style.display="none";
+  return;
+ }
 
  document.body.dataset.theme=
   document.body.dataset.theme==="dark"
@@ -4241,7 +4482,7 @@ function toggleTheme(){
 
  saveSettings();
 
- menu.style.display="none";
+ if(menu) menu.style.display="none";
 }
 
 /* =========================================================
@@ -5447,6 +5688,8 @@ window.addEventListener("load",()=>{
  document.querySelectorAll("[data-theme-set]").forEach(b=>{
   b.addEventListener("click",()=>{
    document.body.dataset.theme=b.dataset.themeSet;
+   document.body.classList.remove("halloween-mode");
+   try{localStorage.removeItem("fastAssistant.halloween");}catch(err){}
    updateThemeIcon();
    saveSettings();
    openSettings();
@@ -5562,6 +5805,125 @@ function onFilePicked(e){
 }
 
 // override add-btn to open plus menu instead of agents directly
+
+
+/* ===== PURGE / TRASH ===== */
+let _purgeTimer = null;
+let _purgeLeft = 10;
+
+function openPurgeModal(){
+  try{ if(menu) menu.style.display="none"; }catch(e){}
+  const list = document.getElementById("fa-purge-chat-list");
+  const map = typeof loadFaChats==="function" ? loadFaChats() : {};
+  const ids = Object.keys(map||{});
+  if(list){
+    if(!ids.length){
+      list.innerHTML = "<li style='color:var(--sub)'>Нет локальных чатов Fast Assistant</li>";
+    }else{
+      list.innerHTML = ids.map(id=>{
+        const title = (map[id]&&map[id].title) || "Чат";
+        return "<li>• "+String(title).replace(/[<>&]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;"}[c]))+"</li>";
+      }).join("");
+    }
+  }
+  const btn = document.getElementById("fa-purge-delete");
+  _purgeLeft = 10;
+  if(btn){
+    btn.disabled = true;
+    btn.textContent = "Удалить (10)";
+  }
+  if(_purgeTimer) clearInterval(_purgeTimer);
+  _purgeTimer = setInterval(()=>{
+    _purgeLeft--;
+    if(!btn) return;
+    if(_purgeLeft<=0){
+      clearInterval(_purgeTimer); _purgeTimer=null;
+      btn.disabled = false;
+      btn.textContent = "Удалить";
+    }else{
+      btn.disabled = true;
+      btn.textContent = "Удалить ("+_purgeLeft+")";
+    }
+  },1000);
+  document.getElementById("fa-modal-purge")?.classList.add("open");
+  try{ scheduleAutoOk(); }catch(e){}
+}
+
+function closePurgeModal(){
+  document.getElementById("fa-modal-purge")?.classList.remove("open");
+  if(_purgeTimer){ clearInterval(_purgeTimer); _purgeTimer=null; }
+}
+
+/** Мусор и «куки» FA — без удаления чатов */
+function purgeTrashAndCookies(){
+  const keep = new Set([
+    "fastAssistant.chats.v1",
+    "fastAssistant.currentChat",
+    "fastAssistant.chat",
+    "oracle_chat_sessions",
+    "oracle_current_session",
+    "oracle_fa_bridge_meta"
+  ]);
+  const toRemove = [];
+  for(let i=0;i<localStorage.length;i++){
+    const k = localStorage.key(i);
+    if(!k) continue;
+    if(k.startsWith("fastAssistant.") && !keep.has(k)) toRemove.push(k);
+  }
+  // explicit junk
+  ["fastAssistant.settings","fastAssistant.whatsNew","fastAssistant.halloween","fastAssistant.width"].forEach(k=>{
+    if(!keep.has(k)) toRemove.push(k);
+  });
+  [...new Set(toRemove)].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  closePurgeModal();
+  try{ showAlert("Мусор и куки FA очищены. Чаты сохранены."); }catch(e){}
+}
+
+/** Полное удаление локальных чатов FA (Core Node не трогаем) */
+function purgeAllFaChats(){
+  try{ localStorage.removeItem("fastAssistant.chats.v1"); }catch(e){}
+  try{ localStorage.removeItem("fastAssistant.currentChat"); }catch(e){}
+  try{ localStorage.removeItem("fastAssistant.chat"); }catch(e){}
+  // also settings/junk
+  try{ localStorage.removeItem("fastAssistant.settings"); }catch(e){}
+  try{ localStorage.removeItem("fastAssistant.whatsNew"); }catch(e){}
+  try{ localStorage.removeItem("fastAssistant.halloween"); }catch(e){}
+  try{ localStorage.removeItem("fastAssistant.width"); }catch(e){}
+  closePurgeModal();
+  try{
+    if(typeof chat!=="undefined" && chat) chat.innerHTML="";
+    if(typeof state!=="undefined"){ state.home=true; state.agent=null; }
+    if(typeof renderHome==="function") renderHome();
+    if(typeof setInputCentered==="function") setInputCentered(true);
+    if(typeof renderFaChatsList==="function") renderFaChatsList();
+    if(typeof ensureCurrentChat==="function") ensureCurrentChat();
+  }catch(e){}
+  try{ showAlert("Локальные чаты FA удалены. Core Node не затронут."); }catch(e){}
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("purge-btn")?.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    openPurgeModal();
+  });
+  document.getElementById("fa-purge-cancel")?.addEventListener("click", closePurgeModal);
+  document.getElementById("fa-purge-cookies")?.addEventListener("click", purgeTrashAndCookies);
+  document.getElementById("fa-purge-delete")?.addEventListener("click", ()=>{
+    const btn = document.getElementById("fa-purge-delete");
+    if(btn && btn.disabled) return;
+    purgeAllFaChats();
+  });
+  document.getElementById("fa-modal-purge")?.addEventListener("click", (e)=>{
+    if(e.target && e.target.id==="fa-modal-purge") closePurgeModal();
+  });
+});
+window.addEventListener("load", ()=>{
+  document.getElementById("purge-btn")?.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    openPurgeModal();
+  });
+});
+
 
 window.FastAssistant={
 
