@@ -3,9 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Core Node | Material Expensive 3</title>
+    <title>Core Node | Prestige HQ</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
-    <meta name="theme-color" content="#0a0b10">
+    <meta name="theme-color" content="#0a0b10" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#f0f2f8" media="(prefers-color-scheme: light)">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Core Node">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icon.svg">
+    <meta name="application-name" content="Core Node">
+    <meta name="msapplication-TileColor" content="#0a0b10">
+    <meta name="format-detection" content="telephone=no">
+
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -1114,12 +1126,19 @@
         </div>
     </main>
 
+
+<div id="live-try-tip" class="live-try-tip" hidden>
+    <span class="live-try-tip-text">Попробуйте поговорить с ИИ вживую! <small>(Используется лёгкая модель)</small></span>
+    <button type="button" class="live-try-tip-go" onclick="acceptLiveTryTip()">Live</button>
+    <button type="button" class="live-try-tip-x" onclick="dismissLiveTryTip()" title="Закрыть">✕</button>
+</div>
+
 <div id="main-input-box" class="glass-input-box">
     <div id="attach-chips" class="attach-chips" style="display:none;"></div>
 
     
     <!-- Текстовое поле сверху -->
-    <textarea id="user-input" 
+    <textarea id="user-input" data-ph="Спросите что-нибудь…" 
               placeholder="Введите ваш запрос..." 
               oninput="handleInput(this)"
               rows="1"></textarea>
@@ -1626,6 +1645,77 @@
     </div>
 </div>
 
+
+<!-- SIDE CORE NODE PROMO (desktop) -->
+<div id="side-core-promo-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width:440px;">
+        <div class="modal-header">
+            <span class="material-symbols-rounded">extension</span>
+            <h3 class="modal-title">Side Core Node</h3>
+        </div>
+        <p class="modal-subtitle" style="line-height:1.55;">
+            Урезанный Core Node в <b>боковой панели браузера</b> (Chrome / Edge).
+            Alt+Shift+C · ПКМ «Ask Core Node» · свой API в настройках панели.
+            <br><br>Не обязательно — можно закрыть и пользоваться сайтом как обычно.
+        </p>
+        <div class="modal-actions" style="flex-wrap:wrap;gap:8px;">
+            <button type="button" class="modal-btn modal-btn-reject" onclick="dismissSideCorePromo()">Не сейчас</button>
+            <button type="button" class="modal-btn modal-btn-reject" onclick="openSideCoreZipHint()">Локально ZIP</button>
+            <button type="button" class="modal-btn modal-btn-accept" onclick="openSideCoreExtHint()">Расширения</button>
+        </div>
+    </div>
+</div>
+
+<!-- SIDE CORE INSTALL HINT -->
+<div id="side-core-hint-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width:420px;">
+        <div class="modal-header">
+            <span class="material-symbols-rounded">download</span>
+            <h3 class="modal-title" id="side-core-hint-title">Установка</h3>
+        </div>
+        <p class="modal-subtitle" id="side-core-hint-text" style="line-height:1.55;"></p>
+        <div class="modal-actions">
+            <button type="button" class="modal-btn modal-btn-accept" onclick="closeSideCoreHint()">Понятно</button>
+        </div>
+    </div>
+</div>
+
+
+<div id="page-ctx-menu" style="display:none;position:fixed;z-index:6000;min-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.45);">
+    <button type="button" class="nav-ctx-item" id="cm-ask-screenshot" onclick="askCoreNodeScreenshot()">
+        <span class="material-symbols-rounded">screenshot_region</span>
+        Ask Core Node about this Screenshot
+        <span class="setting-new-badge">НОВИНКА</span>
+    </button>
+</div>
+
+
+<!-- LIVE CHAT PRIVACY (first time) -->
+<div id="live-privacy-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width:420px;">
+        <div class="modal-header">
+            <span class="material-symbols-rounded">record_voice_over</span>
+            <h3 class="modal-title">Live Chat</h3>
+        </div>
+        <p class="modal-subtitle" style="line-height:1.55;">
+            Перед голосовым режимом подтвердите:
+            <br><br>
+            • Соблюдайте <b>правила конфиденциальности</b> и не передавайте чужие персональные данные без права.<br>
+            • Не используйте Live для оскорблений, вреда, обхода закона или контента, нарушающего права других.<br>
+            • Распознавание речи идёт в браузере / через ваш API-ключ — вы отвечаете за сказанное.<br>
+            • В Live используется <b>лёгкая модель</b> для быстрых ответов.
+        </p>
+        <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;margin:8px 0 4px;cursor:pointer;color:var(--on-surface-variant);">
+            <input type="checkbox" id="live-privacy-check" style="margin-top:2px;">
+            <span>Я понимаю и обязуюсь не нарушать правила</span>
+        </label>
+        <div class="modal-actions" style="flex-wrap:wrap;gap:8px;">
+            <button type="button" class="modal-btn modal-btn-reject" onclick="closeLivePrivacyModal(false)">Отмена</button>
+            <button type="button" class="modal-btn modal-btn-accept" id="live-privacy-accept" onclick="closeLivePrivacyModal(true)" disabled>Продолжить</button>
+        </div>
+    </div>
+</div>
+
 <div id="onboarding-overlay"></div>
 
 
@@ -1660,6 +1750,41 @@
         </div>
     </div>
 </div>
+
+
+<script>
+/* PWA register — Core Node */
+(function registerCoreNodePWA() {
+  if (!('serviceWorker' in navigator)) return;
+  const register = () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then((reg) => {
+        // soft update check
+        try { reg.update(); } catch (e) {}
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        reg.addEventListener('updatefound', () => {
+          const w = reg.installing;
+          if (!w) return;
+          w.addEventListener('statechange', () => {
+            if (w.state === 'installed' && navigator.serviceWorker.controller) {
+              // new version ready — optional toast if app exposes showToast
+              try {
+                if (typeof showToast === 'function') {
+                  showToast('Доступно обновление Core Node (PWA). Перезагрузите страницу.', 'info', 5000);
+                }
+              } catch (e) {}
+            }
+          });
+        });
+      })
+      .catch(() => {});
+  };
+  if (document.readyState === 'complete') register();
+  else window.addEventListener('load', register);
+})();
+</script>
 
 </body>
 </html>
