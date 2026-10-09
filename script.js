@@ -4463,6 +4463,7 @@ function addPlanFromForm() {
         notified: false
     });
     saveReminders();
+    try { requestNotificationPermissionForPlans().then(() => syncRemindersToServiceWorker()); } catch (e) {};
     renderCalendar();
     renderRemindersList();
     document.getElementById('plan-title').value = '';
@@ -7116,3 +7117,133 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(maybeShowLiveTryTip, 8 * 60 * 1000);
 });
 if (document.readyState !== 'loading') setTimeout(maybeShowLiveTryTip, 12000);
+
+
+/* ===== PWA: sync calendar reminders to Service Worker ===== */
+function postToCoreSW(msg) {
+    try {
+        if (!navigator.serviceWorker || !navigator.serviceWorker.controller) {
+            navigator.serviceWorker?.ready?.then((reg) => {
+                reg.active?.postMessage(msg);
+            }).catch(() => {});
+            return;
+        }
+        navigator.serviceWorker.controller.postMessage(msg);
+    } catch (e) {}
+}
+
+function buildReminderFireList(list) {
+    const out = [];
+    (list || []).forEach((r) => {
+        if (!r || r.id == null) return;
+        let eventAt = null;
+        if (r.datetime) {
+            const t = Date.parse(r.datetime);
+            if (!Number.isNaN(t)) eventAt = t;
+        }
+        if (!eventAt && r.date) {
+            // date key YYYY-MM-DD or similar — noon local as fallback
+            const d = new Date(r.date);
+            if (!Number.isNaN(d.getTime())) {
+                d.setHours(12, 0, 0, 0);
+                eventAt = d.getTime();
+            }
+        }
+        if (!eventAt && r.ts) eventAt = Number(r.ts);
+        if (!eventAt) return;
+
+        const notifyBefore = Number(r.notifyBefore != null ? r.notifyBefore : (r.notifyMins != null ? r.notifyMins : 10));
+        const fireAt = eventAt - Math.max(0, notifyBefore) * 60 * 1000;
+        if (fireAt < Date.now() - 120000) return; // skip old
+
+        out.push({
+            id: String(r.id),
+            title: r.title || r.text || 'Напоминание',
+            body: (r.title || r.text || 'Событие') + (notifyBefore ? (' · через ' + notifyBefore + ' мин') : ''),
+            fireAt,
+            eventAt,
+            tag: 'cn-reminder-' + r.id
+        });
+    });
+    return out;
+}
+
+function syncRemindersToServiceWorker() {
+    try {
+        const list = typeof reminders !== 'undefined' ? reminders : [];
+        const payload = buildReminderFireList(list);
+        postToCoreSW({ type: 'SYNC_REMINDERS', reminders: payload });
+    } catch (e) {}
+}
+
+function requestNotificationPermissionForPlans() {
+    if (!('Notification' in window)) return Promise.resolve(false);
+    if (Notification.permission === 'granted') return Promise.resolve(true);
+    if (Notification.permission === 'denied') return Promise.resolve(false);
+    return Notification.requestPermission().then((p) => p === 'granted');
+}
+
+// Hook saveReminders if exists
+(function wireReminderSWSync() {
+    const tryWrap = () => {
+        if (typeof saveReminders !== 'function') return false;
+        if (saveReminders._swWired) return true;
+        const prev = saveReminders;
+        window.saveReminders = function() {
+            const r = prev.apply(this, arguments);
+            try { syncRemindersToServiceWorker(); } catch (e) {}
+            return r;
+        };
+        saveReminders._swWired = true;
+        return true;
+    };
+    if (!tryWrap()) {
+        document.addEventListener('DOMContentLoaded', () => {
+            tryWrap();
+            setTimeout(syncRemindersToServiceWorker, 1500);
+        });
+        setTimeout(() => { tryWrap(); syncRemindersToServiceWorker(); }, 2000);
+    } else {
+        setTimeout(syncRemindersToServiceWorker, 1200);
+    }
+
+    // also after addPlanFromForm / delete
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(syncRemindersToServiceWorker, 2000);
+    });
+
+    // open calendar from notification click
+    if (navigator.serviceWorker) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            const d = event.data;
+            if (!d || d.type !== 'NOTIFICATION_CLICK') return;
+            try {
+                if (typeof switchScreen === 'function') switchScreen('calendar');
+                if (d.reminderId && typeof showToast === 'function') {
+                    showToast('Напоминание из уведомления', 'info');
+                }
+            } catch (e) {}
+        });
+    }
+})();
+
+// Permission soft-ask when opening calendar screen once
+(function wireCalendarNotifPerm() {
+    const boot = () => {
+        const cal = document.getElementById('screen-calendar');
+        if (!cal || cal.dataset.notifWired) return;
+        cal.dataset.notifWired = '1';
+        const obs = new MutationObserver(() => {
+            if (cal.classList.contains('active-screen') && 'Notification' in window && Notification.permission === 'default') {
+                // don't force; only if settings allow
+                const notifOn = localStorage.getItem('oracle_notif_plans');
+                if (notifOn === 'false') return;
+                // defer aggressive prompt
+            }
+        });
+        obs.observe(cal, { attributes: true, attributeFilter: ['class'] });
+    };
+    document.addEventListener('DOMContentLoaded', boot);
+    if (document.readyState !== 'loading') setTimeout(boot, 0);
+})();
+
