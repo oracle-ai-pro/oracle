@@ -23,6 +23,8 @@
             --radius-medium: 16px;
             --danger: #ff8a80;
             --code-bg: #0c0d12;
+            --success: #7ddea5;
+            --warning: #ffcc80;
         }
         body.light-theme {
             --bg: #f4f5fa;
@@ -36,6 +38,8 @@
             --border: #d0d3de;
             --glass-bg: rgba(255, 255, 255, 0.82);
             --code-bg: #1a1b26;
+            --success: #1b7a45;
+            --warning: #c77700;
         }
         body.true-black-theme {
             --bg: #000000;
@@ -50,6 +54,8 @@
             --grad: linear-gradient(90deg, #adc6ff 0%, #adc6ff 100%);
             --glass-bg: rgba(10, 10, 10, 0.88);
             --code-bg: #050505;
+            --success: #7ddea5;
+            --warning: #ffcc80;
         }
         body.true-black-theme .hero-banner {
             background: radial-gradient(circle at 50% 40%, #0a0a12 0%, #000 75%);
@@ -350,6 +356,118 @@
             color: var(--on-surface-variant); font-size: 13px;
             border-top: 1px solid var(--border);
         }
+
+        /* ===== Limit visual scales ===== */
+        .limits-showcase {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .limit-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+        }
+        .limit-card-head {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; margin-bottom: 12px;
+        }
+        .limit-card-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 14px; font-weight: 800;
+        }
+        .limit-card-title .material-symbols-rounded {
+            font-size: 20px; color: var(--primary);
+        }
+        .limit-pct {
+            font-size: 13px; font-weight: 900; color: var(--primary);
+            font-variant-numeric: tabular-nums;
+        }
+        .limit-pct.warn { color: var(--warning); }
+        .limit-pct.full { color: var(--danger); }
+        .limit-wave-track {
+            position: relative;
+            height: 18px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: var(--bg);
+            border: 1px solid var(--border);
+        }
+        .limit-wave-fill {
+            position: absolute; left: 0; top: 0; bottom: 0;
+            border-radius: 999px;
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--primary) 0 8px,
+                color-mix(in srgb, var(--primary) 55%, transparent) 8px 16px
+            );
+            background-size: 22px 22px;
+            animation: limitWave 1.1s linear infinite;
+            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .limit-wave-fill.warn {
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--warning) 0 8px,
+                color-mix(in srgb, var(--warning) 55%, transparent) 8px 16px
+            );
+            background-size: 22px 22px;
+        }
+        .limit-wave-fill.full {
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--danger) 0 8px,
+                color-mix(in srgb, var(--danger) 55%, transparent) 8px 16px
+            );
+            background-size: 22px 22px;
+        }
+        .limit-wave-fill.ok {
+            background: repeating-linear-gradient(
+                -45deg,
+                var(--success) 0 8px,
+                color-mix(in srgb, var(--success) 55%, transparent) 8px 16px
+            );
+            background-size: 22px 22px;
+        }
+        @keyframes limitWave {
+            from { background-position: 0 0; }
+            to { background-position: 22px 0; }
+        }
+        .limit-meta {
+            display: flex; justify-content: space-between; gap: 8px;
+            margin-top: 8px; font-size: 11px; color: var(--on-surface-variant);
+            line-height: 1.35;
+        }
+        .limit-meta b { color: var(--on-surface); font-weight: 700; }
+        .limit-tiers {
+            display: grid; gap: 8px; margin-top: 14px;
+        }
+        .tier-row {
+            display: grid; grid-template-columns: 1fr 72px;
+            align-items: center; gap: 10px;
+            font-size: 12px; color: var(--on-surface-variant);
+        }
+        .tier-row span:last-child {
+            text-align: right; font-weight: 800; color: var(--primary);
+            font-variant-numeric: tabular-nums;
+        }
+        .tier-bar {
+            height: 8px; border-radius: 999px; background: var(--bg);
+            border: 1px solid var(--border); overflow: hidden; grid-column: 1 / -1;
+        }
+        .tier-bar > i {
+            display: block; height: 100%; border-radius: 999px;
+            background: var(--primary); opacity: 0.85;
+        }
+        .limit-note {
+            margin-top: 16px; padding: 12px 14px; border-radius: 12px;
+            border: 1px dashed var(--border); font-size: 12px;
+            color: var(--on-surface-variant); line-height: 1.5;
+        }
+        .limit-note b { color: var(--on-surface); }
+
         @media (max-width: 640px) {
             .promo-block { padding: 24px 18px; }
             .settings-item { flex-direction: column; align-items: flex-start; }
@@ -367,15 +485,12 @@
         </filter>
       </defs>
     </svg>
-
     <div class="theme-bar" role="group" aria-label="Тема">
         <button type="button" data-theme="light" onclick="setAboutTheme('light')">Светлая</button>
         <button type="button" data-theme="dark" onclick="setAboutTheme('dark')">Тёмная</button>
         <button type="button" data-theme="trueblack" class="active" onclick="setAboutTheme('trueblack')">True Black</button>
     </div>
-
     <a href="index.html" class="floating-try-btn" id="floatingTryBtn">Открыть Core Node 2.6 PRO ➔</a>
-
     <section class="hero-banner">
         <div class="hero-blur"></div>
         <div class="blob-container">
@@ -396,7 +511,6 @@
             <a href="#whats-new" class="action-btn ghost">Что нового</a>
         </div>
     </section>
-
     <main class="main-container">
         <div class="features-headline" id="whats-new">
             <div class="section-label">
@@ -406,7 +520,6 @@
             <h2>Как это выглядит</h2>
             <p>Карточки с мини-превью интерфейса — в стиле ядра</p>
         </div>
-
         <div class="features-grid">
             <div class="card new">
                 <div class="card-top-row">
@@ -427,7 +540,6 @@
 }</pre>
                 </div>
             </div>
-
             <div class="card new">
                 <div class="card-top-row">
                     <div class="card-icon"><span class="material-symbols-rounded">auto_awesome</span></div>
@@ -444,7 +556,6 @@
                     </span>
                 </div>
             </div>
-
             <div class="card new">
                 <div class="card-top-row">
                     <div class="card-icon"><span class="material-symbols-rounded">error</span></div>
@@ -465,7 +576,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="card new">
                 <div class="card-top-row">
                     <div class="card-icon"><span class="material-symbols-rounded">progress_activity</span></div>
@@ -479,7 +589,6 @@
                     Модель думает…
                 </div>
             </div>
-
             <div class="card new">
                 <div class="card-top-row">
                     <div class="card-icon"><span class="material-symbols-rounded">link</span></div>
@@ -497,7 +606,6 @@
                     </span>
                 </div>
             </div>
-
             <div class="card">
                 <div class="card-top-row">
                     <div class="card-icon"><span class="material-symbols-rounded">view_column</span></div>
@@ -512,7 +620,6 @@
                     <div class="pane">Notepad</div>
                 </div>
             </div>
-
             <div class="card">
                 <div class="card-top-row">
                     <div class="card-icon"><span class="material-symbols-rounded">contrast</span></div>
@@ -527,7 +634,6 @@
                     <div class="theme-swatch swatch-black">True Black</div>
                 </div>
             </div>
-
             <div class="card">
                 <div class="card-top-row">
                     <div class="card-icon"><span class="material-symbols-rounded">lock</span></div>
@@ -537,6 +643,128 @@
                     Ч/Б без записи в историю. PIN при входе, безопасный поиск, уведомления планов.
                 </div>
                 <div class="preview" style="font-weight:600;">Зашли случайно?</div>
+            </div>
+        </div>
+
+        <!-- LIMITS VISUAL SECTION -->
+        <div class="promo-block" id="limits-visual">
+            <div class="badge">
+                <span class="material-symbols-rounded" style="font-size:14px;">analytics</span>
+                Лимиты · визуальные шкалы
+            </div>
+            <h3 style="font-size:22px;margin:0 0 8px;">Каждый вид лимита — своя шкала</h3>
+            <p style="color:var(--on-surface-variant);font-size:14px;line-height:1.55;margin:0 0 20px;">
+                В настройках и над полем ввода показываются <b>волнистые шкалы</b>: занято / свободно.
+                Примеры ниже — демонстрация состояний (не живые данные).
+            </p>
+            <div class="limits-showcase">
+                <!-- 3h window -->
+                <div class="limit-card">
+                    <div class="limit-card-head">
+                        <div class="limit-card-title">
+                            <span class="material-symbols-rounded">schedule</span>
+                            Окно 3–24 ч
+                        </div>
+                        <span class="limit-pct" id="demo-short-pct">28%</span>
+                    </div>
+                    <div class="limit-wave-track">
+                        <div class="limit-wave-fill ok" id="demo-short-fill" style="width:28%"></div>
+                    </div>
+                    <div class="limit-meta">
+                        <span>Сброс ~ каждые 3 ч<br><b>(до 24 ч при разгоне)</b></span>
+                        <span style="text-align:right">Текущее<br>использование</span>
+                    </div>
+                </div>
+                <!-- weekly -->
+                <div class="limit-card">
+                    <div class="limit-card-head">
+                        <div class="limit-card-title">
+                            <span class="material-symbols-rounded">date_range</span>
+                            Недельный лимит
+                        </div>
+                        <span class="limit-pct warn" id="demo-week-pct">62%</span>
+                    </div>
+                    <div class="limit-wave-track">
+                        <div class="limit-wave-fill warn" id="demo-week-fill" style="width:62%"></div>
+                    </div>
+                    <div class="limit-meta">
+                        <span>Сброс: <b>Пн · 00:30</b></span>
+                        <span style="text-align:right">Сумма<br>за неделю</span>
+                    </div>
+                </div>
+                <!-- attachments -->
+                <div class="limit-card">
+                    <div class="limit-card-head">
+                        <div class="limit-card-title">
+                            <span class="material-symbols-rounded">attach_file</span>
+                            Вложения · 1 ч
+                        </div>
+                        <span class="limit-pct" id="demo-attach-pct">40%</span>
+                    </div>
+                    <div class="limit-wave-track">
+                        <div class="limit-wave-fill" id="demo-attach-fill" style="width:40%"></div>
+                    </div>
+                    <div class="limit-meta">
+                        <span>При 100% кнопка<br><b>Прикрепить</b> скрыта</span>
+                        <span style="text-align:right">Файлы<br>и фото</span>
+                    </div>
+                </div>
+                <!-- blocked state -->
+                <div class="limit-card">
+                    <div class="limit-card-head">
+                        <div class="limit-card-title">
+                            <span class="material-symbols-rounded">block</span>
+                            Блок 100%
+                        </div>
+                        <span class="limit-pct full">100%</span>
+                    </div>
+                    <div class="limit-wave-track">
+                        <div class="limit-wave-fill full" style="width:100%"></div>
+                    </div>
+                    <div class="limit-meta">
+                        <span>Отправка недоступна<br>до <b>Завтра в 09:00</b></span>
+                        <span style="text-align:right">Баннер<br>над полем</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="limit-card" style="margin-top:16px;">
+                <div class="limit-card-title" style="margin-bottom:10px;">
+                    <span class="material-symbols-rounded">layers</span>
+                    Расход по типу запроса
+                </div>
+                <div class="limit-tiers">
+                    <div class="tier-row">
+                        <span>≤ 50 символов</span>
+                        <span>≈ 0,5%</span>
+                        <div class="tier-bar"><i style="width:5%"></i></div>
+                    </div>
+                    <div class="tier-row">
+                        <span>50–150 символов</span>
+                        <span>≈ 1%</span>
+                        <div class="tier-bar"><i style="width:10%"></i></div>
+                    </div>
+                    <div class="tier-row">
+                        <span>Поиск · известное / неизвестное</span>
+                        <span>5% / 10%</span>
+                        <div class="tier-bar"><i style="width:35%"></i></div>
+                    </div>
+                    <div class="tier-row">
+                        <span>Код · игры · сложные генерации</span>
+                        <span>20–40%</span>
+                        <div class="tier-bar"><i style="width:55%"></i></div>
+                    </div>
+                    <div class="tier-row">
+                        <span>Вложение файла</span>
+                        <span>+5%</span>
+                        <div class="tier-bar"><i style="width:15%"></i></div>
+                    </div>
+                </div>
+                <div class="limit-note">
+                    <b>С 1 ноября</b> — уточнённое соглашение по процентам (уже анонсировано в приложении).
+                    Вручную сбросить лимиты <b>нельзя</b>. Внешний API (Gemini / OpenAI…) считает провайдер —
+                    встроенные шкалы Core Node остаются ориентиром для локального контура.
+                </div>
             </div>
         </div>
 
@@ -574,7 +802,7 @@
                 <div class="settings-item">
                     <div>
                         <div class="settings-item-title">Лимиты</div>
-                        <div class="settings-item-desc">3 часа / неделя / вложения. Внешний API — «считает провайдер».</div>
+                        <div class="settings-item-desc">3 часа / неделя / вложения + визуальные шкалы.</div>
                     </div>
                     <div class="setting-badge-pill">analytics</div>
                 </div>
@@ -597,30 +825,29 @@
                 &gt;_ CORE_NODE: v2.6 PRO · RELEASE 2026-09-20<br>
                 &gt;_ MARKDOWN_ENGINE: ACTIVE · CODE_WINDOWS · IMAGE_VIEWER<br>
                 &gt;_ EXTERNAL_API: GEMINI AQ. | OPENAI | CLAUDE | GROK<br>
+                &gt;_ LIMITS: WAVE_BARS · 3H · WEEK · ATTACH · TIER_COSTS<br>
                 &gt;_ PUBLIC_LINKS · SPLIT_VIEW · NOTEPAD_PROJECTS<br>
                 &gt;_ THEME: TRUE_BLACK | LIGHT | DARK<br>
                 &gt;_ LOCAL_STORAGE_SYNC: oracle_* KEYS SHARED<br>
                 &gt;_ STATUS: ALL SYSTEMS OPERATIONAL
             </div>
         </div>
-
         <div class="promo-block" style="margin-bottom:0;">
             <div class="badge">Changelog 2.6 PRO</div>
             <div class="changelog">
                 <div class="changelog-item"><span class="tag">UI</span> Матовые бабблы, glass-навигация, плавающий бар на телефонах</div>
                 <div class="changelog-item"><span class="tag">AI</span> Markdown, окна кода, просмотр фото, анимация думания</div>
                 <div class="changelog-item"><span class="tag">API</span> Сторонние ключи, Gemini AQ., ошибка + Повторить, чип статуса</div>
+                <div class="changelog-item"><span class="tag">Limits</span> Волнистые шкалы: 3–24 ч, неделя, вложения, тиры расхода</div>
                 <div class="changelog-item"><span class="tag">Share</span> Публичные ссылки, вкладка управления</div>
                 <div class="changelog-item"><span class="tag">Split</span> Notepad / два чата / Side Notes, проекты в боковом меню</div>
                 <div class="changelog-item"><span class="tag">Theme</span> True Black: #000 фон, спокойный primary</div>
             </div>
         </div>
     </main>
-
     <footer>
         © 2026 Core Node · Oracle Intelligence · Prestige HQ. Релиз 2.6 PRO — 20 сентября 2026.
     </footer>
-
     <script>
         function setAboutTheme(mode) {
             const b = document.body;
@@ -640,7 +867,6 @@
             const saved = localStorage.getItem('oracle_about_theme');
             if (saved) setAboutTheme(saved);
         } catch (e) {}
-
         const mainBtn = document.getElementById('mainActionBtn');
         const floatingBtn = document.getElementById('floatingTryBtn');
         const observer = new IntersectionObserver((entries) => {
@@ -649,6 +875,27 @@
             });
         }, { threshold: 0.1 });
         if (mainBtn) observer.observe(mainBtn);
+
+        // gentle demo pulse on limit bars (cosmetic)
+        (function demoLimits() {
+            const pairs = [
+                ['demo-short-fill', 'demo-short-pct', 28, 42],
+                ['demo-week-fill', 'demo-week-pct', 62, 68],
+                ['demo-attach-fill', 'demo-attach-pct', 40, 55]
+            ];
+            let t = 0;
+            setInterval(() => {
+                t++;
+                pairs.forEach(([fid, pid, a, b], i) => {
+                    const fill = document.getElementById(fid);
+                    const pct = document.getElementById(pid);
+                    if (!fill || !pct) return;
+                    const v = Math.round(a + (Math.sin(t / 8 + i) * 0.5 + 0.5) * (b - a));
+                    fill.style.width = v + '%';
+                    pct.textContent = v + '%';
+                });
+            }, 1200);
+        })();
     </script>
 </body>
 </html>
