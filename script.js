@@ -14,7 +14,9 @@ isSplitView: false,
 splitOrientation: 'horizontal',   // 'horizontal' | 'vertical'
 splitRatio: 0.5,
 splitSwapped: false,
-genTimer: null
+genTimer: null,
+    isLiveChat: false,
+    _liveRec: null
 };
 
 
@@ -1474,21 +1476,52 @@ function _changeOracleThemeImpl(primary, container, variant) {
             voiceBtn?.classList.add('hidden');
             stopBtn?.classList.remove('hidden');
             stopBtn?.classList.add('visible');
+            stopBtn?.classList.add('gen-active');
         } else {
-            stopBtn?.classList.add('hidden');
-            stopBtn?.classList.remove('visible');
+            stopBtn?.classList.remove('gen-active');
+            // In Live mode stop button stays as "end live"
+            if (CoreState.isLiveChat) {
+                stopBtn?.classList.remove('hidden');
+                stopBtn?.classList.add('visible');
+                liveBtn?.classList.add('hidden');
+                voiceBtn?.classList.add('hidden');
+            } else {
+                stopBtn?.classList.add('hidden');
+                stopBtn?.classList.remove('visible');
+            }
             const input = document.getElementById('user-input');
             if (input) handleInput(input);
         }
     }
 
     function stopGeneration() {
+        // Cancel pending timer / streaming
         if (CoreState.genTimer) {
             clearTimeout(CoreState.genTimer);
             CoreState.genTimer = null;
         }
+        try {
+            if (CoreState.apiAbort) {
+                CoreState.apiAbort.abort();
+                CoreState.apiAbort = null;
+            }
+        } catch (e) {}
+        const wasStreaming = CoreState.isStreaming;
+        CoreState.isStreaming = false;
+        if (typeof showThinkingIndicator === 'function') showThinkingIndicator(false);
+
+        // If generating → only stop generation; second click / live stop ends live
+        if (wasStreaming) {
+            setGenerating(false);
+            showToast('Генерация остановлена', 'warning');
+            return;
+        }
+        // Not generating: exit Live if active
+        if (CoreState.isLiveChat && typeof stopLiveChat === 'function') {
+            stopLiveChat();
+            return;
+        }
         setGenerating(false);
-        showToast('Генерация остановлена', 'warning');
     }
 
     
@@ -1754,6 +1787,9 @@ function sendMsg() {
                     if (result.external) aiMsgDiv.classList.add('ai-external');
                     chatFlow.appendChild(aiMsgDiv);
                     if (typeof enhanceAiMessageActions === 'function') enhanceAiMessageActions(aiMsgDiv);
+                    if (CoreState.isLiveChat && typeof speakLiveAiText === 'function') {
+                        speakLiveAiText(result.text);
+                    }
                 }
             } catch (e) {
                 appendAiApiError(e.message || String(e), msg);
@@ -1768,6 +1804,9 @@ function sendMsg() {
             }
             setGenerating(false);
             CoreState.genTimer = null;
+            if (CoreState.isLiveChat && typeof resumeLiveMicAfterReply === 'function') {
+                setTimeout(resumeLiveMicAfterReply, 400);
+            }
         };
         // slight delay for thinking anim
         CoreState.genTimer = setTimeout(() => { runReply(); }, 350);
@@ -2058,35 +2097,235 @@ function selectAgent(agentName) {
     }
 }
 function startLiveChat() {
-    const phrases = [
-        "Что делаешь?",
-        "Как дела?",
-        "Расскажи что-нибудь",
-        "Есть идеи?",
-        "Чем занят?",
-        "Что нового?",
-        "Помоги с задачей",
-        "Давай поговорим"
-    ];
-    const randomPhrase = phrases[Math.floor(Math.random() * phrases.length)];
-    
-    const msgEl = document.getElementById('live-user-msg');
-    if (msgEl) msgEl.textContent = randomPhrase;
-
-    const modal = document.getElementById('live-chat-modal');
-    if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+    if (localStorage.getItem('oracle_live_privacy_ok') !== '1') {
+        openLivePrivacyModal();
+        return;
     }
+    if (CoreState.isLiveChat) {
+        // already on — treat as toggle off if idle
+        if (!CoreState.isStreaming) stopLiveChat();
+        return;
+    }
+    CoreState.isLiveChat = true;
+    CoreState._liveSilenceTimer = null;
+    CoreState._liveFinalBuf = '';
+    CoreState._liveSending = false;
+    document.body.classList.add('live-chat-active');
+    document.getElementById('main-input-box')?.classList.add('live-mode');
+    document.getElementById('live-chat-btn')?.classList.add('live-on');
+    const stopBtn = document.getElementById('stop-gen-btn');
+    stopBtn?.classList.remove('hidden');
+    stopBtn?.classList.add('visible');
+    updateLiveModelChip();
+    showToast('Live включён · пауза 2с → отправка · Стоп — выход', 'success', 3000);
+
+    const input = document.getElementById('user-input');
+    if (input) {
+        if (!input.getAttribute('data-ph')) input.setAttribute('data-ph', input.placeholder || '');
+        input.placeholder = 'Live · говорите… (2с тишины → отправка)';
+    }
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        showToast('Голос недоступен — можно печатать, Enter отправит', 'warning');
+        return;
+    }
+    try {
+        if (CoreState._liveRec) {
+            try { CoreState._liveRec.onend = null; CoreState._liveRec.stop(); } catch (e) {}
+        }
+        const rec = new SR();
+        CoreState._liveRec = rec;
+        rec.lang = 'ru-RU';
+        rec.continuous = true;
+        rec.interimResults = true;
+
+        const scheduleSilenceSend = () => {
+            if (CoreState._liveSilenceTimer) clearTimeout(CoreState._liveSilenceTimer);
+            CoreState._liveSilenceTimer = setTimeout(() => {
+                if (!CoreState.isLiveChat || CoreState.isStreaming || CoreState._liveSending) return;
+                const el = document.getElementById('user-input');
+                const text = (el && el.value || '').trim();
+                if (text.length < 2) return;
+                CoreState._liveSending = true;
+                CoreState._liveFinalBuf = '';
+                try {
+                    // pause recognition while generating
+                    if (CoreState._liveRec) {
+                        CoreState._liveRec.onend = null;
+                        try { CoreState._liveRec.stop(); } catch (e) {}
+                    }
+                } catch (e) {}
+                if (typeof sendMsg === 'function') sendMsg();
+                setTimeout(() => { CoreState._liveSending = false; }, 800);
+            }, 2000);
+        };
+
+        rec.onresult = (ev) => {
+            if (!CoreState.isLiveChat || CoreState.isStreaming) return;
+            let interim = '';
+            for (let i = ev.resultIndex; i < ev.results.length; i++) {
+                const tr = ev.results[i][0].transcript;
+                if (ev.results[i].isFinal) CoreState._liveFinalBuf = (CoreState._liveFinalBuf || '') + tr + ' ';
+                else interim += tr;
+            }
+            const el = document.getElementById('user-input');
+            if (el) {
+                el.value = ((CoreState._liveFinalBuf || '') + interim).trim();
+                if (typeof handleInput === 'function') handleInput(el);
+            }
+            scheduleSilenceSend();
+        };
+        rec.onerror = (ev) => {
+            if (ev.error === 'aborted' || ev.error === 'no-speech') return;
+            console.warn('live rec', ev.error);
+        };
+        rec.onend = () => {
+            // restart only if still live and not streaming
+            if (CoreState.isLiveChat && !CoreState.isStreaming && CoreState._liveRec === rec) {
+                try { rec.start(); } catch (e) {}
+            }
+        };
+        rec.start();
+    } catch (e) {
+        showToast('Микрофон: ' + (e.message || e), 'error');
+    }
+}
+
+function stopLiveChat() {
+    CoreState.isLiveChat = false;
+    if (CoreState._liveSilenceTimer) {
+        clearTimeout(CoreState._liveSilenceTimer);
+        CoreState._liveSilenceTimer = null;
+    }
+    CoreState._liveFinalBuf = '';
+    CoreState._liveSending = false;
+    document.body.classList.remove('live-chat-active');
+    document.getElementById('main-input-box')?.classList.remove('live-mode');
+    document.getElementById('live-chat-btn')?.classList.remove('live-on');
+    try {
+        if (CoreState._liveRec) {
+            CoreState._liveRec.onend = null;
+            CoreState._liveRec.onresult = null;
+            CoreState._liveRec.stop();
+        }
+    } catch (e) {}
+    CoreState._liveRec = null;
+    try { window.speechSynthesis && speechSynthesis.cancel(); } catch (e) {}
+    const stopBtn = document.getElementById('stop-gen-btn');
+    stopBtn?.classList.add('hidden');
+    stopBtn?.classList.remove('visible');
+    const input = document.getElementById('user-input');
+    if (input) {
+        input.placeholder = input.getAttribute('data-ph') || 'Спросите что-нибудь…';
+        if (typeof handleInput === 'function') handleInput(input);
+    }
+    const chip = document.getElementById('live-model-chip');
+    if (chip) chip.style.display = 'none';
+    showToast('Live выключен', 'info');
 }
 
 function closeLiveChatModal() {
-    const modal = document.getElementById('live-chat-modal');
-    if (modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = '';
-    }
+    document.getElementById('live-chat-modal')?.classList.remove('active');
+    document.body.style.overflow = '';
 }
+
+function updateLiveModelChip() {
+    let chip = document.getElementById('live-model-chip');
+    if (!chip) {
+        const bar = document.querySelector('.input-left-actions') || document.querySelector('.input-bottom-bar');
+        if (!bar) return;
+        chip = document.createElement('button');
+        chip.type = 'button';
+        chip.id = 'live-model-chip';
+        chip.className = 'live-model-chip';
+        chip.title = 'В Live — быстрая lite-модель';
+        bar.appendChild(chip);
+    }
+    const s = typeof loadCustomApiState === 'function' ? loadCustomApiState() : {};
+    const p = (s.provider || 'local');
+    const labels = { gemini: 'Gemini Lite', openai: 'GPT mini', claude: 'Haiku', grok: 'Grok' };
+    chip.textContent = 'Live · ' + (labels[p] || 'Assistant');
+    chip.style.display = CoreState.isLiveChat ? 'inline-flex' : 'none';
+}
+
+function speakLiveAiText(text) {
+    if (!CoreState.isLiveChat) return;
+    if (!window.speechSynthesis) return;
+    const plain = String(text || '')
+        .replace(/```[\s\S]*?```/g, ' ')
+        .replace(/[#>*_`]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 1200);
+    if (!plain) return;
+    try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(plain);
+        u.lang = 'ru-RU';
+        u.rate = 1.02;
+        speechSynthesis.speak(u);
+    } catch (e) {}
+}
+
+function resumeLiveMicAfterReply() {
+    if (!CoreState.isLiveChat || CoreState.isStreaming) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return;
+    try {
+        if (CoreState._liveRec) {
+            CoreState._liveRec.onend = null;
+            try { CoreState._liveRec.stop(); } catch (e) {}
+        }
+        const rec = new SR();
+        CoreState._liveRec = rec;
+        rec.lang = 'ru-RU';
+        rec.continuous = true;
+        rec.interimResults = true;
+        CoreState._liveFinalBuf = '';
+        const scheduleSilenceSend = () => {
+            if (CoreState._liveSilenceTimer) clearTimeout(CoreState._liveSilenceTimer);
+            CoreState._liveSilenceTimer = setTimeout(() => {
+                if (!CoreState.isLiveChat || CoreState.isStreaming || CoreState._liveSending) return;
+                const el = document.getElementById('user-input');
+                const text = (el && el.value || '').trim();
+                if (text.length < 2) return;
+                CoreState._liveSending = true;
+                CoreState._liveFinalBuf = '';
+                try {
+                    if (CoreState._liveRec) {
+                        CoreState._liveRec.onend = null;
+                        try { CoreState._liveRec.stop(); } catch (e) {}
+                    }
+                } catch (e) {}
+                if (typeof sendMsg === 'function') sendMsg();
+                setTimeout(() => { CoreState._liveSending = false; }, 800);
+            }, 2000);
+        };
+        rec.onresult = (ev) => {
+            if (!CoreState.isLiveChat || CoreState.isStreaming) return;
+            let interim = '';
+            for (let i = ev.resultIndex; i < ev.results.length; i++) {
+                const tr = ev.results[i][0].transcript;
+                if (ev.results[i].isFinal) CoreState._liveFinalBuf = (CoreState._liveFinalBuf || '') + tr + ' ';
+                else interim += tr;
+            }
+            const el = document.getElementById('user-input');
+            if (el) {
+                el.value = ((CoreState._liveFinalBuf || '') + interim).trim();
+                if (typeof handleInput === 'function') handleInput(el);
+            }
+            scheduleSilenceSend();
+        };
+        rec.onend = () => {
+            if (CoreState.isLiveChat && !CoreState.isStreaming && CoreState._liveRec === rec) {
+                try { rec.start(); } catch (e) {}
+            }
+        };
+        rec.start();
+    } catch (e) {}
+}
+
 
 // Privacy modal handlers
 function handlePrivacyAccept() {
@@ -5248,6 +5487,10 @@ function loadCustomApiState() {
 function saveCustomApiState(partial) {
     const s = Object.assign(loadCustomApiState(), partial);
     localStorage.setItem(API_KEYS_STATE_KEY, JSON.stringify(s));
+    try {
+        window.dispatchEvent(new CustomEvent('oracle-bridge-sync', { detail: { api: s } }));
+        localStorage.setItem('oracle_bridge_ping', String(Date.now()));
+    } catch (e) {}
     return s;
 }
 function refreshApiKeysUI() {
@@ -5473,21 +5716,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 // ===== External API call + key error with Retry =====
+function isApiBusyError(message) {
+    const m = String(message || '').toLowerCase();
+    return /high demand|try again later|rate limit|429|resource.?exhausted|overloaded|unavailable|capacity|quota|too many requests|временно|перегруз|займ/i.test(m);
+}
+
 function appendAiApiError(message, retryMsg) {
     const chatFlow = document.getElementById('chat-flow');
     if (!chatFlow) return;
     const wrap = document.createElement('div');
     wrap.className = 'msg ai-msg ai-api-error';
     const safe = String(message || 'Ошибка API ключа');
+    const busy = isApiBusyError(safe);
+    const deferBtn = busy ? `
+                <button type="button" class="ai-defer-btn" onclick="deferApiGeneration(this)">
+                    <span class="material-symbols-rounded">schedule</span> Отложить генерацию
+                </button>` : '';
     wrap.innerHTML = `
         <div class="ai-error-card">
             <div class="ai-error-icon"><span class="material-symbols-rounded">error</span></div>
             <div class="ai-error-body">
-                <div class="ai-error-title">Ошибка ключа / API</div>
+                <div class="ai-error-title">Ошибка API</div>
                 <div class="ai-error-text">${escapeAiHtml(safe)}</div>
+                <div class="ai-error-actions">
                 <button type="button" class="ai-retry-btn" onclick="retryLastApiRequest(this)">
                     <span class="material-symbols-rounded">refresh</span> Повторить
                 </button>
+                ${deferBtn}
+                </div>
+                <div class="ai-defer-hint" style="display:none;font-size:11px;margin-top:8px;color:var(--on-surface-variant);line-height:1.4;"></div>
             </div>
         </div>`;
     if (retryMsg) wrap.dataset.retryMsg = retryMsg;
@@ -5501,6 +5758,98 @@ function appendAiApiError(message, retryMsg) {
         }
         localStorage.setItem('oracle_chat_history', chatFlow.innerHTML);
     }
+}
+
+let _deferApiTimer = null;
+let _deferApiAbort = false;
+
+function deferApiGeneration(btn) {
+    const wrap = btn?.closest('.ai-api-error');
+    const msg = wrap?.dataset?.retryMsg || CoreState._lastApiUserMsg || '';
+    if (!msg) {
+        showToast('Нет сообщения для отложенной генерации', 'warning');
+        return;
+    }
+    if (_deferApiTimer) {
+        showToast('Уже ждём освобождения модели', 'info');
+        return;
+    }
+    _deferApiAbort = false;
+    const hint = wrap?.querySelector('.ai-defer-hint');
+    if (hint) {
+        hint.style.display = 'block';
+        hint.textContent = 'Ждём освобождения модели… Не закрывайте вкладку. Попытки каждые ~25 с.';
+    }
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    showToast('Отложено: ждём, когда модель освободится', 'info', 3500);
+
+    // Notification permission (optional)
+    try {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission().catch(() => {});
+        }
+    } catch (e) {}
+
+    let attempts = 0;
+    const maxAttempts = 24; // ~10 min
+    const delayMs = 25000;
+
+    const tick = async () => {
+        if (_deferApiAbort) return;
+        attempts++;
+        if (hint) hint.textContent = 'Попытка ' + attempts + '/' + maxAttempts + '… Не закрывайте вкладку.';
+        try {
+            if (typeof callExternalProvider === 'function') {
+                const result = await callExternalProvider(msg);
+                if (result && result.ok && result.text) {
+                    _deferApiTimer = null;
+                    wrap?.remove();
+                    // inject as AI reply
+                    const chatFlow = document.getElementById('chat-flow');
+                    if (chatFlow) {
+                        const div = document.createElement('div');
+                        div.className = 'msg ai-msg';
+                        div.innerHTML = '<div class="ai-bubble">' + (typeof escapeAiHtml === 'function' ? escapeAiHtml(result.text).replace(/\n/g, '<br>') : result.text) + '</div>';
+                        chatFlow.appendChild(div);
+                        const screenChat = document.getElementById('screen-chat');
+                        if (screenChat) screenChat.scrollTop = screenChat.scrollHeight;
+                    }
+                    const note = 'Модель освободилась — ответ готов.';
+                    showToast(note, 'success', 5000);
+                    try {
+                        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                            new Notification('Core Node', { body: note });
+                        } else {
+                            alert(note);
+                        }
+                    } catch (e) {
+                        try { alert(note); } catch (e2) {}
+                    }
+                    return;
+                }
+                if (result && !isApiBusyError(result.error || '')) {
+                    // permanent error
+                    _deferApiTimer = null;
+                    if (hint) hint.textContent = 'Ошибка: ' + (result.error || 'не удалось');
+                    showToast(result.error || 'Ошибка API', 'error');
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    return;
+                }
+            }
+        } catch (e) {}
+        if (attempts >= maxAttempts) {
+            _deferApiTimer = null;
+            if (hint) hint.textContent = 'Время ожидания истекло. Нажмите «Повторить».';
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            showToast('Модель всё ещё занята. Попробуйте позже.', 'warning', 4000);
+            return;
+        }
+        _deferApiTimer = setTimeout(tick, delayMs);
+    };
+    _deferApiTimer = setTimeout(tick, 3000); // first try soon
 }
 function retryLastApiRequest(btn) {
     const wrap = btn?.closest('.ai-api-error');
@@ -5516,6 +5865,17 @@ function retryLastApiRequest(btn) {
         if (typeof handleInput === 'function') handleInput(input);
     }
     if (typeof sendMsg === 'function') sendMsg();
+}
+
+
+function getProviderModel(provider, forLive) {
+    const p = String(provider || '').toLowerCase();
+    const live = forLive || (typeof CoreState !== 'undefined' && CoreState.isLiveChat);
+    if (p === 'gemini') return live ? 'gemini-2.0-flash-lite' : 'gemini-2.0-flash';
+    if (p === 'openai') return live ? 'gpt-4o-mini' : 'gpt-4o-mini';
+    if (p === 'claude') return live ? 'claude-3-5-haiku-20241022' : 'claude-3-5-haiku-20241022';
+    if (p === 'grok') return live ? 'grok-2-latest' : 'grok-2-latest';
+    return 'gemini-2.0-flash-lite';
 }
 
 async function callExternalProvider(userMsg) {
@@ -5535,7 +5895,7 @@ async function callExternalProvider(userMsg) {
     try {
         if (provider === 'gemini') {
             // Support both legacy AIza and new Auth keys AQ.
-            const model = 'gemini-2.0-flash';
+            const model = getProviderModel('gemini', CoreState.isLiveChat);
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
             const res = await fetch(url, {
                 method: 'POST',
@@ -5575,7 +5935,7 @@ async function callExternalProvider(userMsg) {
                     'Authorization': 'Bearer ' + key
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o-mini',
+                    model: getProviderModel('openai', CoreState.isLiveChat),
                     messages: [{ role: 'user', content: prompt }]
                 })
             });
@@ -5599,7 +5959,7 @@ async function callExternalProvider(userMsg) {
                     'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
-                    model: 'claude-3-5-haiku-20241022',
+                    model: getProviderModel('claude', CoreState.isLiveChat),
                     max_tokens: 1024,
                     messages: [{ role: 'user', content: prompt }]
                 })
@@ -5623,7 +5983,7 @@ async function callExternalProvider(userMsg) {
                     'Authorization': 'Bearer ' + key
                 },
                 body: JSON.stringify({
-                    model: 'grok-2-latest',
+                    model: getProviderModel('grok', CoreState.isLiveChat),
                     messages: [{ role: 'user', content: prompt }]
                 })
             });
@@ -5780,21 +6140,9 @@ function updateApiStatusChip() {
     });
 }
 
-const _stopGenBase = typeof stopGeneration === 'function' ? stopGeneration : null;
-if (_stopGenBase && !window._stopAbortPatched) {
-    window._stopAbortPatched = true;
-    window.stopGeneration = function() {
-        try {
-            if (CoreState.apiAbort) {
-                CoreState.apiAbort.abort();
-                CoreState.apiAbort = null;
-            }
-        } catch (e) {}
-        _stopGenBase();
-        showThinkingIndicator(false);
-        showToast('Генерация остановлена', 'info');
-    };
-}
+/* stopGeneration already handles abort */
+window._stopAbortPatched = true;
+
 
 // wrap callExternalProvider to use AbortController
 const _callExtOrig = typeof callExternalProvider === 'function' ? callExternalProvider : null;
@@ -6499,3 +6847,272 @@ function clearHalloweenIfThemeChange() {
     document.body.classList.remove('halloween-mode');
     try { localStorage.removeItem('oracle_halloween_mode'); } catch (e) {}
 }
+
+
+/* ===== Side Core Node promo (desktop) + Screenshot Ask ===== */
+function isDesktopCoreNode() {
+    try {
+        return window.matchMedia('(min-width: 901px)').matches && !('ontouchstart' in window && navigator.maxTouchPoints > 2);
+    } catch (e) {
+        return window.innerWidth >= 901;
+    }
+}
+
+function maybeShowSideCorePromo() {
+    if (localStorage.getItem('oracle_side_core_promo_v1') === '1') return;
+    if (!isDesktopCoreNode()) return;
+    // after consent
+    const consent = document.getElementById('consent-modal');
+    if (consent && consent.classList.contains('active')) {
+        setTimeout(maybeShowSideCorePromo, 2000);
+        return;
+    }
+    setTimeout(() => {
+        if (localStorage.getItem('oracle_side_core_promo_v1') === '1') return;
+        document.getElementById('side-core-promo-modal')?.classList.add('active');
+    }, 2200);
+}
+
+function dismissSideCorePromo() {
+    localStorage.setItem('oracle_side_core_promo_v1', '1');
+    document.getElementById('side-core-promo-modal')?.classList.remove('active');
+}
+
+function openSideCoreZipHint() {
+    localStorage.setItem('oracle_side_core_promo_v1', '1');
+    document.getElementById('side-core-promo-modal')?.classList.remove('active');
+    const t = document.getElementById('side-core-hint-title');
+    const b = document.getElementById('side-core-hint-text');
+    if (t) t.textContent = 'Локально ZIP';
+    if (b) b.innerHTML = '1. Скачайте <b>side-core-node.zip</b> из репозитория / артефактов сборки.<br>2. Распакуйте папку.<br>3. Chrome → <code>chrome://extensions</code> → Режим разработчика → <b>Загрузить распакованное</b>.<br>4. Alt+Shift+C — боковая панель.';
+    document.getElementById('side-core-hint-modal')?.classList.add('active');
+}
+
+function openSideCoreExtHint() {
+    localStorage.setItem('oracle_side_core_promo_v1', '1');
+    document.getElementById('side-core-promo-modal')?.classList.remove('active');
+    const t = document.getElementById('side-core-hint-title');
+    const b = document.getElementById('side-core-hint-text');
+    if (t) t.textContent = 'Расширения Chrome';
+    if (b) b.innerHTML = 'Когда расширение будет в Chrome Web Store, установка — в один клик.<br><br>Сейчас доступна <b>распакованная</b> версия (ZIP + Режим разработчика).<br>После установки: иконка расширения или <b>Alt+Shift+C</b>.';
+    document.getElementById('side-core-hint-modal')?.classList.add('active');
+}
+
+function closeSideCoreHint() {
+    document.getElementById('side-core-hint-modal')?.classList.remove('active');
+}
+
+document.addEventListener('DOMContentLoaded', maybeShowSideCorePromo);
+if (document.readyState !== 'loading') setTimeout(maybeShowSideCorePromo, 800);
+
+/* Page context menu: screenshot ask */
+(function wirePageCtxScreenshot() {
+    const menu = () => document.getElementById('page-ctx-menu');
+    document.addEventListener('contextmenu', (e) => {
+        // only inside oracle container / app, not on inputs where native menu is useful
+        const t = e.target;
+        if (t && (t.closest('input, textarea, [contenteditable="true"]'))) return;
+        if (!t.closest('.oracle-container') && !t.closest('.app-screen') && t !== document.body) {
+            // still allow on main UI
+            if (!t.closest('body')) return;
+        }
+        const m = menu();
+        if (!m) return;
+        e.preventDefault();
+        m.style.display = 'block';
+        const pad = 8;
+        const w = 260, h = 52;
+        let x = e.clientX, y = e.clientY;
+        if (x + w > window.innerWidth) x = window.innerWidth - w - pad;
+        if (y + h > window.innerHeight) y = window.innerHeight - h - pad;
+        m.style.left = x + 'px';
+        m.style.top = y + 'px';
+    });
+    document.addEventListener('click', () => {
+        const m = menu();
+        if (m) m.style.display = 'none';
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const m = menu();
+            if (m) m.style.display = 'none';
+        }
+    });
+})();
+
+function loadHtml2Canvas() {
+    return new Promise((resolve, reject) => {
+        if (window.html2canvas) return resolve(window.html2canvas);
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+        s.onload = () => resolve(window.html2canvas);
+        s.onerror = () => reject(new Error('html2canvas load failed'));
+        document.head.appendChild(s);
+    });
+}
+
+async function askCoreNodeScreenshot() {
+    const m = document.getElementById('page-ctx-menu');
+    if (m) m.style.display = 'none';
+    try {
+        if (typeof showToast === 'function') showToast('Делаю скриншот…', 'info', 1600);
+        const h2c = await loadHtml2Canvas();
+        const target = document.querySelector('.oracle-container') || document.body;
+        const canvas = await h2c(target, {
+            backgroundColor: null,
+            scale: Math.min(2, window.devicePixelRatio || 1),
+            useCORS: true,
+            logging: false,
+            windowWidth: target.scrollWidth,
+            windowHeight: Math.min(target.scrollHeight, 2400)
+        });
+        const dataUrl = canvas.toDataURL('image/png');
+        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+        const fileName = 'core-node-shot-' + stamp + '.png';
+
+        // switch to chat
+        if (typeof switchScreen === 'function') switchScreen('chat');
+
+        // attach to pending files if Core Node has attach pipeline
+        const input = document.getElementById('user-input');
+        const q = 'Вопрос по этому материалу «' + fileName + '»';
+        if (input) {
+            input.value = q;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            try { input.focus(); } catch (e) {}
+        }
+
+        // Try global pending attachments API
+        if (typeof window.attachDataUrlToChat === 'function') {
+            window.attachDataUrlToChat(dataUrl, fileName, 'image/png');
+        } else if (typeof window.addPendingAttachment === 'function') {
+            window.addPendingAttachment({ name: fileName, dataUrl: dataUrl, type: 'image/png' });
+        } else {
+            // fallback: stash for sendMsg / show chip manually
+            window.__cnShotAttach = { name: fileName, dataUrl: dataUrl, type: 'image/png' };
+            tryRenderShotChip(fileName, dataUrl);
+        }
+
+        if (typeof showToast === 'function') {
+            showToast('Скриншот в чате. Можно отправить или править вопрос.', 'success', 3200);
+        }
+    } catch (err) {
+        console.warn(err);
+        if (typeof showToast === 'function') {
+            showToast('Не удалось сделать скриншот: ' + (err.message || err), 'error', 4000);
+        }
+    }
+}
+
+function tryRenderShotChip(name, dataUrl) {
+    let row = document.getElementById('attach-chips-row');
+    if (!row) {
+        const box = document.getElementById('main-input-box') || document.querySelector('.glass-input-box');
+        if (!box) return;
+        row = document.createElement('div');
+        row.id = 'attach-chips-row';
+        row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;';
+        box.insertBefore(row, box.firstChild);
+    }
+    row.innerHTML = '';
+    const chip = document.createElement('div');
+    chip.style.cssText = 'position:relative;display:flex;align-items:center;gap:8px;padding:6px 28px 6px 6px;border:1px solid var(--border);border-radius:12px;background:var(--surface-variant);';
+    chip.innerHTML = '<img alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;"/><span style="font-size:12px;font-weight:700;"></span><button type="button" style="position:absolute;top:4px;right:4px;border:none;background:var(--surface);border-radius:50%;width:22px;height:22px;cursor:pointer;color:var(--on-surface-variant);">✕</button>';
+    chip.querySelector('img').src = dataUrl;
+    chip.querySelector('span').textContent = name;
+    chip.querySelector('button').onclick = () => {
+        row.innerHTML = '';
+        window.__cnShotAttach = null;
+    };
+    row.appendChild(chip);
+}
+
+/* Live Chat — enhance existing modal with rotating prompts */
+(function enhanceLiveChat() {
+    const prompts = [
+        'Привет!',
+        'Что делаешь?',
+        'Расскажи коротко о себе',
+        'Как настроить API?',
+        'Помоги с кодом'
+    ];
+    let i = 0;
+    setInterval(() => {
+        const el = document.getElementById('live-user-msg');
+        if (!el) return;
+        const modal = document.getElementById('live-chat-modal');
+        if (!modal || !modal.classList.contains('active')) return;
+        i = (i + 1) % prompts.length;
+        el.style.opacity = '0';
+        setTimeout(() => {
+            el.textContent = prompts[i];
+            el.style.opacity = '1';
+        }, 200);
+    }, 2800);
+})();
+
+
+/* ===== Live privacy modal + try tip ===== */
+function openLivePrivacyModal() {
+    const m = document.getElementById('live-privacy-modal');
+    const cb = document.getElementById('live-privacy-check');
+    const ok = document.getElementById('live-privacy-accept');
+    if (cb) cb.checked = false;
+    if (ok) ok.disabled = true;
+    m?.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function closeLivePrivacyModal(accepted) {
+    document.getElementById('live-privacy-modal')?.classList.remove('active');
+    document.body.style.overflow = '';
+    if (!accepted) return;
+    const cb = document.getElementById('live-privacy-check');
+    if (!cb || !cb.checked) {
+        if (typeof showToast === 'function') showToast('Отметьте согласие с правилами', 'warning');
+        openLivePrivacyModal();
+        return;
+    }
+    localStorage.setItem('oracle_live_privacy_ok', '1');
+    if (typeof startLiveChat === 'function') startLiveChat();
+}
+(function wireLivePrivacyCheck() {
+    const boot = () => {
+        const cb = document.getElementById('live-privacy-check');
+        const ok = document.getElementById('live-privacy-accept');
+        if (!cb || !ok || cb.dataset.wired) return;
+        cb.dataset.wired = '1';
+        cb.addEventListener('change', () => { ok.disabled = !cb.checked; });
+    };
+    document.addEventListener('DOMContentLoaded', boot);
+    if (document.readyState !== 'loading') setTimeout(boot, 0);
+})();
+
+function dismissLiveTryTip() {
+    const tip = document.getElementById('live-try-tip');
+    if (tip) tip.hidden = true;
+    localStorage.setItem('oracle_live_tip_dismissed_at', String(Date.now()));
+}
+function acceptLiveTryTip() {
+    dismissLiveTryTip();
+    if (typeof startLiveChat === 'function') startLiveChat();
+}
+function maybeShowLiveTryTip() {
+    if (typeof CoreState !== 'undefined' && CoreState.isLiveChat) return;
+    const dismissed = Number(localStorage.getItem('oracle_live_tip_dismissed_at') || 0);
+    if (Date.now() - dismissed < 6 * 60 * 60 * 1000) return;
+    const last = Number(localStorage.getItem('oracle_live_tip_last_shown') || 0);
+    if (Date.now() - last < 45 * 60 * 1000) return;
+    if (Math.random() > 0.35) return;
+    const tip = document.getElementById('live-try-tip');
+    if (!tip) return;
+    const chat = document.getElementById('screen-chat');
+    if (chat && !chat.classList.contains('active-screen')) return;
+    tip.hidden = false;
+    localStorage.setItem('oracle_live_tip_last_shown', String(Date.now()));
+    setTimeout(() => { if (tip && !tip.hidden) tip.hidden = true; }, 14000);
+}
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(maybeShowLiveTryTip, 12000);
+    setInterval(maybeShowLiveTryTip, 8 * 60 * 1000);
+});
+if (document.readyState !== 'loading') setTimeout(maybeShowLiveTryTip, 12000);
