@@ -1514,6 +1514,187 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
  background:var(--ai); color:var(--text); border:1px solid var(--border);
 }
 
+
+/* ===== Limits & Usage BETA ===== */
+.fa-limit-banner{
+ display:none;
+ margin:0 0 8px;
+ padding:10px 12px;
+ border-radius:14px;
+ border:1px solid var(--border);
+ background:color-mix(in srgb, var(--warning) 12%, var(--ai));
+ color:var(--text);
+ font-size:12px;
+ line-height:1.45;
+ font-weight:600;
+ animation:up .25s ease;
+}
+.fa-limit-banner.visible{display:block}
+.fa-limit-banner strong{color:var(--danger)}
+body.halloween-mode .fa-limit-banner{
+ border-color:#ff9500;
+ background:rgba(255,149,0,.15);
+}
+
+.limit-wave-track{
+ position:relative;
+ height:18px;
+ border-radius:999px;
+ overflow:hidden;
+ background:var(--bg);
+ border:1px solid var(--border);
+}
+.limit-wave-fill{
+ position:absolute;left:0;top:0;bottom:0;
+ width:0%;
+ background:repeating-linear-gradient(
+  -45deg,
+  var(--accent) 0 8px,
+  color-mix(in srgb, var(--accent) 55%, transparent) 8px 16px
+ );
+ background-size:22px 22px;
+ animation:limitWave 1.1s linear infinite;
+ opacity:.9;
+ transition:width .45s ease;
+}
+[data-theme=dark] .limit-wave-fill{
+ background:repeating-linear-gradient(
+  -45deg,
+  #7dd3fc 0 8px,
+  #38bdf8 8px 16px
+ );
+ background-size:22px 22px;
+}
+body.halloween-mode .limit-wave-fill{
+ background:repeating-linear-gradient(
+  -45deg,
+  #ff9500 0 8px,
+  #ffb340 8px 16px
+ );
+ background-size:22px 22px;
+}
+.limit-wave-free{
+ position:absolute;right:0;top:0;bottom:0;
+ background:transparent;
+}
+@keyframes limitWave{
+ from{background-position:0 0}
+ to{background-position:22px 0}
+}
+.limit-row-meta{
+ display:flex;justify-content:space-between;align-items:center;
+ margin:6px 0 4px;font-size:11px;color:var(--sub);font-weight:700
+}
+.limit-row-meta b{color:var(--text);font-size:12px}
+.limit-rules{
+ margin-top:12px;padding:12px;border-radius:14px;border:1px dashed var(--border);
+ font-size:11px;line-height:1.5;color:var(--sub)
+}
+.limit-rules b{color:var(--text)}
+.limit-badge-beta{
+ display:inline-flex;align-items:center;gap:4px;
+ padding:3px 8px;border-radius:999px;font-size:9px;font-weight:900;
+ background:#007aff20;color:#007aff;letter-spacing:.4px
+}
+body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
+.limits-modal .fa-modal{max-width:400px;max-height:min(90dvh,90vh);overflow-y:auto}
+.send-btn.limit-locked{
+ opacity:.25!important;pointer-events:none!important;filter:grayscale(.4)
+}
+.set-card.limits-entry{cursor:pointer}
+.set-card.limits-entry:hover{border-color:var(--text)}
+
+
+/* Fast Model 4.4 locks + priority */
+.agent-row.locked{
+ opacity:.55;
+ cursor:not-allowed;
+ position:relative;
+}
+.agent-row.locked:hover{background:var(--ai)}
+.agent-lock{
+ margin-left:auto;
+ display:inline-flex;
+ align-items:center;
+ gap:4px;
+ color:var(--sub);
+ font-size:10px;
+ font-weight:800;
+}
+.agent-cost{
+ margin-left:auto;
+ font-size:9px;
+ font-weight:800;
+ color:var(--sub);
+ white-space:nowrap;
+}
+.agent-row.locked .agent-cost{display:none}
+.agent-row .material-symbols-rounded.lock-ico{font-size:16px;color:var(--warning)}
+.plus-cost{
+ margin-left:auto;
+ font-size:10px;
+ font-weight:800;
+ color:var(--sub);
+}
+.priority-bar{
+ display:flex;
+ flex-direction:column;
+ gap:6px;
+ margin:0 10px 8px;
+ padding:10px 12px;
+ border-radius:14px;
+ border:1px solid var(--border);
+ background:var(--ai);
+}
+.priority-bar label{
+ font-size:10px;
+ font-weight:800;
+ color:var(--sub);
+ letter-spacing:.4px;
+ text-transform:uppercase;
+}
+.priority-opts{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:6px;
+}
+.priority-opt{
+ padding:8px 4px;
+ border-radius:10px;
+ border:1px solid var(--border);
+ background:var(--card);
+ color:var(--text);
+ font-size:10px;
+ font-weight:800;
+ cursor:pointer;
+ line-height:1.25;
+ text-align:center;
+}
+.priority-opt.active{
+ background:var(--text);
+ color:var(--card);
+ border-color:var(--text);
+}
+.priority-opt small{
+ display:block;
+ font-weight:600;
+ opacity:.75;
+ margin-top:2px;
+}
+.model-chip-fa{
+ display:inline-flex;
+ align-items:center;
+ gap:6px;
+ font-size:10px;
+ font-weight:800;
+ color:var(--sub);
+ letter-spacing:.3px;
+}
+#ai-head .model-lock{
+ font-size:14px;
+ vertical-align:middle;
+}
+
 </style>
 </head>
 
@@ -1587,6 +1768,37 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
  </div>
 </div>
 
+
+<div class="fa-modal-ov limits-modal" id="fa-modal-limits">
+ <div class="fa-modal">
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+   <h3 style="margin:0;flex:1">Лимиты и Использование</h3>
+   <span class="limit-badge-beta">BETA</span>
+  </div>
+  <p style="margin:0 0 12px;font-size:12px;color:var(--sub);line-height:1.45">
+   Обновлённая система лимитов <b>уже доступна</b> в Fast Assistant как бета.
+   Сброс только по таймеру (не вручную).
+  </p>
+  <div class="limit-row-meta"><span>Окно 3–24 ч</span><b id="lim-short-pct">0%</b></div>
+  <div class="limit-wave-track" title="Занято"><div class="limit-wave-fill" id="lim-short-fill"></div></div>
+  <div class="limit-row-meta" style="margin-top:12px"><span>Неделя</span><b id="lim-week-pct">0%</b></div>
+  <div class="limit-wave-track"><div class="limit-wave-fill" id="lim-week-fill"></div></div>
+  <p style="margin:10px 0 0;font-size:11px;color:var(--sub)" id="lim-reset-line">Сброс короткого окна: —</p>
+  <div class="limit-rules">
+   <b>Правила (бета, как у ИИ-платформ):</b><br>
+   • ≤50 символов ≈ <b>0,5%</b> · 50–150 ≈ <b>1%</b> · длиннее — пропорционально<br>
+   • Интернет-поиск: ~<b>5%</b> известное / ~<b>10%</b> неизвестное<br>
+   • Код / игры / сложные генерации: <b>20–40%</b><br>
+   • При <b>100%</b> отправка блокируется до конца окна (3–24 ч; при «спам-разгоне» дольше)<br>
+   • Вторая шкала — расход за <b>текущую неделю</b><br>
+   • <b>Сбросить лимиты вручную нельзя</b>
+  </div>
+  <div class="fa-modal-actions" style="margin-top:14px">
+   <button type="button" class="ok" id="fa-limits-close" style="flex:1">Понятно</button>
+  </div>
+ </div>
+</div>
+
 <div id="settings-panel">
  <div class="settings-inner">
  <div class="settings-head">
@@ -1614,6 +1826,10 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
    <button type="button" class="set-btn" id="set-core-import">Импорт в Core Node</button>
   </div>
   <p style="margin-top:10px" id="set-core-status-line">Статус: offline</p>
+ </div>
+ <div class="set-card limits-entry" id="set-open-limits" role="button" tabindex="0">
+  <h4>Лимиты и Использование <span class="limit-badge-beta">BETA</span></h4>
+  <p>Шкалы 3–24 ч и неделя · правила расхода · без ручного сброса</p>
  </div>
  <div class="set-card">
   <h4>О приложении</h4>
@@ -1645,7 +1861,7 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
  <span id="core-status-text">CORE NODE: OFFLINE</span>
 </div>
 
-<div id="ai-head">FAST ASSISTANT • LOCAL COMMAND CENTER</div>
+<div id="ai-head">FAST MODEL 4.4 · LOCAL <span class="material-symbols-rounded model-lock" style="font-size:14px">lock</span></div>
 
 <div class="controls">
  <button class="icon-btn" id="menu-btn">
@@ -1786,6 +2002,10 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
   Быстрые команды
  </div>
 
+ <div class="menu-item" id="limits-menu-action">
+  <span class="material-symbols-rounded">analytics</span>
+  Лимиты и Использование
+ </div>
  <div class="menu-item" id="core-action">
   <span class="material-symbols-rounded">hub</span>
   Core Node Bridge
@@ -1906,85 +2126,69 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
 
   <div class="agent-row"
        data-agent="AI Reader"
-       data-icon="chrome_reader_mode">
+       data-icon="chrome_reader_mode"
+       data-cost="10"
+       data-cost-label="7% анализ + 3% история">
 
-   <span class="material-symbols-rounded">
-    chrome_reader_mode
-   </span>
-
+   <span class="material-symbols-rounded">chrome_reader_mode</span>
    AI Reader
+   <span class="agent-cost">7%+3%</span>
 
   </div>
 
   <div class="agent-row"
        data-agent="AI Search Packs"
-       data-icon="search">
+       data-icon="search"
+       data-cost="10.5"
+       data-cost-label="10% поиск + 0,5% ответ">
 
-   <span class="material-symbols-rounded">
-    search
-   </span>
-
+   <span class="material-symbols-rounded">search</span>
    AI Search Packs
-
-   <span class="event-label new-label">
-    НОВИНКА
-   </span>
+   <span class="agent-cost">10%+0,5%</span>
 
   </div>
 
-  <div class="agent-row"
+  <div class="agent-row locked"
        data-agent="Worldpack AI"
-       data-icon="public">
+       data-icon="public"
+       data-locked="1"
+       data-lock-reason="На техническом восстановлении">
 
-   <span class="material-symbols-rounded">
-    public
-   </span>
-
+   <span class="material-symbols-rounded">public</span>
    Worldpack AI
+   <span class="agent-lock"><span class="material-symbols-rounded lock-ico">lock</span> ТО</span>
 
   </div>
 
   <div class="agent-row"
-       data-agent="Core Node"
-       data-icon="hub">
+       data-agent="Builder"
+       data-icon="construction"
+       data-cost="50"
+       data-cost-label="до 50% генерация кода">
 
-   <span class="material-symbols-rounded">
-    hub
-   </span>
-
-   Core Node
-
-  </div>
-
-  <div class="agent-row"
-       data-agent="Конструктор Авторов"
-       data-icon="construction">
-
-   <span class="material-symbols-rounded">
-    construction
-   </span>
-
-   Конструктор Авторов
+   <span class="material-symbols-rounded">construction</span>
+   Builder
+   <span class="agent-cost">до 50%</span>
 
   </div>
 
-  <div class="agent-row"
+  <div class="agent-row locked"
        data-agent="Ask Event"
-       data-icon="event">
+       data-icon="event"
+       data-locked="1"
+       data-lock-reason="Модель слабая · нет активного события">
 
-   <span class="material-symbols-rounded">
-    event
-   </span>
-
+   <span class="material-symbols-rounded">event</span>
    Ask Event
-
-   <span class="event-label">
-    EVENT
-   </span>
+   <span class="agent-lock"><span class="material-symbols-rounded lock-ico">lock</span></span>
 
   </div>
 
  </div>
+ <p style="margin:10px 0 0;font-size:10px;color:var(--sub);line-height:1.4">
+  Fast Model <b>4.4</b> · продвинутые агенты с 🔒 недоступны.
+  Core Node — отдельное приложение, не агент FA.
+ </p>
 
 </div>
 
@@ -1994,6 +2198,16 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
 </button>
 
 <!-- ================= INPUT ================= -->
+
+
+<div class="priority-bar" id="priority-bar" style="display:none">
+ <label>Приоритет ответов · Fast Model 4.4</label>
+ <div class="priority-opts">
+  <button type="button" class="priority-opt" data-prio="low">Низкий<small>макс. 2%</small></button>
+  <button type="button" class="priority-opt active" data-prio="medium">Средний<small>макс. 20%</small></button>
+  <button type="button" class="priority-opt" data-prio="high">Высокий<small>макс. 70%</small></button>
+ </div>
+</div>
 
 <div class="input-wrapper centered" id="input-wrapper">
 
@@ -2011,12 +2225,16 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
   <button type="button" class="plus-item" id="plus-attach">
    <span class="material-symbols-rounded">attach_file</span>
    Прикрепить Файл
-   <span class="badge-new">НОВИНКА</span>
+   <span class="plus-cost">(5% нагрузки)</span>
   </button>
   <div class="plus-divider"></div>
   <button type="button" class="plus-item" id="plus-agent">
    <span class="material-symbols-rounded">smart_toy</span>
    Выбрать Агента
+  </button>
+  <button type="button" class="plus-item" id="plus-priority">
+   <span class="material-symbols-rounded">speed</span>
+   Приоритет Ответов
   </button>
  </div>
 
@@ -2033,6 +2251,7 @@ body.halloween-mode .ext-warn-go{color:#1a0800}
   </button>
  </div>
 
+ <div class="fa-limit-banner" id="fa-limit-banner" role="status"></div>
  <div class="input-area">
 
   <button type="button" class="bind-btn" id="add-btn" aria-label="Меню">
@@ -2383,7 +2602,7 @@ const commands=[
  ["//agent","smart_toy","Выбрать агента"],
  ["//packs","search","Открыть AI Search Packs"],
  ["//event","event","Текущее событие"],
- ["//askevent","event_available","Активировать Ask Event"],
+ ["//askevent","lock","Ask Event · недоступен на Fast Model 4.4"],
  ["//core","hub","Открыть Core Node"],
  ["//coreconnect","lan","Подключить Core Node"],
  ["//corestatus","network_check","Статус Core Node"],
@@ -3001,6 +3220,19 @@ function updateAgentUI(){
 }
 
 function selectAgent(name,icon,persist=true){
+
+ if(name==="Ask Event"||name==="Worldpack AI"){
+  try{showAlert(name==="Ask Event"?"Ask Event недоступен: модель слабая, нет активного события":"Worldpack AI на техническом восстановлении");}catch(e){}
+  return;
+ }
+ if(name==="Core Node"||name==="Конструктор Авторов"){
+  // map old constructor name
+  if(name==="Конструктор Авторов") name="Builder";
+  else {
+   try{showAlert("Агент Core Node убран — откройте Core Node отдельно");}catch(e){}
+   return;
+  }
+ }
 
  state.agent={
   name,
@@ -5924,6 +6156,432 @@ window.addEventListener("load", ()=>{
   });
 });
 
+
+
+/* =========================================================
+   LIMITS & USAGE (BETA) — Fast Assistant
+========================================================= */
+const FA_LIMITS_KEY = "fastAssistant.limits.v1";
+const FA_LIMITS_SEEN = "fastAssistant.limitsBetaSeen";
+
+function defaultLimitsState(){
+  const now = Date.now();
+  return {
+    shortUsed: 0,       // 0..100
+    weekUsed: 0,
+    shortResetAt: now + 3 * 3600 * 1000, // default 3h window
+    weekResetAt: nextWeekReset(now),
+    history: []
+  };
+}
+
+function nextWeekReset(from){
+  const d = new Date(from);
+  // next Monday 00:30 local as soft easter-egg style reset
+  const day = d.getDay(); // 0 Sun
+  const add = day === 0 ? 1 : (8 - day);
+  d.setDate(d.getDate() + add);
+  d.setHours(0, 30, 0, 0);
+  if (d.getTime() <= from) d.setDate(d.getDate() + 7);
+  return d.getTime();
+}
+
+function loadLimits(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(FA_LIMITS_KEY) || "null");
+    if (!raw || typeof raw !== "object") return defaultLimitsState();
+    return Object.assign(defaultLimitsState(), raw);
+  }catch(e){ return defaultLimitsState(); }
+}
+
+function saveLimits(s){
+  try{ localStorage.setItem(FA_LIMITS_KEY, JSON.stringify(s)); }catch(e){}
+}
+
+function maybeRollLimits(s){
+  const now = Date.now();
+  let changed = false;
+  if (now >= (s.shortResetAt || 0)) {
+    // escalate window if user hit 100% fast (spam protection): next window up to 24h
+    const hitHard = (s.shortUsed || 0) >= 100;
+    const hours = hitHard ? 24 : 3;
+    s.shortUsed = 0;
+    s.shortResetAt = now + hours * 3600 * 1000;
+    changed = true;
+  }
+  if (now >= (s.weekResetAt || 0)) {
+    s.weekUsed = 0;
+    s.weekResetAt = nextWeekReset(now);
+    changed = true;
+  }
+  if (changed) saveLimits(s);
+  return s;
+}
+
+function estimateLimitCost(text, opts){
+  opts = opts || {};
+  const len = (text || "").trim().length;
+  let pct = 0.5;
+  if (len > 150) pct = Math.min(8, 1 + (len - 150) / 200);
+  else if (len > 50) pct = 1;
+  const low = (text || "").toLowerCase();
+  if (opts.search || /поиск|найди|search|google|интернет/.test(low)) {
+    pct += opts.unknownSearch ? 10 : 5;
+  }
+  if (opts.code || /код|function|class |```|html|css|javascript|python|игра|game/.test(low)) {
+    pct += 20 + Math.min(20, Math.floor(len / 100));
+  }
+  return Math.round(pct * 10) / 10;
+}
+
+function formatResetWhen(ts){
+  const now = Date.now();
+  const d = new Date(ts);
+  const pad = n => String(n).padStart(2, "0");
+  const time = pad(d.getHours()) + ":" + pad(d.getMinutes());
+  const startToday = new Date(); startToday.setHours(0,0,0,0);
+  const startTarget = new Date(d); startTarget.setHours(0,0,0,0);
+  const dayDiff = Math.round((startTarget - startToday) / 86400000);
+  if (dayDiff <= 0) return time;
+  if (dayDiff === 1) return "Завтра в " + time;
+  return d.toLocaleDateString("ru-RU") + " в " + time;
+}
+
+function isLimitBlocked(){
+  const s = maybeRollLimits(loadLimits());
+  return (s.shortUsed || 0) >= 100;
+}
+
+function applyLimitUsage(text, opts){
+  const s = maybeRollLimits(loadLimits());
+  if ((s.shortUsed || 0) >= 100) return s;
+  const cost = estimateLimitCost(text, opts);
+  s.shortUsed = Math.min(100, Math.round((s.shortUsed + cost) * 10) / 10);
+  s.weekUsed = Math.min(100, Math.round((s.weekUsed + cost * 0.35) * 10) / 10);
+  // if rocketed to 100, extend reset toward 24h
+  if (s.shortUsed >= 100) {
+    const minUntil = Date.now() + 6 * 3600 * 1000;
+    if ((s.shortResetAt || 0) < minUntil) s.shortResetAt = Date.now() + 12 * 3600 * 1000;
+  }
+  s.history = (s.history || []).slice(-40);
+  s.history.push({ t: Date.now(), cost, len: (text || "").length });
+  saveLimits(s);
+  refreshLimitUI();
+  return s;
+}
+
+function refreshLimitUI(){
+  const s = maybeRollLimits(loadLimits());
+  const shortPct = Math.min(100, s.shortUsed || 0);
+  const weekPct = Math.min(100, s.weekUsed || 0);
+  const sf = document.getElementById("lim-short-fill");
+  const wf = document.getElementById("lim-week-fill");
+  const sp = document.getElementById("lim-short-pct");
+  const wp = document.getElementById("lim-week-pct");
+  const line = document.getElementById("lim-reset-line");
+  if (sf) sf.style.width = shortPct + "%";
+  if (wf) wf.style.width = weekPct + "%";
+  if (sp) sp.textContent = shortPct + "%";
+  if (wp) wp.textContent = weekPct + "%";
+  if (line) {
+    line.textContent = "Сброс короткого окна: " + formatResetWhen(s.shortResetAt) +
+      " · Неделя: " + formatResetWhen(s.weekResetAt);
+  }
+  const banner = document.getElementById("fa-limit-banner");
+  const blocked = shortPct >= 100;
+  if (banner) {
+    if (blocked) {
+      banner.classList.add("visible");
+      banner.innerHTML = "Ваш лимит достиг <strong>100%</strong>, а это значит, что вы не можете отправлять сообщения до <strong>" +
+        formatResetWhen(s.shortResetAt) + "</strong>";
+    } else {
+      banner.classList.remove("visible");
+      banner.textContent = "";
+    }
+  }
+  try {
+    if (typeof updateSend === "function") updateSend();
+  } catch (e) {}
+}
+
+function openLimitsModal(){
+  try { if (typeof closeSettings === "function") closeSettings(); } catch (e) {}
+  try { if (menu) menu.style.display = "none"; } catch (e) {}
+  refreshLimitUI();
+  document.getElementById("fa-modal-limits")?.classList.add("open");
+  try { scheduleAutoOk(); } catch (e) {}
+}
+function closeLimitsModal(){
+  document.getElementById("fa-modal-limits")?.classList.remove("open");
+}
+
+// patch updateSend for lock
+(function patchUpdateSendLimits(){
+  const prev = typeof updateSend === "function" ? updateSend : null;
+  if (!prev || window._faLimitSendPatched) return;
+  window._faLimitSendPatched = true;
+  window.updateSend = function(){
+    prev.apply(this, arguments);
+    try {
+      if (isLimitBlocked() && !state.sending) {
+        sendBtn.classList.remove("active", "stop");
+        sendBtn.classList.add("limit-locked");
+        sendIcon.textContent = "block";
+      } else {
+        sendBtn.classList.remove("limit-locked");
+      }
+    } catch (e) {}
+  };
+})();
+
+// patch sendUserMessage to consume limits
+(function patchSendLimits(){
+  const name = "sendUserMessage";
+  const prev = typeof sendUserMessage === "function" ? sendUserMessage : null;
+  if (!prev || window._faLimitMsgPatched) return;
+  window._faLimitMsgPatched = true;
+  window.sendUserMessage = function(text){
+    if (isLimitBlocked()) {
+      refreshLimitUI();
+      try { showAlert("Лимит 100%. Дождитесь сброса."); } catch (e) {}
+      return;
+    }
+    const r = prev.apply(this, arguments);
+    try {
+      applyLimitUsage(text || (input && input.value) || "", {});
+    } catch (e) {}
+    return r;
+  };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("set-open-limits")?.addEventListener("click", openLimitsModal);
+  document.getElementById("set-open-limits")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") openLimitsModal();
+  });
+  document.getElementById("limits-menu-action")?.addEventListener("click", () => {
+    try { if (menu) menu.style.display = "none"; } catch (e) {}
+    openLimitsModal();
+  });
+  document.getElementById("fa-limits-close")?.addEventListener("click", closeLimitsModal);
+  document.getElementById("fa-modal-limits")?.addEventListener("click", (e) => {
+    if (e.target && e.target.id === "fa-modal-limits") closeLimitsModal();
+  });
+  refreshLimitUI();
+  setInterval(refreshLimitUI, 30000);
+  // one-time beta tip
+  if (localStorage.getItem(FA_LIMITS_SEEN) !== "1") {
+    setTimeout(() => {
+      if (localStorage.getItem(FA_LIMITS_SEEN) === "1") return;
+      localStorage.setItem(FA_LIMITS_SEEN, "1");
+      openLimitsModal();
+    }, 2200);
+  }
+});
+window.addEventListener("load", () => {
+  // re-patch after all functions defined
+  try {
+    if (typeof updateSend === "function" && !window._faLimitSendPatched2) {
+      window._faLimitSendPatched2 = true;
+      const prev = updateSend;
+      updateSend = function(){
+        prev.apply(this, arguments);
+        try {
+          if (isLimitBlocked() && !(state && state.sending)) {
+            sendBtn.classList.remove("active", "stop");
+            sendBtn.classList.add("limit-locked");
+            if (typeof sendIcon !== "undefined") sendIcon.textContent = "block";
+          } else {
+            sendBtn.classList.remove("limit-locked");
+          }
+        } catch (e) {}
+      };
+    }
+    if (typeof sendUserMessage === "function" && !window._faLimitMsgPatched2) {
+      window._faLimitMsgPatched2 = true;
+      const prev = sendUserMessage;
+      sendUserMessage = function(text){
+        if (isLimitBlocked()) {
+          refreshLimitUI();
+          try { showAlert("Лимит 100%. Дождитесь сброса."); } catch (e) {}
+          return;
+        }
+        const r = prev.apply(this, arguments);
+        try { applyLimitUsage(typeof text === "string" ? text : (input && input.value) || "", {}); } catch (e) {}
+        return r;
+      };
+    }
+    refreshLimitUI();
+  } catch (e) {}
+});
+
+
+/* =========================================================
+   FAST MODEL 4.4 — agent locks + priority + cost DB
+========================================================= */
+const FA_COST_DB = {
+  words: {
+    "код": 8, "code": 8, "function": 6, "class": 6, "html": 5, "css": 5,
+    "javascript": 6, "python": 6, "игра": 12, "game": 12, "поиск": 5,
+    "search": 5, "анализ": 4, "история": 3, "файл": 5, "attach": 5
+  },
+  agents: {
+    "AI Reader": { cost: 10, detail: "7% анализ + 3% печатание истории" },
+    "AI Search Packs": { cost: 10.5, detail: "10% поиск + 0,5% ответ" },
+    "Builder": { cost: 50, detail: "до 50% генерация кодов" },
+    "Worldpack AI": { locked: true, reason: "На техническом восстановлении" },
+    "Ask Event": { locked: true, reason: "Модель слабая · нет активного события" },
+    "Core Node": { removed: true, reason: "Используйте сам Core Node" }
+  },
+  attach: 5,
+  priorityCap: { low: 2, medium: 20, high: 70 }
+};
+
+function getReplyPriority(){
+  try {
+    const s = JSON.parse(localStorage.getItem("fastAssistant.settings") || "{}");
+    const p = s.replyPriority || "medium";
+    return ["low","medium","high"].includes(p) ? p : "medium";
+  } catch(e){ return "medium"; }
+}
+function setReplyPriority(p){
+  try {
+    const s = JSON.parse(localStorage.getItem("fastAssistant.settings") || "{}");
+    s.replyPriority = p;
+    localStorage.setItem("fastAssistant.settings", JSON.stringify(s));
+  } catch(e){}
+  document.querySelectorAll(".priority-opt").forEach(b=>{
+    b.classList.toggle("active", b.dataset.prio === p);
+  });
+}
+
+function estimateWithPriorityAndAgent(text, extra){
+  extra = extra || {};
+  let cost = typeof estimateLimitCost === "function" ? estimateLimitCost(text, extra) : 1;
+  // word DB boost
+  const low = (text||"").toLowerCase();
+  Object.keys(FA_COST_DB.words).forEach(w=>{
+    if (low.includes(w)) cost += FA_COST_DB.words[w] * 0.15;
+  });
+  if (extra.attach) cost += FA_COST_DB.attach;
+  if (state && state.agent && state.agent.name) {
+    const a = FA_COST_DB.agents[state.agent.name];
+    if (a && a.cost) cost += a.cost * 0.25; // agent surcharge portion per message
+  }
+  const cap = FA_COST_DB.priorityCap[getReplyPriority()] || 20;
+  // priority scales the cost: low reduces, high increases toward cap
+  const prio = getReplyPriority();
+  if (prio === "low") cost = Math.min(cap, cost * 0.35);
+  else if (prio === "medium") cost = Math.min(cap, cost);
+  else cost = Math.min(cap, Math.max(cost, cost * 1.8));
+  return Math.round(cost * 10) / 10;
+}
+
+// Override applyLimitUsage cost path if exists
+(function patchLimitCost(){
+  if (typeof applyLimitUsage !== "function") return;
+  const prev = applyLimitUsage;
+  window.applyLimitUsage = function(text, opts){
+    opts = opts || {};
+    const s = typeof maybeRollLimits === "function" ? maybeRollLimits(loadLimits()) : null;
+    if (s && (s.shortUsed||0) >= 100) return s;
+    // custom apply
+    if (typeof loadLimits === "function" && typeof saveLimits === "function") {
+      const st = maybeRollLimits(loadLimits());
+      const cost = estimateWithPriorityAndAgent(text, opts);
+      st.shortUsed = Math.min(100, Math.round((st.shortUsed + cost) * 10) / 10);
+      st.weekUsed = Math.min(100, Math.round((st.weekUsed + cost * 0.35) * 10) / 10);
+      if (st.shortUsed >= 100) {
+        const minUntil = Date.now() + 6 * 3600 * 1000;
+        if ((st.shortResetAt||0) < minUntil) st.shortResetAt = Date.now() + 12 * 3600 * 1000;
+      }
+      st.history = (st.history||[]).slice(-40);
+      st.history.push({ t: Date.now(), cost, len: (text||"").length, prio: getReplyPriority(), agent: state?.agent?.name||null });
+      saveLimits(st);
+      if (typeof refreshLimitUI === "function") refreshLimitUI();
+      return st;
+    }
+    return prev.apply(this, arguments);
+  };
+})();
+
+function showAgentLocked(reason){
+  try { showAlert(reason || "Агент недоступен на Fast Model 4.4"); } catch(e){}
+}
+
+// Patch agent row clicks
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.querySelectorAll(".agent-row").forEach(row=>{
+    row.onclick = (e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      if (row.classList.contains("locked") || row.dataset.locked === "1") {
+        showAgentLocked(row.dataset.lockReason || "Недоступно");
+        return;
+      }
+      if (row.dataset.agent === "Core Node") {
+        showAgentLocked("Агент Core Node убран — откройте Core Node отдельно");
+        return;
+      }
+      if (typeof selectAgent === "function") {
+        selectAgent(row.dataset.agent, row.dataset.icon);
+      }
+    };
+  });
+
+  document.getElementById("plus-priority")?.addEventListener("click", ()=>{
+    try { closePlusMenu(); } catch(e){}
+    const bar = document.getElementById("priority-bar");
+    if (!bar) return;
+    bar.style.display = bar.style.display === "none" ? "flex" : "none";
+  });
+  document.querySelectorAll(".priority-opt").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      setReplyPriority(btn.dataset.prio);
+      try { showAlert("Приоритет: " + ({low:"Низкий (≤2%)",medium:"Средний (≤20%)",high:"Высокий (≤70%)"}[btn.dataset.prio]||"")); } catch(e){}
+    });
+  });
+  setReplyPriority(getReplyPriority());
+
+  // attach cost on pick
+  const fi = document.getElementById("fa-file-input");
+  if (fi && !fi.dataset.limitCost) {
+    fi.dataset.limitCost = "1";
+    fi.addEventListener("change", ()=>{
+      if (fi.files && fi.files[0] && typeof applyLimitUsage === "function") {
+        // only mark pending; actual charge on send with attach flag preferred
+        try { state._attachCostPending = true; } catch(e){}
+      }
+    });
+  }
+});
+
+window.addEventListener("load", ()=>{
+  // rebind agent rows after other scripts
+  document.querySelectorAll(".agent-row").forEach(row=>{
+    const orig = row.onclick;
+    row.onclick = (e)=>{
+      if (row.classList.contains("locked") || row.dataset.locked === "1") {
+        e?.preventDefault?.();
+        showAgentLocked(row.dataset.lockReason || "Недоступно на Fast Model 4.4");
+        return false;
+      }
+      if (row.dataset.agent === "Core Node") {
+        showAgentLocked("Агент Core Node удалён — используйте Core Node");
+        return false;
+      }
+      if (typeof selectAgent === "function") {
+        selectAgent(row.dataset.agent, row.dataset.icon);
+      }
+    };
+  });
+  // block //askevent command soft
+  try {
+    if (Array.isArray(commands)) {
+      // no-op if not global
+    }
+  } catch(e){}
+});
 
 window.FastAssistant={
 
