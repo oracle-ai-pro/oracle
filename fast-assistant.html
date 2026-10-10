@@ -1202,13 +1202,82 @@ textarea{
 .fa-chat-item:hover{border-color:var(--border);background:var(--card)}
 .fa-chat-item.active{border-color:var(--text);background:var(--card)}
 .fa-chat-item .title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.fa-side-foot{border-top:1px solid var(--border);padding-top:10px;margin-top:4px}
-.fa-settings-btn{
+.fa-side-foot{border-top:1px solid var(--border);padding-top:10px;margin-top:4px;display:flex;flex-direction:column;gap:8px}
+.fa-settings-btn,.fa-reader-btn{
  width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);
  background:var(--ai);color:var(--text);font-weight:800;font-size:13px;cursor:pointer;
- display:flex;align-items:center;gap:10px
+ display:flex;align-items:center;gap:10px;position:relative
 }
-.fa-settings-btn:hover{background:var(--card);border-color:var(--text)}
+.fa-settings-btn:hover,.fa-reader-btn:hover{background:var(--card);border-color:var(--text)}
+.fa-reader-btn .badge-new{
+ margin-left:auto;padding:3px 7px;border-radius:999px;
+ background:#007aff20;color:#007aff;font-size:9px;font-weight:900
+}
+.fa-reader-btn .novelty-dot-fa{
+ position:absolute;top:8px;right:8px;width:8px;height:8px;
+ background:var(--danger);border-radius:50%;border:1.5px solid var(--card)
+}
+
+/* Reader panel */
+#reader-panel{
+ position:fixed;inset:0;z-index:4700;
+ display:none;align-items:stretch;justify-content:center;
+ background:rgba(0,0,0,.55);
+ padding:0;overflow:hidden;
+ -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)
+}
+#reader-panel.open{display:flex}
+.reader-inner{
+ width:100%;max-width:500px;height:100%;
+ background:var(--card);color:var(--text);
+ display:flex;flex-direction:column;
+ padding:16px 16px 20px;overflow:hidden;
+ box-shadow:0 0 40px rgba(0,0,0,.35)
+}
+.reader-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0}
+.reader-head h2{font-size:18px;font-weight:900;margin:0;display:flex;align-items:center;gap:8px}
+.reader-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-bottom:8px;min-height:0}
+.reader-item{
+ display:flex;align-items:center;gap:10px;padding:12px;border-radius:14px;
+ border:1px solid var(--border);background:var(--ai);cursor:pointer;text-align:left;color:var(--text)
+}
+.reader-item:hover{background:var(--card);border-color:var(--text)}
+.reader-item .r-title{flex:1;min-width:0;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reader-item .r-meta{font-size:10px;color:var(--sub)}
+.reader-editor-wrap{display:none;flex-direction:column;flex:1;min-height:0;gap:10px}
+.reader-editor-wrap.open{display:flex}
+.reader-title-input{
+ width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--border);
+ background:var(--bg);color:var(--text);outline:0;font-size:15px;font-weight:700
+}
+.reader-content{
+ flex:1;min-height:160px;padding:12px;border-radius:14px;border:1px solid var(--border);
+ background:var(--bg);color:var(--text);outline:0;font-size:14px;line-height:1.5;resize:none
+}
+.reader-actions{display:flex;gap:8px;flex-shrink:0}
+.reader-actions button{
+ flex:1;padding:11px;border-radius:12px;border:1px solid var(--border);
+ font-weight:800;font-size:13px;cursor:pointer
+}
+.reader-actions .save{background:var(--text);color:var(--card);border-color:var(--text)}
+.reader-actions .back{background:var(--ai);color:var(--text)}
+.reader-actions .del{background:transparent;color:var(--danger);border-color:var(--danger)}
+.reader-empty{padding:24px;text-align:center;color:var(--sub);font-size:13px;line-height:1.5}
+.reader-new-btn{
+ width:100%;padding:11px;border-radius:12px;border:1px dashed var(--border);
+ background:transparent;color:var(--text);font-weight:800;font-size:13px;cursor:pointer;
+ display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;flex-shrink:0
+}
+.reader-new-btn:hover{border-color:var(--text);background:var(--ai)}
+
+/* Shared story modal */
+#shared-story-modal.fa-modal-ov{z-index:5600}
+.shared-story-preview{
+ text-align:left;max-height:140px;overflow:auto;padding:10px 12px;margin:0 0 14px;
+ border:1px solid var(--border);border-radius:12px;background:var(--bg);
+ font-size:12px;line-height:1.45;color:var(--sub);white-space:pre-wrap
+}
+.shared-story-preview b{color:var(--text);display:block;margin-bottom:6px;font-size:13px}
 .fa-ctx{
  position:fixed;z-index:5000;min-width:180px;padding:6px;
  border:1px solid var(--border);border-radius:14px;background:var(--card);
@@ -1720,6 +1789,12 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
  <div class="fa-chats-label">Недавние · ПКМ для опций</div>
  <div class="fa-chats-list" id="fa-chats-list"></div>
  <div class="fa-side-foot">
+  <button type="button" class="fa-reader-btn" id="fa-open-reader">
+   <span class="material-symbols-rounded">menu_book</span>
+   Reader
+   <span class="badge-new" id="reader-badge-new">NEW</span>
+   <span class="novelty-dot-fa" id="reader-novelty-dot"></span>
+  </button>
   <button type="button" class="fa-settings-btn" id="fa-open-settings">
    <span class="material-symbols-rounded">settings</span>
    Настройки
@@ -1768,6 +1843,43 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
  </div>
 </div>
 
+<!-- Shared story from LMSH / external -->
+<div class="fa-modal-ov" id="shared-story-modal">
+ <div class="fa-modal">
+  <h3>Кто-то поделился Историей с вами в ИИ</h3>
+  <p>Информация о Истории:</p>
+  <div class="shared-story-preview" id="shared-story-preview"></div>
+  <div class="fa-modal-actions" style="flex-direction:column;gap:8px">
+   <button type="button" class="ok" id="shared-story-yes" style="width:100%">Да, это моя история</button>
+   <button type="button" class="cancel" id="shared-story-no" style="width:100%">Нет, это не моя история</button>
+  </div>
+ </div>
+</div>
+
+<!-- Reader panel -->
+<div id="reader-panel">
+ <div class="reader-inner">
+  <div class="reader-head">
+   <h2><span class="material-symbols-rounded">menu_book</span> Reader</h2>
+   <button type="button" class="icon-btn" id="reader-close-btn"><span class="material-symbols-rounded">close</span></button>
+  </div>
+  <div id="reader-list-view">
+   <div class="reader-list" id="reader-list"></div>
+   <button type="button" class="reader-new-btn" id="reader-new-btn">
+    <span class="material-symbols-rounded">add</span> Новая история
+   </button>
+  </div>
+  <div class="reader-editor-wrap" id="reader-editor-wrap">
+   <input class="reader-title-input" id="reader-title-input" maxlength="120" placeholder="Название истории">
+   <textarea class="reader-content" id="reader-content" placeholder="Текст истории..."></textarea>
+   <div class="reader-actions">
+    <button type="button" class="back" id="reader-back-btn">Назад</button>
+    <button type="button" class="del" id="reader-delete-btn">Удалить</button>
+    <button type="button" class="save" id="reader-save-btn">Сохранить</button>
+   </div>
+  </div>
+ </div>
+</div>
 
 <div class="fa-modal-ov limits-modal" id="fa-modal-limits">
  <div class="fa-modal">
@@ -1949,8 +2061,24 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
   </div>
  </div>
 
+ <div class="feature">
+  <span class="material-symbols-rounded">menu_book</span>
+  <div>
+   <b>Reader</b>
+   <small>Вкладка историй · правка вручную и через AI Reader</small>
+  </div>
+ </div>
+
+ <div class="feature">
+  <span class="material-symbols-rounded">ios_share</span>
+  <div>
+   <b>Приём историй</b>
+   <small>LMSH / внешние ссылки → подтверждение «моя история»</small>
+  </div>
+ </div>
+
  <div class="wn-footer">
-  Fast Assistant 4.4 • AI Search Packs
+  Fast Assistant 4.4 • Reader · AI Search Packs
  </div>
 
 </div>
@@ -2299,7 +2427,7 @@ const CONFIG={
  coreUrl:"https://oracle-ai-pro.github.io/oracle/",
  channel:"fast-assistant-core-node",
  maxLocal:150,
- whatsNew:"4.4",
+ whatsNew:"4.4-reader",
  /* Общие ключи с Core Node (один origin = общий localStorage) */
  keys:{
   sessions:"oracle_chat_sessions",
@@ -2812,7 +2940,7 @@ function renderHome(){
    homeHero(
     "auto_stories",
     "AI Reader",
-    "Выбери историю — она сразу появится в чате."
+    "Выбери историю — в чат и во вкладку Reader. Можно править вручную или через ИИ."
    )+
 
    `<div class="section">
@@ -2842,6 +2970,10 @@ function renderHome(){
 
      `).join("")}
 
+    </div>
+
+    <div class="tip" style="margin-top:12px">
+     📖 Напиши «добавь в reader …» — агент сохранит текст во вкладку Reader (боковое меню).
     </div>`;
 
   chat.appendChild(h);
@@ -2857,6 +2989,12 @@ function renderHome(){
     clearHome();
 
     state.home=false;
+
+    try{
+     if(typeof insertStoryFromAIReader === "function"){
+      insertStoryFromAIReader(s[1], s[3]);
+     }
+    }catch(e){}
 
     sendUserMessage(
      "AI Reader: "+s[3]
@@ -3323,6 +3461,8 @@ function isOverlayOpen(){
   $("fa-modal-rename")?.classList.contains("open") ||
   $("fa-modal-delete")?.classList.contains("open") ||
   $("fa-modal-share")?.classList.contains("open") ||
+  $("shared-story-modal")?.classList.contains("open") ||
+  $("reader-panel")?.classList.contains("open") ||
   ($("whats-new") && !$("whats-new").classList.contains("hidden") && $("whats-new").style.display!=="none")
  );
 }
@@ -3385,9 +3525,10 @@ function closeAllOverlaysInstant(){
  try{ closeSidebar(); }catch(e){}
  try{ closeSettings(); }catch(e){}
  try{ closeFaCtx(); }catch(e){}
- ["fa-modal-rename","fa-modal-delete","fa-modal-share"].forEach(id=>{
+ ["fa-modal-rename","fa-modal-delete","fa-modal-share","shared-story-modal"].forEach(id=>{
   $(id)?.classList.remove("open");
  });
+ try{ closeReader(); }catch(e){}
  try{
   const wn=$("whats-new");
   if(wn){ wn.classList.add("hidden"); }
@@ -6582,6 +6723,223 @@ window.addEventListener("load", ()=>{
     }
   } catch(e){}
 });
+
+/* =========================================================
+   READER + SHARED STORIES (LMSH bridge)
+========================================================= */
+const FA_READER_KEY = "fastAssistant.reader.v1";
+const FA_READER_NOVELTY = "fastAssistant.readerNoveltySeen";
+let _readerEditId = null;
+let _pendingShared = null;
+
+function loadReaderStories(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(FA_READER_KEY) || "[]");
+    return Array.isArray(raw) ? raw : [];
+  }catch(e){ return []; }
+}
+function saveReaderStories(list){
+  try{ localStorage.setItem(FA_READER_KEY, JSON.stringify(list)); }catch(e){}
+}
+function readerId(){
+  return "r_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+
+function updateReaderNoveltyUI(){
+  const seen = localStorage.getItem(FA_READER_NOVELTY) === "1";
+  const badge = document.getElementById("reader-badge-new");
+  const dot = document.getElementById("reader-novelty-dot");
+  if(badge) badge.style.display = seen ? "none" : "inline-flex";
+  if(dot) dot.style.display = seen ? "none" : "block";
+}
+
+function openReader(){
+  try{ closeSidebar(); }catch(e){}
+  try{ closeSettings(); }catch(e){}
+  localStorage.setItem(FA_READER_NOVELTY, "1");
+  updateReaderNoveltyUI();
+  document.getElementById("reader-panel")?.classList.add("open");
+  showReaderList();
+  try{ scheduleAutoOk(); }catch(e){}
+}
+function closeReader(){
+  document.getElementById("reader-panel")?.classList.remove("open");
+  _readerEditId = null;
+}
+
+function showReaderList(){
+  const listEl = document.getElementById("reader-list");
+  const listView = document.getElementById("reader-list-view");
+  const editor = document.getElementById("reader-editor-wrap");
+  if(!listEl) return;
+  if(listView) listView.style.display = "block";
+  if(editor) editor.classList.remove("open");
+  const stories = loadReaderStories().sort((a,b)=>(b.updated||0)-(a.updated||0));
+  if(!stories.length){
+    listEl.innerHTML = '<div class="reader-empty">Пока нет историй.<br>Создайте новую или примите из LMSH / AI Reader.</div>';
+    return;
+  }
+  listEl.innerHTML = stories.map(s => `
+    <button type="button" class="reader-item" data-id="${esc(s.id)}">
+      <span class="material-symbols-rounded" style="color:var(--sub)">auto_stories</span>
+      <div style="flex:1;min-width:0">
+        <div class="r-title">${esc(s.title||"Без названия")}</div>
+        <div class="r-meta">${s.content ? esc(String(s.content).slice(0,80)) : "Пусто"} · ${s.updated ? new Date(s.updated).toLocaleDateString("ru-RU") : ""}</div>
+      </div>
+    </button>
+  `).join("");
+  listEl.querySelectorAll(".reader-item").forEach(btn=>{
+    btn.onclick = () => openReaderEditor(btn.dataset.id);
+  });
+}
+
+function openReaderEditor(id){
+  const stories = loadReaderStories();
+  let s = stories.find(x => x.id === id);
+  if(!s){
+    s = { id: id || readerId(), title: "Новая история", content: "", updated: Date.now() };
+    stories.unshift(s);
+    saveReaderStories(stories);
+  }
+  _readerEditId = s.id;
+  const listView = document.getElementById("reader-list-view");
+  const editor = document.getElementById("reader-editor-wrap");
+  if(listView) listView.style.display = "none";
+  if(editor) editor.classList.add("open");
+  const ti = document.getElementById("reader-title-input");
+  const tc = document.getElementById("reader-content");
+  if(ti) ti.value = s.title || "";
+  if(tc) tc.value = s.content || "";
+}
+
+function saveReaderEditor(){
+  if(!_readerEditId) return;
+  const stories = loadReaderStories();
+  const s = stories.find(x => x.id === _readerEditId);
+  if(!s) return;
+  s.title = (document.getElementById("reader-title-input")?.value || "").trim() || "Без названия";
+  s.content = document.getElementById("reader-content")?.value || "";
+  s.updated = Date.now();
+  saveReaderStories(stories);
+  try{ showAlert("История сохранена в Reader"); }catch(e){}
+  showReaderList();
+}
+
+function deleteReaderEditor(){
+  if(!_readerEditId) return;
+  const stories = loadReaderStories().filter(x => x.id !== _readerEditId);
+  saveReaderStories(stories);
+  _readerEditId = null;
+  try{ showAlert("История удалена"); }catch(e){}
+  showReaderList();
+}
+
+function addStoryToReader(title, content){
+  const stories = loadReaderStories();
+  const id = readerId();
+  stories.unshift({
+    id,
+    title: (title || "История").trim() || "История",
+    content: content || "",
+    updated: Date.now(),
+    source: "shared"
+  });
+  saveReaderStories(stories);
+  return id;
+}
+
+/** AI Reader agent can push text into Reader */
+function insertStoryFromAIReader(title, content){
+  const id = addStoryToReader(title, content);
+  try{ showAlert("История добавлена в Reader"); }catch(e){}
+  return id;
+}
+
+function checkSharedStoryFromURL(){
+  try{
+    const params = new URLSearchParams(location.search);
+    const title = params.get("title");
+    const content = params.get("content");
+    if(!title && !content) return;
+    _pendingShared = {
+      title: title || "Без названия",
+      content: content || ""
+    };
+    const preview = document.getElementById("shared-story-preview");
+    if(preview){
+      preview.innerHTML = "<b>" + esc(_pendingShared.title) + "</b>" + esc(String(_pendingShared.content).slice(0, 500)) + (String(_pendingShared.content).length > 500 ? "…" : "");
+    }
+    document.getElementById("shared-story-modal")?.classList.add("open");
+    // clean URL without reload
+    try{
+      const u = new URL(location.href);
+      u.searchParams.delete("title");
+      u.searchParams.delete("content");
+      history.replaceState({}, "", u.pathname + u.hash);
+    }catch(e){}
+  }catch(e){}
+}
+
+function acceptSharedStory(){
+  if(!_pendingShared) return;
+  const id = addStoryToReader(_pendingShared.title, _pendingShared.content);
+  _pendingShared = null;
+  document.getElementById("shared-story-modal")?.classList.remove("open");
+  try{ showAlert("История принята и сохранена в Reader"); }catch(e){}
+  openReader();
+  openReaderEditor(id);
+}
+function rejectSharedStory(){
+  _pendingShared = null;
+  document.getElementById("shared-story-modal")?.classList.remove("open");
+  try{ showAlert("История отклонена"); }catch(e){}
+}
+
+// Wire Reader + shared UI
+document.addEventListener("DOMContentLoaded", ()=>{
+  updateReaderNoveltyUI();
+  document.getElementById("fa-open-reader")?.addEventListener("click", openReader);
+  document.getElementById("reader-close-btn")?.addEventListener("click", closeReader);
+  document.getElementById("reader-panel")?.addEventListener("click", (e)=>{
+    if(e.target && e.target.id === "reader-panel") closeReader();
+  });
+  document.getElementById("reader-new-btn")?.addEventListener("click", ()=>{
+    openReaderEditor(readerId());
+  });
+  document.getElementById("reader-back-btn")?.addEventListener("click", showReaderList);
+  document.getElementById("reader-save-btn")?.addEventListener("click", saveReaderEditor);
+  document.getElementById("reader-delete-btn")?.addEventListener("click", deleteReaderEditor);
+  document.getElementById("shared-story-yes")?.addEventListener("click", acceptSharedStory);
+  document.getElementById("shared-story-no")?.addEventListener("click", rejectSharedStory);
+});
+window.addEventListener("load", ()=>{
+  updateReaderNoveltyUI();
+  checkSharedStoryFromURL();
+});
+
+// Enhance AI Reader home / localAI path: allow "в reader" / "в ридер"
+(function patchAIReaderInsert(){
+  const prev = typeof localAI === "function" ? localAI : null;
+  if(!prev || window._faReaderAIPatched) return;
+  window._faReaderAIPatched = true;
+  window.localAI = function(q){
+    const x = String(q||"").toLowerCase();
+    if(state.agent?.name === "AI Reader" && (x.includes("в reader") || x.includes("в ридер") || x.includes("сохрани в reader") || x.includes("добавь в reader"))){
+      // extract story from last user context or whole query
+      const titleMatch = q.match(/(?:название|title)\s*[:\-–]?\s*(.+)/i);
+      const title = titleMatch ? titleMatch[1].trim().slice(0,80) : "История из AI Reader";
+      const body = q.replace(/(в reader|в ридер|сохрани в reader|добавь в reader)/ig, "").trim() || q;
+      insertStoryFromAIReader(title, body);
+      return `
+        📖 <b>AI Reader → Reader</b><br><br>
+        История «${esc(title)}» добавлена во вкладку <b>Reader</b>.<br>
+        Откройте Reader в боковом меню, чтобы править.
+      `;
+    }
+    // built-in stories click still works via existing home
+    return prev.apply(this, arguments);
+  };
+})();
 
 window.FastAssistant={
 
