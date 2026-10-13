@@ -357,6 +357,90 @@
             border-top: 1px solid var(--border);
         }
 
+        
+        .card.soon::after {
+            content: 'СКОРО'; position: absolute; top: 14px; right: 14px;
+            font-size: 9px; font-weight: 800; letter-spacing: 0.4px;
+            padding: 3px 8px; border-radius: 6px;
+            background: color-mix(in srgb, var(--secondary) 35%, var(--surface-variant));
+            color: var(--secondary);
+            border: 1px solid color-mix(in srgb, var(--secondary) 40%, transparent);
+        }
+        body.true-black-theme .card.soon::after {
+            background: #1a1a1a; color: #e8bbf1; border-color: #333;
+        }
+        body.light-theme .card.soon::after {
+            background: #f3e8ff; color: #7c3aed; border-color: #ddd6fe;
+        }
+        .soon-section-head {
+            text-align: center; margin: 8px 0 28px;
+        }
+        .soon-section-head h2 { font-size: 26px; font-weight: 800; margin: 0 0 8px; }
+        .soon-section-head p { color: var(--on-surface-variant); font-size: 14px; margin: 0; line-height: 1.5; }
+        .preview-nav-tabs {
+            display: flex; gap: 4px; padding: 6px; border-radius: 14px;
+            background: var(--bg); border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        .preview-nav-tabs .tn {
+            flex: 1; min-width: 56px; text-align: center;
+            padding: 8px 6px; border-radius: 10px;
+            font-size: 9px; font-weight: 700; color: var(--on-surface-variant);
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .preview-nav-tabs .tn .material-symbols-rounded { font-size: 16px; }
+        .preview-nav-tabs .tn.on {
+            background: var(--primary-container); color: var(--primary);
+        }
+        .preview-nav-tabs .tn.add {
+            border: 1px dashed var(--border); color: var(--primary); opacity: 0.85;
+        }
+        .preview-scenario {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .preview-scenario .sc-col {
+            border-radius: 10px; border: 1px solid var(--border);
+            background: var(--bg); padding: 8px; min-height: 64px;
+        }
+        .preview-scenario .sc-label {
+            font-size: 9px; font-weight: 800; text-transform: uppercase;
+            color: var(--primary); margin-bottom: 4px; letter-spacing: 0.3px;
+        }
+        .preview-scenario .sc-line {
+            height: 6px; border-radius: 4px; background: var(--surface-variant);
+            margin-bottom: 4px;
+        }
+        .preview-scenario .sc-line.w60 { width: 60%; }
+        .preview-scenario .sc-line.w80 { width: 80%; }
+        .preview-scenario .sc-chip {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 9px; font-weight: 700; padding: 3px 6px;
+            border-radius: 6px; background: var(--primary-container); color: var(--primary);
+            margin-top: 4px;
+        }
+        .preview-agent {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .preview-agent-avatar {
+            width: 36px; height: 36px; border-radius: 12px;
+            background: var(--grad); display: flex; align-items: center; justify-content: center;
+            color: #0a0b10; flex-shrink: 0;
+        }
+        body.true-black-theme .preview-agent-avatar { color: #000; }
+        .preview-agent-meta { font-size: 11px; line-height: 1.35; }
+        .preview-agent-meta b { display: block; font-size: 12px; color: var(--on-surface); }
+        .preview-focus {
+            display: flex; flex-direction: column; gap: 6px;
+        }
+        .preview-focus .ft {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px 10px; border-radius: 10px;
+            background: var(--bg); border: 1px solid var(--border);
+            font-size: 11px; font-weight: 600;
+        }
+        .preview-focus .ft .material-symbols-rounded { font-size: 18px; color: var(--primary); }
+        .preview-focus .ft.muted { opacity: 0.7; font-weight: 500; color: var(--on-surface-variant); }
+
         /* ===== Limit visual scales ===== */
         .limits-showcase {
             display: grid;
@@ -646,6 +730,115 @@
             </div>
         </div>
 
+
+        <!-- COMING SOON -->
+        <div class="soon-section-head" id="coming-soon">
+            <div class="section-label" style="justify-content:center;width:100%;">
+                <span class="material-symbols-rounded" style="font-size:16px;">schedule</span>
+                Roadmap · Скоро
+            </div>
+            <h2>Что готовим дальше</h2>
+            <p>Метка <b>Скоро</b> — функции в разработке. Не включены в текущий релиз 2.6 PRO.</p>
+        </div>
+        <div class="features-grid" style="margin-bottom:56px;">
+            <div class="card soon">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">edit_note</span></div>
+                </div>
+                <div class="card-heading">Режим Сценариста</div>
+                <div class="card-text">
+                    Новая вкладка: сохраняете сценарий в списке, справа — запрос (текст и/или файл),
+                    слева — желаемый ответ ИИ. Из чата: <b>+</b> → «Добавить сценарий».
+                    Работает, пока не нажмёте крестик у поля ввода.
+                </div>
+                <div class="preview preview-scenario">
+                    <div class="sc-col">
+                        <div class="sc-label">Ответ ИИ</div>
+                        <div class="sc-line"></div>
+                        <div class="sc-line w80"></div>
+                        <div class="sc-line w60"></div>
+                    </div>
+                    <div class="sc-col">
+                        <div class="sc-label">Right Q · запрос</div>
+                        <div class="sc-line w80"></div>
+                        <div class="sc-line w60"></div>
+                        <span class="sc-chip">
+                            <span class="material-symbols-rounded" style="font-size:12px;">attach_file</span>
+                            file.md
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="card soon">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">tab</span></div>
+                </div>
+                <div class="card-heading">До 4 вкладок навигации</div>
+                <div class="card-text">
+                    Верхнее меню расширяется: по умолчанию 3 вкладки, в настройках «+» —
+                    можно держать <b>от 3 до 4</b> слотов (Чат остаётся, остальные на выбор).
+                </div>
+                <div class="preview-nav-tabs">
+                    <div class="tn on">
+                        <span class="material-symbols-rounded">chat_bubble</span>
+                        Chat
+                    </div>
+                    <div class="tn">
+                        <span class="material-symbols-rounded">auto_stories</span>
+                        Reader
+                    </div>
+                    <div class="tn">
+                        <span class="material-symbols-rounded">edit_note</span>
+                        Сценарий
+                    </div>
+                    <div class="tn add">
+                        <span class="material-symbols-rounded">add</span>
+                        +4
+                    </div>
+                </div>
+            </div>
+            <div class="card soon">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">terminal</span></div>
+                </div>
+                <div class="card-heading">Агент Oracle Notepad</div>
+                <div class="card-text">
+                    Умный <b>Builder AI</b>: и кодит, и общается. Связка с Notepad / MAP Studio —
+                    правки кода, миры и диалог в одном агенте.
+                </div>
+                <div class="preview preview-agent">
+                    <div class="preview-agent-avatar">
+                        <span class="material-symbols-rounded">psychology</span>
+                    </div>
+                    <div class="preview-agent-meta">
+                        <b>Oracle Notepad</b>
+                        Builder · code + chat
+                        <span style="color:var(--primary);font-weight:700;">Скоро в списке агентов</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card soon">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">timer</span></div>
+                </div>
+                <div class="card-heading">Умные ограничения</div>
+                <div class="card-text">
+                    Вкладка в настройках: пауза от ИИ от <b>30 минут</b> — чтобы отвлечься.
+                    Рядом вкладка <b>Навыки</b>: действия, умения и быстрые сценарии системы.
+                </div>
+                <div class="preview preview-focus">
+                    <div class="ft">
+                        <span class="material-symbols-rounded">hourglass_top</span>
+                        Фокус · 30 мин без чата
+                    </div>
+                    <div class="ft muted">
+                        <span class="material-symbols-rounded">psychology_alt</span>
+                        Навыки · список действий
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- LIMITS VISUAL SECTION -->
         <div class="promo-block" id="limits-visual">
             <div class="badge">
@@ -829,6 +1022,7 @@
                 &gt;_ PUBLIC_LINKS · SPLIT_VIEW · NOTEPAD_PROJECTS<br>
                 &gt;_ THEME: TRUE_BLACK | LIGHT | DARK<br>
                 &gt;_ LOCAL_STORAGE_SYNC: oracle_* KEYS SHARED<br>
+                &gt;_ ROADMAP: SCENARIO · NAV×4 · NOTEPAD_AGENT · FOCUS_30M<br>
                 &gt;_ STATUS: ALL SYSTEMS OPERATIONAL
             </div>
         </div>
@@ -842,6 +1036,7 @@
                 <div class="changelog-item"><span class="tag">Share</span> Публичные ссылки, вкладка управления</div>
                 <div class="changelog-item"><span class="tag">Split</span> Notepad / два чата / Side Notes, проекты в боковом меню</div>
                 <div class="changelog-item"><span class="tag">Theme</span> True Black: #000 фон, спокойный primary</div>
+                <div class="changelog-item"><span class="tag">Soon</span> Сценарист · 4 вкладки · агент Notepad · умные ограничения / навыки</div>
             </div>
         </div>
     </main>
