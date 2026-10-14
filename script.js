@@ -123,22 +123,22 @@ function loadChatSession(id) {
 }
 
 function createNewChatSession() {
-    const id = 'session_' + Date.now();
-    chatSessions[id] = { title: 'Новый чат', html: '' };
-    currentSessionId = id;
+    // Lazy: не пишем в историю, пока нет первого сообщения
+    currentSessionId = null;
     CoreState.isFirstMsgInSession = true;
-    localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
-    localStorage.setItem('oracle_current_session', id);
-    
+    CoreState.pendingBlankChat = true;
+    try { localStorage.removeItem('oracle_current_session'); } catch(e) {}
     const chatFlow = document.getElementById('chat-flow');
     const welcome = document.getElementById('welcome-block');
     if (chatFlow) chatFlow.innerHTML = '';
     if (welcome) welcome.classList.remove('hidden');
-    
-    renderSidebarChats();
+    if (typeof updateWelcomeAmbient === 'function') updateWelcomeAmbient();
+    if (typeof updateChatEmptyState === 'function') updateChatEmptyState();
+    if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+    else if (typeof renderSidebarChats === 'function') renderSidebarChats();
     document.getElementById('sidebar-archive')?.classList.remove('open');
     switchScreen('chat');
-    showToast('Новый чат создан', 'success');
+    showToast('Новый чат — напишите сообщение, чтобы сохранить', 'info');
 }
 
 function openStoryBook(id) {
@@ -166,57 +166,68 @@ function toggleTempChat() {
 }
 
 function enterTempChat() {
-    // Сохраняем текущее состояние обычного чата
     const chatFlow = document.getElementById('chat-flow');
     const welcomeBlock = document.getElementById('welcome-block');
     
     CoreState.savedChatHTML = chatFlow ? chatFlow.innerHTML : '';
     CoreState.savedWelcomeHTML = welcomeBlock ? welcomeBlock.innerHTML : '';
 
-    // Очищаем чат для временного режима
     if (chatFlow) chatFlow.innerHTML = '';
     if (welcomeBlock) {
         welcomeBlock.classList.remove('hidden');
         const greeting = document.getElementById('welcome-greeting');
         const subtext = document.getElementById('welcome-subtext');
         if (greeting) greeting.textContent = 'Зашли случайно?';
-        if (subtext) subtext.textContent = 'Это временный чат. Всё, что вы напишете здесь, исчезнет после выхода. Ничего не сохранится в истории.';
+        if (subtext) subtext.textContent = 'Это временный чат. Сообщения не пишутся в историю, пока вы сами не сохраните чат.';
     }
 
     CoreState.isTempChat = true;
+    CoreState.tempPersonaLocked = false;
+    CoreState.tempPersona = CoreState.tempPersona || 'with';
+    CoreState.tempHasMessages = false;
     document.body.classList.add('temp-chat-mode');
+    document.body.classList.remove('temp-chat-saved-ready');
     
-    const btn = document.getElementById('temp-chat-btn');
-    if (btn) btn.classList.add('active');
-
-    showToast('Временный чат активирован. История не сохраняется.', 'warning');
+    const chooser = document.getElementById('temp-persona-chooser');
+    if (chooser) {
+        chooser.hidden = false;
+        setTempPersona(CoreState.tempPersona || 'with', true);
+    }
+    syncTempChatButton();
+    showToast('Временный чат. Выберите персонализацию до первого сообщения.', 'warning');
 }
 
 function exitTempChat() {
     const chatFlow = document.getElementById('chat-flow');
     const welcomeBlock = document.getElementById('welcome-block');
+    const chooser = document.getElementById('temp-persona-chooser');
+    if (chooser) chooser.hidden = true;
 
-    // Возвращаем обычный чат
     if (chatFlow) chatFlow.innerHTML = CoreState.savedChatHTML || '';
     if (welcomeBlock) {
-        welcomeBlock.innerHTML = CoreState.savedWelcomeHTML || '';
-        // Если в обычном чате уже были сообщения — прячем приветствие
+        // Don't wipe chooser node if it exists in DOM as sibling structure — restore text only if we saved HTML
+        if (CoreState.savedWelcomeHTML) {
+            // Prefer restoring greeting/subtext without destroying chooser if possible
+            const g = document.getElementById('welcome-greeting');
+            const s = document.getElementById('welcome-subtext');
+            if (g) g.textContent = 'Привет! Как твои дела?';
+            if (s) s.textContent = 'Готов к работе. Чем я могу помочь тебе сегодня?';
+        }
         if (CoreState.savedChatHTML && CoreState.savedChatHTML.trim() !== '') {
             welcomeBlock.classList.add('hidden');
-            updateWelcomeAmbient();
+            if (typeof updateWelcomeAmbient === 'function') updateWelcomeAmbient();
         } else {
             welcomeBlock.classList.remove('hidden');
         }
     }
 
     CoreState.isTempChat = false;
+    CoreState.tempPersonaLocked = false;
+    CoreState.tempHasMessages = false;
     CoreState.savedChatHTML = null;
     CoreState.savedWelcomeHTML = null;
-    document.body.classList.remove('temp-chat-mode');
-
-    const btn = document.getElementById('temp-chat-btn');
-    if (btn) btn.classList.remove('active');
-
+    document.body.classList.remove('temp-chat-mode', 'temp-chat-saved-ready');
+    syncTempChatButton();
     showToast('Обычный чат восстановлен.', 'success');
 }
     let modalCallback = null;
@@ -258,7 +269,7 @@ function enterSplitView() {
     initSplitResizer();
 
     // Скрываем обычный input если нужно (он останется внизу)
-    showToast('Split View активирован', 'success');
+    showToast('Параллельный просмотр активирован', 'success');
 }
 
 function exitSplitView() {
@@ -285,7 +296,7 @@ function exitSplitView() {
     // Закрываем меню
     document.getElementById('split-menu')?.classList.remove('open');
 
-    showToast('Вышли из Split View', 'success');
+    showToast('Вышли из Параллельный просмотр', 'success');
 }
 
 function updateSplitHeader() {
@@ -833,6 +844,9 @@ function changeOracleThemeBW() {
         const sidebar = document.getElementById('sidebar-archive');
         if (sidebar) sidebar.classList.remove('open');
         if (screenName === 'calendar') renderCalendar();
+        if (screenName === 'maps') {
+            setTimeout(() => { if (typeof initCoreMaps === 'function') initCoreMaps(); }, 80);
+        }
     }
 
     function toggleSidebar() {
@@ -2406,12 +2420,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainInput = document.getElementById('user-input');
     if (!mainInput) return;
 
-    // На мобильных — открываем fullscreen при фокусе
-    mainInput.addEventListener('focus', () => {
-        if (isMobileOrTablet()) {
-            openFullscreenInput();
-        }
-    });
+    // Мобильные: НЕ открываем расширенное поле автоматически (только по кнопке expand)
+    // mainInput focus stays compact one-line
 
     // На ПК — показываем floating menu при выделении текста
     mainInput.addEventListener('mouseup', showFloatingMenu);
@@ -2533,21 +2543,63 @@ function updateThemeButtons(mode) {
 // ===== NAV CONTEXT MENU =====
 function showNavContextMenu(e) {
     e.preventDefault();
+    e.stopPropagation();
     const menu = document.getElementById('nav-context-menu');
     if (!menu) return;
-    menu.classList.add('open');
-    menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
-    menu.style.top = Math.min(e.clientY, window.innerHeight - 160) + 'px';
-    const moveBtn = document.getElementById('nav-ctx-move');
     const isBottom = document.body.classList.contains('nav-bottom');
-    if (moveBtn) moveBtn.innerHTML = isBottom
-        ? '<span class="material-symbols-rounded">swap_vert</span> Переместить вверх'
-        : '<span class="material-symbols-rounded">swap_vert</span> Переместить вниз';
+    const isFlush = document.body.classList.contains('nav-flush');
+    const isCompact = document.body.classList.contains('compact-nav-mode');
+    const setLabel = (id, text) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const lab = el.querySelector('.nav-ctx-label');
+        if (lab) lab.textContent = text;
+        else {
+            const icon = el.querySelector('.material-symbols-rounded');
+            el.innerHTML = (icon ? icon.outerHTML + ' ' : '') + '<span class="nav-ctx-label">' + text + '</span>';
+        }
+    };
+    setLabel('nav-ctx-compact', isCompact ? 'Сделать Просторнее' : 'Сделать Компактнее навигацию');
+    setLabel('nav-ctx-move', isBottom ? 'Переместить вверх' : 'Переместить вниз');
+    setLabel('nav-ctx-flush', isFlush ? 'Отлиять от концов' : 'Слиять с Концами');
+    // extras: tabs not in main nav
+    const extras = document.getElementById('nav-ctx-extras');
+    const div = document.getElementById('nav-ctx-divider');
+    const inNav = new Set(typeof getNavTabs === 'function' ? getNavTabs() : ['chat','reader','settings']);
+    const extraTabs = [
+        { id: 'library', label: 'Библиотека', icon: 'folder_open' },
+        { id: 'calendar', label: 'Планы и календарь', icon: 'calendar_month' },
+        { id: 'maps', label: 'Карты', icon: 'map' },
+        { id: 'reader', label: 'Reader', icon: 'auto_stories' },
+        { id: 'settings', label: 'Settings', icon: 'settings' }
+    ].filter(t => !inNav.has(t.id));
+    if (extras) {
+        extras.innerHTML = extraTabs.map(t =>
+            '<button type="button" class="nav-ctx-item nav-ctx-extra" data-tab="' + t.id + '">' +
+            '<span class="material-symbols-rounded">' + t.icon + '</span> ' + t.label +
+            ' <span class="setting-new-badge">НОВИНКА</span></button>'
+        ).join('');
+        extras.querySelectorAll('.nav-ctx-extra').forEach(btn => {
+            btn.onclick = () => {
+                menu.classList.remove('open');
+                if (typeof navGo === 'function') navGo(btn.dataset.tab);
+            };
+        });
+    }
+    if (div) div.hidden = !extraTabs.length;
+    menu.classList.add('open');
+    const w = 280, h = 52 + (extraTabs.length + 3) * 40;
+    let x = e.clientX, y = e.clientY;
+    if (x + w > window.innerWidth) x = window.innerWidth - w - 8;
+    if (y + h > window.innerHeight) y = Math.max(8, window.innerHeight - h - 8);
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
 }
 
 function navCtxCompact() {
     toggleCompactNav();
     document.getElementById('nav-context-menu')?.classList.remove('open');
+    showToast?.(document.body.classList.contains('compact-nav-mode') ? 'Компактная навигация' : 'Просторная навигация', 'success');
 }
 function navCtxMove() {
     const isBottom = document.body.classList.contains('nav-bottom');
@@ -2557,6 +2609,7 @@ function navCtxMove() {
 function navCtxFlush() {
     toggleFlushNav();
     document.getElementById('nav-context-menu')?.classList.remove('open');
+    showToast?.(document.body.classList.contains('nav-flush') ? 'Слито с краями' : 'Отлеплено от краёв', 'success');
 }
 
 document.addEventListener('click', (e) => {
@@ -2786,15 +2839,48 @@ function handleFileUpload(input) {
 }
 
 // ===== DOCK SIDEBAR =====
+function syncSidebarDockUI() {
+    const docked = document.body.classList.contains('sidebar-docked');
+    const label = document.getElementById('dock-toggle-label');
+    if (label) label.textContent = docked ? 'Скрыть боковое меню' : 'Закрепить меню';
+    const icon = document.getElementById('sidebar-dock-icon');
+    if (icon) icon.textContent = docked ? 'keep_off' : 'keep';
+    const btn = document.getElementById('sidebar-dock-toggle');
+    if (btn) btn.title = docked ? 'Открепить меню' : 'Закрепить меню';
+}
+
 function toggleSidebarDock() {
     const docked = document.body.classList.toggle('sidebar-docked');
     localStorage.setItem('oracle_sidebar_docked', docked ? 'true' : 'false');
-    const label = document.getElementById('dock-toggle-label');
-    if (label) label.textContent = docked ? 'Скрыть боковое меню' : 'Закрепить меню';
+    syncSidebarDockUI();
     if (docked) {
         document.getElementById('sidebar-archive')?.classList.add('open');
     }
 }
+
+/** Крестик: если меню закреплено — сначала открепляем и закрываем */
+function toggleSidebarOrUndock() {
+    if (document.body.classList.contains('sidebar-docked')) {
+        document.body.classList.remove('sidebar-docked');
+        localStorage.setItem('oracle_sidebar_docked', 'false');
+        syncSidebarDockUI();
+        document.getElementById('sidebar-archive')?.classList.remove('open');
+        showToast?.('Меню откреплено', 'success');
+        return;
+    }
+    if (typeof toggleSidebar === 'function') toggleSidebar();
+}
+
+/** Экстренный сброс закрепления (и для консоли: undockSidebar()) */
+function undockSidebar() {
+    document.body.classList.remove('sidebar-docked');
+    localStorage.setItem('oracle_sidebar_docked', 'false');
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+    syncSidebarDockUI();
+    showToast?.('Боковое меню откреплено', 'success');
+}
+window.undockSidebar = undockSidebar;
+
 
 // ===== SECURITY TOGGLES =====
 function toggleLockScreen() {
@@ -2838,9 +2924,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (localStorage.getItem('oracle_sidebar_docked') === 'true') {
         document.body.classList.add('sidebar-docked');
         document.getElementById('sidebar-archive')?.classList.add('open');
-        const label = document.getElementById('dock-toggle-label');
-        if (label) label.textContent = 'Скрыть боковое меню';
     }
+    if (typeof syncSidebarDockUI === 'function') syncSidebarDockUI();
 });
 
 
@@ -3331,6 +3416,7 @@ const NAV_TAB_META = {
     reader:   { label: 'Reader', icon: 'auto_stories' },
     library:  { label: 'Библиотека', icon: 'folder_open' },
     calendar: { label: 'Планы', icon: 'calendar_month' },
+    maps:     { label: 'Карты', icon: 'map' },
     settings: { label: 'Settings', icon: 'settings' }
 };
 
@@ -3360,28 +3446,69 @@ function saveNavTabsFromUI() {
     const s2 = document.getElementById('nav-slot-2')?.value || 'reader';
     let s3 = document.getElementById('nav-slot-3')?.value || 'settings';
     if (s3 === s2) {
-        const opts = ['reader','library','calendar','settings'].filter(x => x !== s2);
+        const opts = ['reader','library','calendar','maps','settings'].filter(x => x !== s2);
         s3 = opts[0];
     }
     saveNavTabs(['chat', s2, s3]);
     showToast('Навигация обновлена', 'success');
 }
 
+const NAV_SLOT_OPTIONS = [
+    { v: 'reader', t: 'Reader' },
+    { v: 'library', t: 'Библиотека файлов' },
+    { v: 'calendar', t: 'Календарь и планы' },
+    { v: 'maps', t: 'Карты' },
+    { v: 'settings', t: 'Settings' }
+];
+
 function fillNavSlotSelects() {
     const tabs = getNavTabs();
-    const options = [
-        { v: 'reader', t: 'Reader' },
-        { v: 'library', t: 'Библиотека файлов' },
-        { v: 'calendar', t: 'Календарь и планы' },
-        { v: 'settings', t: 'Settings' }
-    ];
-    ['nav-slot-2','nav-slot-3'].forEach((id, i) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        const current = tabs[i + 1];
-        el.innerHTML = options.map(o => `<option value="${o.v}" ${o.v===current?'selected':''}>${o.t}</option>`).join('');
+    ['2','3'].forEach((slot, i) => {
+        const hidden = document.getElementById('nav-slot-' + slot);
+        const label = document.getElementById('nav-slot-' + slot + '-label');
+        const menu = document.getElementById('nav-slot-' + slot + '-menu');
+        const current = tabs[i + 1] || (slot === '2' ? 'reader' : 'settings');
+        if (hidden) hidden.value = current;
+        const opt = NAV_SLOT_OPTIONS.find(o => o.v === current) || NAV_SLOT_OPTIONS[0];
+        if (label) label.textContent = opt.t;
+        if (menu) {
+            menu.innerHTML = '';
+            NAV_SLOT_OPTIONS.forEach(o => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'custom-select-option' + (o.v === current ? ' active' : '');
+                btn.setAttribute('data-value', o.v);
+                btn.textContent = o.t;
+                btn.addEventListener('click', () => selectNavSlot(slot, o.v));
+                menu.appendChild(btn);
+            });
+        }
     });
 }
+
+function toggleNavSlotMenu(e, slot) {
+    e.preventDefault();
+    e.stopPropagation();
+    const wrap = document.getElementById('nav-slot-' + slot + '-wrap');
+    document.querySelectorAll('.nav-slot-select.open').forEach(w => {
+        if (w !== wrap) w.classList.remove('open');
+    });
+    wrap?.classList.toggle('open');
+}
+
+function selectNavSlot(slot, value) {
+    const hidden = document.getElementById('nav-slot-' + slot);
+    if (hidden) hidden.value = value;
+    document.getElementById('nav-slot-' + slot + '-wrap')?.classList.remove('open');
+    saveNavTabsFromUI();
+    fillNavSlotSelects();
+}
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.nav-slot-select')) {
+        document.querySelectorAll('.nav-slot-select.open').forEach(w => w.classList.remove('open'));
+    }
+});
 
 function renderMainNav() {
     const nav = document.querySelector('.glass-nav');
@@ -3412,6 +3539,7 @@ function navGo(tabId) {
     else if (tabId === 'reader') switchScreen('reader');
     else if (tabId === 'settings') switchScreen('settings');
     else if (tabId === 'calendar') switchScreen('calendar');
+    else if (tabId === 'maps') switchScreen('maps');
     else if (tabId === 'library') {
         switchScreen('library');
         if (typeof refreshLibraryUI === 'function') refreshLibraryUI();
@@ -3423,23 +3551,10 @@ function navGo(tabId) {
 function renderSidebarFallbacks() {
     const box = document.getElementById('sidebar-fallbacks');
     if (!box) return;
-    const tabs = getNavTabs();
-    const inNav = new Set(tabs);
-    const items = [];
-    if (!inNav.has('reader')) {
-        items.push(`<button type="button" class="sidebar-fallback-btn" onclick="switchScreen('reader'); document.getElementById('sidebar-archive')?.classList.remove('open');"><span class="material-symbols-rounded">auto_stories</span> Reader</button>`);
-    }
-    if (!inNav.has('calendar')) {
-        items.push(`<button type="button" class="sidebar-fallback-btn" onclick="switchScreen('calendar'); document.getElementById('sidebar-archive')?.classList.remove('open');"><span class="material-symbols-rounded">calendar_month</span> Планы и календарь</button>`);
-    }
-    if (!inNav.has('library')) {
-        items.push(`<button type="button" class="sidebar-fallback-btn" onclick="switchScreen('library'); document.getElementById('sidebar-archive')?.classList.remove('open'); if(typeof refreshLibraryUI==='function')refreshLibraryUI();"><span class="material-symbols-rounded">folder_open</span> Библиотека файлов</button>`);
-    }
-    if (!inNav.has('settings')) {
-        items.push(`<button type="button" class="sidebar-fallback-btn" onclick="switchScreen('settings'); document.getElementById('sidebar-archive')?.classList.remove('open');"><span class="material-symbols-rounded">settings</span> Settings</button>`);
-    }
-    box.innerHTML = items.join('');
-    box.style.display = items.length ? 'flex' : 'none';
+    box.innerHTML = '';
+    box.hidden = true;
+    box.style.display = 'none';
+    // Доп. вкладки (Библиотека / Планы / Карты / …) — только в ПКМ по верхней навигации
 }
 
 // ===== READER TOUR =====
@@ -4701,25 +4816,30 @@ function closeSaveTempModal() {
     document.getElementById('save-temp-modal')?.classList.remove('active');
 }
 function confirmSaveTempChat() {
-    const mode = document.querySelector('input[name="temp-save-mode"]:checked')?.value || 'with';
     const chatFlow = document.getElementById('chat-flow');
     const html = chatFlow ? chatFlow.innerHTML : '';
     const id = 'session_' + Date.now();
+    // Персонализация как у обычных чатов (профиль «О вас») — без выбора в модалке
     chatSessions[id] = {
         title: 'Из временного',
         html,
-        personalization: mode === 'with'
+        updated: Date.now(),
+        fromTemp: true
     };
     currentSessionId = id;
     localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
     localStorage.setItem('oracle_current_session', id);
     CoreState.isTempChat = false;
-    document.body.classList.remove('temp-chat-mode');
-    document.getElementById('temp-chat-btn')?.classList.remove('active');
+    CoreState.tempHasMessages = false;
+    CoreState.tempPersonaLocked = false;
+    document.body.classList.remove('temp-chat-mode', 'temp-chat-saved-ready');
+    document.getElementById('temp-persona-chooser') && (document.getElementById('temp-persona-chooser').hidden = true);
     CoreState.savedChatHTML = null;
+    syncTempChatButton();
     if (typeof renderSidebarChats === 'function') renderSidebarChats();
+    if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
     closeSaveTempModal();
-    showToast(mode === 'with' ? 'Сохранено с персонализацией' : 'Сохранено без персонализации', 'success');
+    showToast('Чат сохранён в историю', 'success');
 }
 
 // ===== PIN / SECURITY =====
@@ -6906,40 +7026,7 @@ function closeSideCoreHint() {
 document.addEventListener('DOMContentLoaded', maybeShowSideCorePromo);
 if (document.readyState !== 'loading') setTimeout(maybeShowSideCorePromo, 800);
 
-/* Page context menu: screenshot ask */
-(function wirePageCtxScreenshot() {
-    const menu = () => document.getElementById('page-ctx-menu');
-    document.addEventListener('contextmenu', (e) => {
-        // only inside oracle container / app, not on inputs where native menu is useful
-        const t = e.target;
-        if (t && (t.closest('input, textarea, [contenteditable="true"]'))) return;
-        if (!t.closest('.oracle-container') && !t.closest('.app-screen') && t !== document.body) {
-            // still allow on main UI
-            if (!t.closest('body')) return;
-        }
-        const m = menu();
-        if (!m) return;
-        e.preventDefault();
-        m.style.display = 'block';
-        const pad = 8;
-        const w = 260, h = 52;
-        let x = e.clientX, y = e.clientY;
-        if (x + w > window.innerWidth) x = window.innerWidth - w - pad;
-        if (y + h > window.innerHeight) y = window.innerHeight - h - pad;
-        m.style.left = x + 'px';
-        m.style.top = y + 'px';
-    });
-    document.addEventListener('click', () => {
-        const m = menu();
-        if (m) m.style.display = 'none';
-    });
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            const m = menu();
-            if (m) m.style.display = 'none';
-        }
-    });
-})();
+/* Page screenshot context menu removed */
 
 function loadHtml2Canvas() {
     return new Promise((resolve, reject) => {
@@ -6952,81 +7039,8 @@ function loadHtml2Canvas() {
     });
 }
 
-async function askCoreNodeScreenshot() {
-    const m = document.getElementById('page-ctx-menu');
-    if (m) m.style.display = 'none';
-    try {
-        if (typeof showToast === 'function') showToast('Делаю скриншот…', 'info', 1600);
-        const h2c = await loadHtml2Canvas();
-        const target = document.querySelector('.oracle-container') || document.body;
-        const canvas = await h2c(target, {
-            backgroundColor: null,
-            scale: Math.min(2, window.devicePixelRatio || 1),
-            useCORS: true,
-            logging: false,
-            windowWidth: target.scrollWidth,
-            windowHeight: Math.min(target.scrollHeight, 2400)
-        });
-        const dataUrl = canvas.toDataURL('image/png');
-        const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-        const fileName = 'core-node-shot-' + stamp + '.png';
-
-        // switch to chat
-        if (typeof switchScreen === 'function') switchScreen('chat');
-
-        // attach to pending files if Core Node has attach pipeline
-        const input = document.getElementById('user-input');
-        const q = 'Вопрос по этому материалу «' + fileName + '»';
-        if (input) {
-            input.value = q;
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            try { input.focus(); } catch (e) {}
-        }
-
-        // Try global pending attachments API
-        if (typeof window.attachDataUrlToChat === 'function') {
-            window.attachDataUrlToChat(dataUrl, fileName, 'image/png');
-        } else if (typeof window.addPendingAttachment === 'function') {
-            window.addPendingAttachment({ name: fileName, dataUrl: dataUrl, type: 'image/png' });
-        } else {
-            // fallback: stash for sendMsg / show chip manually
-            window.__cnShotAttach = { name: fileName, dataUrl: dataUrl, type: 'image/png' };
-            tryRenderShotChip(fileName, dataUrl);
-        }
-
-        if (typeof showToast === 'function') {
-            showToast('Скриншот в чате. Можно отправить или править вопрос.', 'success', 3200);
-        }
-    } catch (err) {
-        console.warn(err);
-        if (typeof showToast === 'function') {
-            showToast('Не удалось сделать скриншот: ' + (err.message || err), 'error', 4000);
-        }
-    }
-}
-
-function tryRenderShotChip(name, dataUrl) {
-    let row = document.getElementById('attach-chips-row');
-    if (!row) {
-        const box = document.getElementById('main-input-box') || document.querySelector('.glass-input-box');
-        if (!box) return;
-        row = document.createElement('div');
-        row.id = 'attach-chips-row';
-        row.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:6px;';
-        box.insertBefore(row, box.firstChild);
-    }
-    row.innerHTML = '';
-    const chip = document.createElement('div');
-    chip.style.cssText = 'position:relative;display:flex;align-items:center;gap:8px;padding:6px 28px 6px 6px;border:1px solid var(--border);border-radius:12px;background:var(--surface-variant);';
-    chip.innerHTML = '<img alt="" style="width:40px;height:40px;border-radius:8px;object-fit:cover;"/><span style="font-size:12px;font-weight:700;"></span><button type="button" style="position:absolute;top:4px;right:4px;border:none;background:var(--surface);border-radius:50%;width:22px;height:22px;cursor:pointer;color:var(--on-surface-variant);">✕</button>';
-    chip.querySelector('img').src = dataUrl;
-    chip.querySelector('span').textContent = name;
-    chip.querySelector('button').onclick = () => {
-        row.innerHTML = '';
-        window.__cnShotAttach = null;
-    };
-    row.appendChild(chip);
-}
+async function askCoreNodeScreenshot() { /* removed */ }
+function tryRenderShotChip() { /* removed */ }
 
 /* Live Chat — enhance existing modal with rotating prompts */
 (function enhanceLiveChat() {
@@ -7247,3 +7261,1289 @@ function requestNotificationPermissionForPlans() {
     if (document.readyState !== 'loading') setTimeout(boot, 0);
 })();
 
+
+
+
+/* ===== Core Node Oct14 features: offline, @connectors, later, edit UX, versions, FS format ===== */
+(function oct14Features() {
+  const CONNECTORS = {
+    tasks: 'Задачи',
+    'oracle-notepad': 'Oracle-Notepad',
+    'letter-write': 'Letter-Write',
+    'verify-ai': 'Verify-AI'
+  };
+
+  let editState = null; // { bubble, original }
+  let replyVersions = new WeakMap(); // element -> { list: [], idx }
+  let activeVersionEl = null;
+
+  function isOnline() {
+    return navigator.onLine !== false;
+  }
+
+  function updateOfflineUI() {
+    const offline = !isOnline();
+    document.body.classList.toggle('offline-mode', offline);
+    const b = document.getElementById('offline-banner');
+    if (b) b.hidden = !offline;
+  }
+
+  window.addEventListener('online', updateOfflineUI);
+  window.addEventListener('offline', updateOfflineUI);
+  document.addEventListener('DOMContentLoaded', updateOfflineUI);
+  if (document.readyState !== 'loading') setTimeout(updateOfflineUI, 0);
+
+  // ---- patch sendMsg for offline ----
+  const _sendMsg = typeof sendMsg === 'function' ? sendMsg : null;
+  if (_sendMsg && !window._oct14SendPatched) {
+    window._oct14SendPatched = true;
+    window.sendMsg = function() {
+      if (editState) {
+        return commitEditMessage();
+      }
+      if (!isOnline()) {
+        if (typeof showToast === 'function') {
+          showToast('Нет сети: новые сообщения недоступны. Reader и Планы работают офлайн.', 'warning', 3600);
+        }
+        return;
+      }
+      // inject active connectors into message meta if needed
+      return _sendMsg.apply(this, arguments);
+    };
+  }
+
+  // ---- @ connectors ----
+  function getConnectorPopup() { return document.getElementById('connector-popup'); }
+
+  function hideConnectors() {
+    const p = getConnectorPopup();
+    if (p) p.hidden = true;
+  }
+
+  function showConnectors() {
+    const p = getConnectorPopup();
+    if (p) p.hidden = false;
+  }
+
+  function insertConnector(label) {
+    const input = document.getElementById('user-input');
+    if (!input) return;
+    const token = '@' + label;
+    let v = input.value;
+    // replace trailing @partial
+    v = v.replace(/(^|\s)@[^\s]*$/, '$1' + token + ' ');
+    if (!/(^|\s)@/.test(v.slice(-token.length - 2))) {
+      // if no @ at end, append
+      if (!v.includes(token)) v = (v + ' ' + token + ' ').replace(/\s+/g, ' ');
+    }
+    input.value = v;
+    hideConnectors();
+    input.focus();
+    if (typeof handleInput === 'function') handleInput(input);
+    if (typeof showToast === 'function') showToast('Коннектор @' + label, 'info', 1800);
+  }
+
+  function wireConnectors() {
+    const input = document.getElementById('user-input');
+    if (!input || input.dataset.connWired) return;
+    input.dataset.connWired = '1';
+    input.addEventListener('input', () => {
+      const v = input.value;
+      const m = v.match(/(^|\s)@([^\s]*)$/);
+      if (m) showConnectors();
+      else hideConnectors();
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') hideConnectors();
+      // double backspace remove connector token
+      if (e.key === 'Backspace') {
+        const v = input.value;
+        const sel = input.selectionStart;
+        const before = v.slice(0, sel);
+        const tok = before.match(/@([A-Za-zА-Яа-я0-9\-]+)\s?$/);
+        if (tok && input.dataset.connHighlight === tok[0]) {
+          e.preventDefault();
+          const start = before.lastIndexOf(tok[0]);
+          input.value = v.slice(0, start) + v.slice(sel);
+          input.dataset.connHighlight = '';
+          if (typeof handleInput === 'function') handleInput(input);
+        } else if (tok) {
+          input.dataset.connHighlight = tok[0];
+        } else {
+          input.dataset.connHighlight = '';
+        }
+      }
+    });
+    document.querySelectorAll('.connector-item').forEach(btn => {
+      btn.addEventListener('click', () => insertConnector(btn.dataset.label || btn.dataset.conn));
+    });
+    document.addEventListener('click', (e) => {
+      const p = getConnectorPopup();
+      if (!p || p.hidden) return;
+      if (!p.contains(e.target) && e.target !== input) hideConnectors();
+    });
+  }
+
+  // ---- Later Generate ----
+  window.toggleLaterGenSetting = function(on) {
+    localStorage.setItem('oracle_later_gen', on ? '1' : '0');
+    syncLaterGenBtn();
+  };
+
+  function syncLaterGenBtn() {
+    const btn = document.getElementById('later-gen-btn');
+    const apiOn = localStorage.getItem('oracle_custom_api_enabled') === 'true' ||
+      localStorage.getItem('oracle_limits_mode') === 'external_api';
+    const settingOn = localStorage.getItem('oracle_later_gen') === '1';
+    // Только на вкладке Чат (и не в skills hub / maps / reader и т.д.)
+    const chatScreen = document.getElementById('screen-chat');
+    const onChat = !!(chatScreen && chatScreen.classList.contains('active-screen')) &&
+      !document.body.classList.contains('skills-hub-open');
+    const show = settingOn && apiOn && onChat;
+    if (btn) btn.classList.toggle('hidden', !show);
+    const cb = document.getElementById('set-later-gen');
+    if (cb) cb.checked = settingOn;
+  }
+
+  window.queueLaterGenerate = function() {
+    if (!isOnline()) {
+      showToast?.('Офлайн: Later Generate недоступен', 'warning');
+      return;
+    }
+    const input = document.getElementById('user-input');
+    const msg = (input?.value || '').trim();
+    if (!msg) {
+      showToast?.('Сначала введите запрос', 'warning');
+      return;
+    }
+    showCustomModal?.(
+      'Сгенерировать позже',
+      'ИИ будет ждать, пока провайдер освободится. Если нажмёте «Остановить», лимит за ожидание <b>не вернётся</b>. Продолжить?',
+      false, '', (ok) => {
+        if (!ok) return;
+        CoreState._laterQueue = CoreState._laterQueue || [];
+        CoreState._laterQueue.push({ msg, ts: Date.now() });
+        if (input) { input.value = ''; handleInput?.(input); }
+        setGenerating?.(true);
+        showToast?.('В очереди ожидания провайдера…', 'info', 3200);
+        // soft poll mock
+        const tryRun = () => {
+          if (!CoreState.isStreaming) return;
+          // after short "wait" run normal send path by restoring msg
+          if (input) input.value = msg;
+          setGenerating?.(false);
+          if (typeof sendMsg === 'function') sendMsg();
+        };
+        setTimeout(tryRun, 3500 + Math.random() * 2500);
+      }
+    );
+  };
+
+  // ---- Edit message UX ----
+  window.editBubbleText = function(btn) {
+    const bubble = btn.closest('.user-bubble, .user-msg');
+    if (!bubble) return;
+    const textNode = bubble.querySelector('.bubble-text');
+    if (!textNode) return;
+    editState = { bubble, original: textNode.textContent };
+    document.body.classList.add('edit-msg-mode');
+    const ban = document.getElementById('edit-msg-banner');
+    if (ban) ban.hidden = false;
+    const input = document.getElementById('user-input');
+    if (input) {
+      input.value = textNode.textContent;
+      handleInput?.(input);
+      input.focus();
+    }
+    const sendIcon = document.querySelector('#send-btn .material-symbols-rounded');
+    if (sendIcon) sendIcon.textContent = 'edit';
+    document.getElementById('send-btn')?.classList.add('visible');
+  };
+
+  window.cancelEditMessage = function() {
+    editState = null;
+    document.body.classList.remove('edit-msg-mode');
+    const ban = document.getElementById('edit-msg-banner');
+    if (ban) ban.hidden = true;
+    const input = document.getElementById('user-input');
+    if (input) { input.value = ''; handleInput?.(input); }
+    const sendIcon = document.querySelector('#send-btn .material-symbols-rounded');
+    if (sendIcon) sendIcon.textContent = 'send';
+  };
+
+  function commitEditMessage() {
+    if (!editState) return;
+    const input = document.getElementById('user-input');
+    const newText = (input?.value || '').trim();
+    if (!newText) {
+      showToast?.('Пустое сообщение', 'warning');
+      return;
+    }
+    if (!isOnline()) {
+      showToast?.('Нужен интернет, чтобы перегенерировать ответ', 'warning');
+      return;
+    }
+    const textNode = editState.bubble.querySelector('.bubble-text');
+    if (textNode) textNode.textContent = newText;
+
+    // remove following AI bubble(s) until next user
+    let n = editState.bubble.nextElementSibling;
+    while (n && (n.classList.contains('ai-msg') || n.classList.contains('ai-bubble') || n.classList.contains('msg') && !n.classList.contains('user-msg'))) {
+      if (n.classList.contains('user-msg') || n.classList.contains('user-bubble')) break;
+      const rm = n;
+      n = n.nextElementSibling;
+      // keep if not ai
+      if (rm.classList.contains('ai-msg') || rm.classList.contains('ai-bubble') || (rm.classList.contains('msg') && !rm.classList.contains('user-msg'))) {
+        rm.remove();
+      } else break;
+    }
+
+    cancelEditMessage();
+    if (input) input.value = newText;
+    // resend
+    if (_sendMsg) {
+      // use original send after clearing edit
+      window.sendMsg = function() {
+        if (!isOnline()) {
+          showToast?.('Нет сети', 'warning');
+          return;
+        }
+        return _sendMsg.apply(this, arguments);
+      };
+      window.sendMsg();
+      // restore full patched send
+      window.sendMsg = function() {
+        if (editState) return commitEditMessage();
+        if (!isOnline()) {
+          showToast?.('Нет сети: новые сообщения недоступны. Reader и Планы работают офлайн.', 'warning', 3600);
+          return;
+        }
+        return _sendMsg.apply(this, arguments);
+      };
+    }
+  }
+
+  // ---- Reply versions (regenerate style) ----
+  window.registerReplyVersion = function(aiEl, text) {
+    if (!aiEl) return;
+    let pack = replyVersions.get(aiEl);
+    if (!pack) {
+      pack = { list: [], idx: 0 };
+      replyVersions.set(aiEl, pack);
+    }
+    pack.list.push(text);
+    pack.idx = pack.list.length - 1;
+    renderVersionChip(aiEl, pack);
+  };
+
+  function renderVersionChip(aiEl, pack) {
+    let chip = aiEl.querySelector('.ai-version-chip');
+    if (!chip) {
+      chip = document.createElement('div');
+      chip.className = 'ai-version-chip';
+      chip.innerHTML = '<button type="button" data-dir="-1">‹</button><span class="ai-v-label">1/1</span><button type="button" data-dir="1">›</button>';
+      chip.querySelectorAll('button').forEach(b => {
+        b.onclick = (e) => {
+          e.stopPropagation();
+          shiftVersionOn(aiEl, Number(b.dataset.dir));
+        };
+      });
+      aiEl.appendChild(chip);
+    }
+    chip.querySelector('.ai-v-label').textContent = (pack.idx + 1) + '/' + pack.list.length;
+    chip.style.display = pack.list.length > 1 ? 'inline-flex' : 'none';
+  }
+
+  function shiftVersionOn(aiEl, dir) {
+    const pack = replyVersions.get(aiEl);
+    if (!pack || pack.list.length < 2) return;
+    pack.idx = (pack.idx + dir + pack.list.length) % pack.list.length;
+    const body = aiEl.querySelector('.bubble-text, .ai-text, .msg-text') || aiEl;
+    // only update text node if structure allows
+    const t = aiEl.querySelector('.bubble-text, .ai-text');
+    if (t) t.textContent = pack.list[pack.idx];
+    else {
+      // fallback: last text
+    }
+    renderVersionChip(aiEl, pack);
+    activeVersionEl = aiEl;
+    const bar = document.getElementById('reply-version-bar');
+    if (bar) {
+      bar.hidden = pack.list.length < 2;
+      document.getElementById('rv-label').textContent = (pack.idx + 1) + '/' + pack.list.length;
+    }
+  }
+
+  window.shiftReplyVersion = function(dir) {
+    if (activeVersionEl) shiftVersionOn(activeVersionEl, dir);
+  };
+
+  // Hook: when AI message appended, try register version
+  const _obs = new MutationObserver((muts) => {
+    muts.forEach(m => {
+      m.addedNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        if (node.classList?.contains('ai-msg') || node.classList?.contains('ai-bubble')) {
+          const text = (node.querySelector('.bubble-text, .ai-text') || node).textContent || '';
+          if (text.trim()) registerReplyVersion(node, text.trim());
+        }
+      });
+    });
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    const flow = document.getElementById('chat-flow');
+    if (flow) _obs.observe(flow, { childList: true });
+  });
+
+  // ---- FS format fix ----
+  window.fsFormat = function(command) {
+    const ed = document.getElementById('fs-user-editor');
+    if (ed) {
+      ed.focus();
+      try { document.execCommand(command, false, null); } catch (e) {}
+      return;
+    }
+    try { document.execCommand(command, false, null); } catch (e) {}
+  };
+
+  window.fsChangeFontSize = function(size) {
+    const ed = document.getElementById('fs-user-editor');
+    if (ed) {
+      ed.focus();
+      document.execCommand('fontSize', false, '7');
+      ed.querySelectorAll('font[size="7"]').forEach(el => {
+        el.removeAttribute('size');
+        el.style.fontSize = size + 'px';
+      });
+    }
+  };
+
+  window.toggleFsFontMenu = function(e) {
+    e?.stopPropagation();
+    document.getElementById('fs-font-size-picker')?.classList.toggle('open');
+  };
+  window.selectFsFontSize = function(n) {
+    const label = document.getElementById('fs-font-size-label');
+    if (label) label.textContent = String(n);
+    document.getElementById('fs-font-size-picker')?.classList.remove('open');
+    fsChangeFontSize(n);
+  };
+
+  // sync openFullscreen / sendFromFullscreen with editor
+  const _openFs = typeof openFullscreenInput === 'function' ? openFullscreenInput : null;
+  if (_openFs && !window._fsPatched) {
+    window._fsPatched = true;
+    window.openFullscreenInput = function() {
+      _openFs.apply(this, arguments);
+      const main = document.getElementById('user-input');
+      const ed = document.getElementById('fs-user-editor');
+      const ta = document.getElementById('fs-user-input');
+      if (ed && main) {
+        ed.innerText = main.value || '';
+        setTimeout(() => ed.focus(), 50);
+      }
+      if (ta && main) ta.value = main.value || '';
+    };
+  }
+
+  const _sendFs = typeof sendFromFullscreen === 'function' ? sendFromFullscreen : null;
+  if (_sendFs) {
+    window.sendFromFullscreen = function() {
+      const ed = document.getElementById('fs-user-editor');
+      const main = document.getElementById('user-input');
+      const ta = document.getElementById('fs-user-input');
+      const text = ed ? (ed.innerText || '').trim() : (ta?.value || '').trim();
+      if (main) {
+        main.value = text;
+        handleInput?.(main);
+      }
+      return _sendFs.apply(this, arguments);
+    };
+  }
+
+  // ---- Maps beta ----
+  window.openMapsBeta = function() {
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+    showCustomModal?.(
+      'Карты / Навигатор · бета',
+      'Вкладка «Карты» в бета-режиме. Навигация и точки появятся в следующих сборках. Сейчас можно пользоваться чатом и Планами.',
+      false, '', null
+    );
+  };
+
+  // ---- Novelty ----
+  window.dismissOct14Novelty = function() {
+    localStorage.setItem('oracle_oct14_novelty', '1');
+    document.getElementById('oct14-novelty-modal')?.classList.remove('active');
+  };
+
+  function maybeNovelty() {
+    if (localStorage.getItem('oracle_oct14_novelty') === '1') return;
+    setTimeout(() => {
+      if (localStorage.getItem('oracle_oct14_novelty') === '1') return;
+      document.getElementById('oct14-novelty-modal')?.classList.add('active');
+    }, 2400);
+  }
+
+  // ---- Advanced reader date note ----
+  window.noteAdvancedReader = function() {
+    const unlock = new Date('2026-10-20T00:00:00');
+    if (Date.now() < unlock.getTime()) {
+      showToast?.('Расширенный редактор Reader — с 20.10.2026', 'info', 3200);
+      return false;
+    }
+    return true;
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    wireConnectors();
+    syncLaterGenBtn();
+    maybeNovelty();
+    updateOfflineUI();
+  });
+  if (document.readyState !== 'loading') {
+    setTimeout(() => {
+      wireConnectors();
+      syncLaterGenBtn();
+      maybeNovelty();
+      updateOfflineUI();
+    }, 100);
+  }
+})();
+
+
+
+/* ===== Core Node Maps: Leaflet + OSM ===== */
+(function coreMapsModule() {
+  let map = null;
+  let markersLayer = null;
+  let userMarker = null;
+  const MARKS_KEY = 'oracle_maps_markers_v1';
+
+  function loadMarks() {
+    try { return JSON.parse(localStorage.getItem(MARKS_KEY) || '[]') || []; }
+    catch (e) { return []; }
+  }
+  function saveMarks(arr) {
+    try { localStorage.setItem(MARKS_KEY, JSON.stringify(arr.slice(-40))); } catch (e) {}
+  }
+
+  window.initCoreMaps = function() {
+    const el = document.getElementById('maps-leaflet');
+    if (!el) return;
+    if (typeof L === 'undefined') {
+      if (typeof showToast === 'function') showToast('Leaflet не загрузился (нужен интернет для скрипта)', 'warning');
+      return;
+    }
+    if (map) {
+      setTimeout(() => map.invalidateSize(), 100);
+      return;
+    }
+    map = L.map(el, { zoomControl: true }).setView([55.75, 37.62], 10);
+    window._coreMap = map;
+    // OSM.org tiles often 403 for apps — use Carto (OSM data) + fallbacks
+    // Free tiles without API keys (OSM.org & CARTO often block / require key)
+    const tileLayers = {
+      esri: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri &mdash; data OSM, USGS, etc.'
+      }),
+      esriImg: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19,
+        attribution: 'Tiles &copy; Esri'
+      }),
+      topo: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        maxZoom: 17,
+        attribution: '&copy; OpenStreetMap, SRTM | OpenTopoMap'
+      }),
+      osmfr: L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png', {
+        maxZoom: 20,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> FR'
+      }),
+      hot: L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap, HOT'
+      })
+    };
+    let activeTiles = tileLayers.esri;
+    activeTiles.addTo(map);
+    window._coreMapTiles = tileLayers;
+    window._coreMapActiveTiles = activeTiles;
+    window._coreMapLayerKey = 'esri';
+    L.control.layers(
+      {
+        'Esri Streets': tileLayers.esri,
+        'Спутник': tileLayers.esriImg,
+        'Topo': tileLayers.topo,
+        'OSM FR': tileLayers.osmfr,
+        'HOT': tileLayers.hot
+      },
+      null,
+      { position: 'topright', collapsed: true }
+    ).addTo(map);
+    markersLayer = L.layerGroup().addTo(map);
+
+    // restore markers
+    loadMarks().forEach(m => {
+      L.marker([m.lat, m.lng]).addTo(markersLayer).bindPopup(m.label || (m.lat.toFixed(4) + ', ' + m.lng.toFixed(4)));
+    });
+
+    map.on('click', (e) => {
+      const { lat, lng } = e.latlng;
+      const label = lat.toFixed(5) + ', ' + lng.toFixed(5);
+      L.marker([lat, lng]).addTo(markersLayer).bindPopup(label).openPopup();
+      const list = loadMarks();
+      list.push({ lat, lng, label, ts: Date.now() });
+      saveMarks(list);
+    });
+
+    setTimeout(() => map.invalidateSize(), 120);
+    setTimeout(() => map.invalidateSize(), 400);
+  };
+
+  window.mapsLocateMe = function() {
+    if (!map) initCoreMaps();
+    if (!navigator.geolocation) {
+      showToast?.('Геолокация недоступна', 'warning');
+      return;
+    }
+    showToast?.('Определяю позицию…', 'info', 1800);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        map.setView([lat, lng], 14);
+        if (userMarker) map.removeLayer(userMarker);
+        userMarker = L.circleMarker([lat, lng], {
+          radius: 9, color: '#fff', weight: 2, fillColor: '#2954c4', fillOpacity: 0.95
+        }).addTo(map).bindPopup('Вы здесь').openPopup();
+      },
+      () => showToast?.('Не удалось получить геолокацию', 'error'),
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  };
+
+  window.mapsClearMarkers = function() {
+    if (markersLayer) markersLayer.clearLayers();
+    saveMarks([]);
+    showToast?.('Метки очищены', 'success');
+  };
+
+  window.mapsSearch = async function() {
+    const q = (document.getElementById('maps-search')?.value || '').trim();
+    if (!q) {
+      showToast?.('Введите запрос', 'warning');
+      return;
+    }
+    if (!map) initCoreMaps();
+    const listEl = document.getElementById('maps-results');
+    if (listEl) { listEl.innerHTML = ''; listEl.hidden = true; }
+    try {
+      showToast?.('Ищу…', 'info', 1200);
+      const url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&q=' + encodeURIComponent(q);
+      const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+      const data = await res.json();
+      if (!data || !data.length) {
+        showToast?.('Ничего не найдено', 'warning');
+        return;
+      }
+      if (data.length === 1) {
+        mapsPickResult(data[0]);
+        return;
+      }
+      // multi-select list
+      if (!listEl) return;
+      listEl.hidden = false;
+      listEl.innerHTML = data.map((item, i) => {
+        const name = item.display_name || q;
+        const type = [item.type, item.class].filter(Boolean).join(' · ');
+        return '<button type="button" class="maps-result-item" data-idx="' + i + '">' +
+          '<span class="maps-result-name">' + String(name).replace(/</g,'&lt;') + '</span>' +
+          (type ? '<span class="maps-result-type">' + type + '</span>' : '') +
+          '</button>';
+      }).join('');
+      window._mapsSearchHits = data;
+      listEl.querySelectorAll('.maps-result-item').forEach(btn => {
+        btn.onclick = () => {
+          const hit = window._mapsSearchHits[Number(btn.dataset.idx)];
+          if (hit) mapsPickResult(hit);
+          listEl.hidden = true;
+        };
+      });
+      showToast?.('Найдено: ' + data.length + ' — выберите', 'success', 2200);
+    } catch (e) {
+      showToast?.('Поиск недоступен (сеть / лимит Nominatim)', 'error');
+    }
+  };
+
+  window.mapsPickResult = function(item) {
+    if (!map) initCoreMaps();
+    if (!item) return;
+    const lat = parseFloat(item.lat);
+    const lng = parseFloat(item.lon);
+    const label = item.display_name || (lat + ', ' + lng);
+    map.setView([lat, lng], 15);
+    if (markersLayer) {
+      L.marker([lat, lng]).addTo(markersLayer).bindPopup(label).openPopup();
+    }
+    const list = loadMarks();
+    list.push({ lat, lng, label, ts: Date.now() });
+    saveMarks(list);
+    const listEl = document.getElementById('maps-results');
+    if (listEl) listEl.hidden = true;
+  };
+
+  // Enter in search
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('maps-search')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        mapsSearch();
+      }
+    });
+  });
+
+  // replace modal stub
+  window.openMapsBeta = function() {
+    if (typeof switchScreen === 'function') switchScreen('maps');
+  };
+})();
+
+
+window.mapsCycleLayer = function() {
+  if (!window._coreMapTiles || typeof L === 'undefined') return;
+  const order = ['esri', 'esriImg', 'topo', 'osmfr', 'hot'];
+  const mapInst = document.getElementById('maps-leaflet') && window._coreMapActiveTiles;
+  // find map via leaflet id
+  const el = document.getElementById('maps-leaflet');
+  if (!el || !el._leaflet_id) return;
+  // access map from init closure — store globally
+  if (!window._coreMap) {
+    showToast?.('Откройте карту ещё раз', 'info');
+    return;
+  }
+  const cur = window._coreMapLayerKey || 'voyager';
+  const idx = (order.indexOf(cur) + 1) % order.length;
+  const next = order[idx];
+  if (window._coreMapActiveTiles) window._coreMap.removeLayer(window._coreMapActiveTiles);
+  window._coreMapActiveTiles = window._coreMapTiles[next];
+  window._coreMapActiveTiles.addTo(window._coreMap);
+  window._coreMapLayerKey = next;
+  showToast?.('Слой: ' + next, 'info', 1400);
+};
+
+
+/* ===== Input placeholder tip (@ connector) ===== */
+(function inputPlaceholderTip() {
+  const TIP = 'Вставьте @ чтобы добавить Коннектор и работать исключительно с ним, зато экономит лимиты на конкретную задачу';
+  const DEF = 'Введите ваш запрос...';
+  function run() {
+    const input = document.getElementById('user-input');
+    if (!input) return;
+    const prev = input.placeholder || DEF;
+    input.placeholder = TIP;
+    setTimeout(() => {
+      if (document.activeElement === input && input.value) return;
+      input.placeholder = prev || DEF;
+    }, 3000);
+  }
+  document.addEventListener('DOMContentLoaded', run);
+  if (document.readyState !== 'loading') setTimeout(run, 400);
+})();
+
+
+(function initNavSlotsOnBoot() {
+  function go() {
+    try { fillNavSlotSelects(); renderMainNav(); renderSidebarFallbacks(); } catch(e) {}
+  }
+  document.addEventListener('DOMContentLoaded', go);
+  if (document.readyState !== 'loading') setTimeout(go, 300);
+})();
+
+
+/* ===== Unified Archive + Create a… + Skills + Search ===== */
+(function unifiedArchiveModule() {
+  const PIN_KEY = 'oracle_pinned_chats_v1';
+  let unifiedFilter = localStorage.getItem('oracle_unified_filter') || 'all';
+
+  function loadPins() {
+    try { return JSON.parse(localStorage.getItem(PIN_KEY) || '[]') || []; } catch(e) { return []; }
+  }
+  function savePins(arr) {
+    localStorage.setItem(PIN_KEY, JSON.stringify(arr || []));
+  }
+  function isPinned(id) { return loadPins().includes(id); }
+
+  window.cmTogglePin = function() {
+    const id = window._ctxSessionId;
+    if (!id) { showToast?.('Нет чата', 'warning'); return; }
+    let pins = loadPins();
+    if (pins.includes(id)) pins = pins.filter(x => x !== id);
+    else pins.unshift(id);
+    savePins(pins);
+    document.getElementById('context-menu') && (document.getElementById('context-menu').style.display = 'none');
+    renderUnifiedArchive();
+    showToast?.(isPinned(id) ? 'Закреплено' : 'Откреплено', 'success');
+  };
+
+  // Update pin label when context opens
+  const _scm = window.showContextMenu;
+  if (typeof _scm === 'function') {
+    window.showContextMenu = function(e, el, type) {
+      const r = _scm.apply(this, arguments);
+      const id = window._ctxSessionId || el?.dataset?.sessionId;
+      const lab = document.getElementById('cm-pin-label');
+      if (lab) lab.textContent = id && isPinned(id) ? 'Открепить' : 'Закрепить';
+      const pinOpt = document.getElementById('cm-pin-opt');
+      if (pinOpt) pinOpt.style.display = (type === 'chat' || el?.dataset?.itemType === 'chat' || id) ? '' : 'none';
+      return r;
+    };
+  }
+
+  window.setUnifiedFilter = function(f) {
+    unifiedFilter = f || 'all';
+    localStorage.setItem('oracle_unified_filter', unifiedFilter);
+    const menu = document.getElementById('unified-filter-menu');
+    if (menu) menu.hidden = true;
+    const map = {
+      all: ['notes', 'Все'],
+      plans: ['schedule', 'Планы'],
+      stories: ['history_edu', 'Истории'],
+      projects: ['folder', 'Проекты'],
+      notepad: ['code', 'Oracle Notepad'],
+      chats: ['chat_bubble', 'Чаты']
+    };
+    const m = map[unifiedFilter] || map.all;
+    const ic = document.getElementById('unified-filter-icon');
+    const lb = document.getElementById('unified-filter-label');
+    if (ic) ic.textContent = m[0];
+    if (lb) lb.textContent = m[1];
+    renderUnifiedArchive();
+  };
+
+  window.toggleUnifiedFilterMenu = function(e) {
+    e?.stopPropagation?.();
+    const menu = document.getElementById('unified-filter-menu');
+    if (!menu) return;
+    menu.hidden = !menu.hidden;
+  };
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.unified-filter-bar')) {
+      const menu = document.getElementById('unified-filter-menu');
+      if (menu) menu.hidden = true;
+    }
+  });
+
+  function esc(s) {
+    return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function getSessions() {
+    try {
+      if (typeof chatSessions === 'object' && chatSessions) return chatSessions;
+      return JSON.parse(localStorage.getItem('oracle_chat_sessions') || '{}') || {};
+    } catch(e) { return {}; }
+  }
+  function getStories() {
+    try {
+      if (typeof storyBooks === 'object' && storyBooks) return storyBooks;
+      return JSON.parse(localStorage.getItem('oracle_story_books') || '{}') || {};
+    } catch(e) { return {}; }
+  }
+  function getPlans() {
+    try { return JSON.parse(localStorage.getItem('oracle_reminders') || '[]') || []; } catch(e) { return []; }
+  }
+  function getFolders() {
+    try {
+      const tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2') || 'null');
+      if (tree && Array.isArray(tree.folders)) return tree.folders;
+      return [];
+    } catch(e) { return []; }
+  }
+  function getNpProjects() {
+    try { return JSON.parse(localStorage.getItem('oracle_projects_list') || '[]') || []; } catch(e) { return []; }
+  }
+
+  window.renderUnifiedArchive = function() {
+    const box = document.getElementById('unified-archive-list');
+    if (!box) return;
+    const pins = loadPins();
+    const sessions = getSessions();
+    const stories = getStories();
+    const plans = getPlans();
+    const folders = getFolders();
+    const nps = getNpProjects();
+    let items = [];
+
+    if (unifiedFilter === 'all' || unifiedFilter === 'chats' || unifiedFilter === 'projects') {
+      Object.keys(sessions).forEach(id => {
+        const s = sessions[id] || {};
+        items.push({
+          kind: 'chat', id, title: s.title || 'Чат',
+          ts: s.updated || (parseInt(String(id).replace(/\D/g,''),10) || 0),
+          pinned: pins.includes(id)
+        });
+      });
+    }
+    if (unifiedFilter === 'all' || unifiedFilter === 'projects') {
+      folders.forEach(f => {
+        items.push({ kind: 'folder', id: f.id || f.name, title: f.name || f.title || 'Папка', ts: f.ts || 0, pinned: false });
+      });
+    }
+    if (unifiedFilter === 'all' || unifiedFilter === 'stories') {
+      Object.keys(stories).forEach(id => {
+        const s = stories[id] || {};
+        items.push({ kind: 'story', id, title: s.title || 'История', ts: s.updated || 0, pinned: false });
+      });
+    }
+    if (unifiedFilter === 'all' || unifiedFilter === 'plans') {
+      plans.forEach((p, i) => {
+        const done = !!(p.done || p.completed);
+        items.push({
+          kind: 'plan', id: p.id || ('plan_' + i), title: p.text || p.title || 'План',
+          ts: p.ts || 0, done, pinned: false
+        });
+      });
+    }
+    if (unifiedFilter === 'all' || unifiedFilter === 'notepad') {
+      (Array.isArray(nps) ? nps : []).forEach((p, i) => {
+        items.push({
+          kind: 'notepad', id: p.id || ('np_' + i), title: p.name || p.title || 'Проект',
+          ts: p.updated || p.ts || 0, pinned: false
+        });
+      });
+    }
+
+    items.sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return (b.ts || 0) - (a.ts || 0);
+    });
+
+    if (!items.length) {
+      box.innerHTML = '<div class="unified-empty">Пока пусто. Create a… или напишите первый запрос.</div>';
+      return;
+    }
+
+    const icon = { chat: 'chat_bubble', folder: 'folder', story: 'history_edu', plan: 'schedule', notepad: 'code' };
+    box.innerHTML = items.map(it => {
+      let badge = '';
+      if (it.kind === 'plan') badge = '<span class="plan-dot ' + (it.done ? 'done' : 'todo') + '"></span>';
+      if (it.pinned) badge += '<span class="material-symbols-rounded pin-mark">push_pin</span>';
+      return '<button type="button" class="unified-item" data-kind="' + it.kind + '" data-id="' + esc(it.id) + '">' +
+        '<span class="material-symbols-rounded">' + (icon[it.kind] || 'notes') + '</span>' +
+        '<span class="unified-item-title">' + esc(it.title) + '</span>' + badge +
+        '</button>';
+    }).join('');
+
+    box.querySelectorAll('.unified-item').forEach(btn => {
+      btn.onclick = () => openUnifiedItem(btn.dataset.kind, btn.dataset.id);
+      btn.oncontextmenu = (e) => {
+        e.preventDefault();
+        if (btn.dataset.kind === 'chat') {
+          window._ctxSessionId = btn.dataset.id;
+          btn.dataset.sessionId = btn.dataset.id;
+          btn.dataset.itemType = 'chat';
+          if (typeof showContextMenu === 'function') showContextMenu(e, btn, 'chat');
+        }
+      };
+    });
+  };
+
+  window.openUnifiedItem = function(kind, id) {
+    if (kind === 'chat' && typeof loadChatSession === 'function') {
+      loadChatSession(id);
+      document.getElementById('sidebar-archive')?.classList.remove('open');
+    } else if (kind === 'story' && typeof openStoryBook === 'function') {
+      openStoryBook(id);
+      document.getElementById('sidebar-archive')?.classList.remove('open');
+    } else if (kind === 'plan') {
+      if (typeof switchScreen === 'function') switchScreen('calendar');
+      document.getElementById('sidebar-archive')?.classList.remove('open');
+    } else if (kind === 'folder') {
+      setUnifiedFilter('projects');
+    } else if (kind === 'notepad') {
+      if (typeof switchScreen === 'function') switchScreen('notepad');
+      document.getElementById('sidebar-archive')?.classList.remove('open');
+    }
+  };
+
+  // Search
+  window.openArchiveSearch = function() {
+    document.getElementById('archive-search-modal')?.classList.add('active');
+    const inp = document.getElementById('archive-search-input');
+    if (inp) { inp.value = ''; setTimeout(() => inp.focus(), 50); }
+    runArchiveSearch('');
+  };
+  window.closeArchiveSearch = function() {
+    document.getElementById('archive-search-modal')?.classList.remove('active');
+  };
+  window.runArchiveSearch = function(q) {
+    const box = document.getElementById('archive-search-results');
+    if (!box) return;
+    q = String(q || '').trim().toLowerCase();
+    // temporarily collect all
+    const prev = unifiedFilter;
+    unifiedFilter = 'all';
+    const sessions = getSessions();
+    const stories = getStories();
+    const plans = getPlans();
+    const nps = getNpProjects();
+    unifiedFilter = prev;
+    let hits = [];
+    Object.keys(sessions).forEach(id => {
+      const t = sessions[id]?.title || '';
+      if (!q || t.toLowerCase().includes(q)) hits.push({ kind: 'chat', id, title: t || 'Чат', group: 'Чаты', icon: 'chat_bubble', ts: sessions[id]?.updated || 0 });
+    });
+    Object.keys(stories).forEach(id => {
+      const t = stories[id]?.title || '';
+      if (!q || t.toLowerCase().includes(q)) hits.push({ kind: 'story', id, title: t || 'История', group: 'Истории', icon: 'history_edu', ts: 0 });
+    });
+    plans.forEach((p, i) => {
+      const t = p.text || p.title || '';
+      if (!q || t.toLowerCase().includes(q)) hits.push({ kind: 'plan', id: p.id || i, title: t, group: 'Планы', icon: 'schedule', ts: 0 });
+    });
+    (Array.isArray(nps) ? nps : []).forEach((p, i) => {
+      const t = p.name || p.title || '';
+      if (!q || t.toLowerCase().includes(q)) hits.push({ kind: 'notepad', id: p.id || i, title: t, group: 'Notepad', icon: 'code', ts: 0 });
+    });
+    hits.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    if (!hits.length) {
+      box.innerHTML = '<div class="unified-empty">Ничего не найдено</div>';
+      return;
+    }
+    box.innerHTML = hits.slice(0, 40).map(h =>
+      '<button type="button" class="archive-search-hit" data-kind="' + h.kind + '" data-id="' + esc(h.id) + '">' +
+      '<span class="material-symbols-rounded">' + h.icon + '</span>' +
+      '<span><b>' + esc(h.title) + '</b><small>' + esc(h.group) + '</small></span></button>'
+    ).join('');
+    box.querySelectorAll('.archive-search-hit').forEach(btn => {
+      btn.onclick = () => {
+        closeArchiveSearch();
+        openUnifiedItem(btn.dataset.kind, btn.dataset.id);
+      };
+    });
+  };
+
+  // Create a…
+  window.openCreateAModal = function() {
+    document.getElementById('create-a-modal')?.classList.add('active');
+  };
+  window.closeCreateAModal = function() {
+    document.getElementById('create-a-modal')?.classList.remove('active');
+  };
+  window.createAPick = function(type) {
+    closeCreateAModal();
+    if (type === 'chat') createNewChatSession();
+    else if (type === 'project' && typeof openCreateFolderModal === 'function') openCreateFolderModal();
+    else if (type === 'history' && typeof createNewStoryBook === 'function') createNewStoryBook(new Event('click'));
+    else if (type === 'coding') {
+      showToast?.('Coding Project — откройте Oracle Notepad / вкладку проектов', 'info');
+      if (typeof switchScreen === 'function') switchScreen('notepad');
+    }
+  };
+
+  // Skills hub
+  window.openSkillsHub = function() {
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+    document.body.classList.add('skills-hub-open');
+    document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
+    document.getElementById('screen-skills')?.classList.add('active-screen');
+    document.querySelector('.glass-nav')?.classList.add('nav-hidden-skills');
+  };
+  window.closeSkillsHub = function() {
+    document.body.classList.remove('skills-hub-open');
+    document.querySelector('.glass-nav')?.classList.remove('nav-hidden-skills');
+    if (typeof switchScreen === 'function') switchScreen('chat');
+  };
+  window.setSkillsTab = function(tab) {
+    document.querySelectorAll('.skills-hub-tab').forEach(b => b.classList.toggle('active', b.dataset.skillsTab === tab));
+    document.getElementById('skills-panel-store').hidden = tab !== 'store';
+    document.getElementById('skills-panel-skills').hidden = tab !== 'skills';
+  };
+
+  // After delete -> blank chat
+  const _cmDel = window.cmDelete;
+  if (typeof _cmDel === 'function') {
+    window.cmDelete = function() {
+      _cmDel.apply(this, arguments);
+      setTimeout(() => {
+        try { createNewChatSession(); } catch(e) {}
+        renderUnifiedArchive();
+      }, 100);
+    };
+  }
+
+  // Hook renderSidebarChats
+  const _rsc = window.renderSidebarChats;
+  window.renderSidebarChats = function() {
+    if (typeof _rsc === 'function') {
+      try { _rsc.apply(this, arguments); } catch(e) {}
+    }
+    renderUnifiedArchive();
+  };
+
+  // Ensure session on first send
+  const _send = window.sendMsg;
+  if (typeof _send === 'function') {
+    window.sendMsg = function() {
+      if (CoreState.pendingBlankChat || !currentSessionId) {
+        const id = 'session_' + Date.now();
+        if (typeof chatSessions === 'object') {
+          chatSessions[id] = { title: 'Новый чат', html: '', updated: Date.now() };
+          try {
+            localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+            localStorage.setItem('oracle_current_session', id);
+          } catch(e) {}
+        }
+        currentSessionId = id;
+        CoreState.pendingBlankChat = false;
+        CoreState.isFirstMsgInSession = true;
+      }
+      return _send.apply(this, arguments);
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setUnifiedFilter(unifiedFilter);
+    renderUnifiedArchive();
+  });
+  if (document.readyState !== 'loading') setTimeout(() => { setUnifiedFilter(unifiedFilter); renderUnifiedArchive(); }, 400);
+})();
+
+
+/* ===== Later Generate: only on Chat + archive item ПКМ ===== */
+(function laterGenAndArchiveCtx() {
+  function hideLaterIfNotChat() {
+    if (typeof syncLaterGenBtn === 'function') {
+      try { syncLaterGenBtn(); } catch(e) {}
+      return;
+    }
+    const btn = document.getElementById('later-gen-btn');
+    if (!btn) return;
+    const chatScreen = document.getElementById('screen-chat');
+    const onChat = chatScreen && chatScreen.classList.contains('active-screen');
+    if (!onChat) btn.classList.add('hidden');
+  }
+
+  const prevSwitch = window.switchScreen;
+  if (typeof prevSwitch === 'function' && !window.__laterSwitchHook) {
+    window.__laterSwitchHook = true;
+    window.switchScreen = function(name) {
+      const r = prevSwitch.apply(this, arguments);
+      setTimeout(hideLaterIfNotChat, 0);
+      setTimeout(hideLaterIfNotChat, 80);
+      return r;
+    };
+  }
+  const prevNav = window.navGo;
+  if (typeof prevNav === 'function' && !window.__laterNavHook) {
+    window.__laterNavHook = true;
+    window.navGo = function(tabId) {
+      const r = prevNav.apply(this, arguments);
+      setTimeout(hideLaterIfNotChat, 0);
+      return r;
+    };
+  }
+  document.addEventListener('DOMContentLoaded', hideLaterIfNotChat);
+  setTimeout(hideLaterIfNotChat, 500);
+
+  // ---- Simple context menu for story / plan / project / notepad ----
+  function ensureArchiveCtxMenu() {
+    let m = document.getElementById('archive-item-ctx');
+    if (m) return m;
+    m = document.createElement('div');
+    m.id = 'archive-item-ctx';
+    m.className = 'archive-item-ctx';
+    m.innerHTML = `
+      <button type="button" class="nav-ctx-item" data-act="edit"><span class="material-symbols-rounded">edit</span> Изменить</button>
+      <button type="button" class="nav-ctx-item danger" data-act="delete"><span class="material-symbols-rounded">delete</span> Удалить</button>
+    `;
+    document.body.appendChild(m);
+    document.addEventListener('click', () => { m.style.display = 'none'; });
+    m.querySelector('[data-act="edit"]').onclick = () => {
+      m.style.display = 'none';
+      archiveCtxEdit();
+    };
+    m.querySelector('[data-act="delete"]').onclick = () => {
+      m.style.display = 'none';
+      archiveCtxDelete();
+    };
+    return m;
+  }
+
+  window._archiveCtx = { kind: null, id: null, title: '' };
+
+  window.showArchiveItemCtx = function(e, kind, id, title) {
+    e.preventDefault();
+    e.stopPropagation();
+    window._archiveCtx = { kind, id, title: title || '' };
+    const m = ensureArchiveCtxMenu();
+    m.style.display = 'flex';
+    const pad = 8;
+    let x = e.clientX, y = e.clientY;
+    if (x + 200 > window.innerWidth) x = window.innerWidth - 200 - pad;
+    if (y + 100 > window.innerHeight) y = window.innerHeight - 100 - pad;
+    m.style.left = x + 'px';
+    m.style.top = y + 'px';
+  };
+
+  function archiveCtxEdit() {
+    const { kind, id, title } = window._archiveCtx || {};
+    if (!kind || id == null) return;
+    if (kind === 'story') {
+      if (typeof showCustomModal === 'function') {
+        showCustomModal('Переименовать историю', 'Новое название', true, title || '', (ok, name) => {
+          if (!ok || !name) return;
+          try {
+            const books = (typeof storyBooks === 'object' && storyBooks) ? storyBooks :
+              JSON.parse(localStorage.getItem('oracle_story_books') || '{}');
+            if (books[id]) {
+              books[id].title = name.trim();
+              if (typeof storyBooks === 'object') storyBooks[id].title = name.trim();
+              localStorage.setItem('oracle_story_books', JSON.stringify(books));
+            }
+          } catch(e) {}
+          if (typeof renderSidebarStories === 'function') renderSidebarStories();
+          if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+          showToast?.('История обновлена', 'success');
+        });
+      }
+    } else if (kind === 'plan') {
+      if (typeof showCustomModal === 'function') {
+        showCustomModal('Изменить план', 'Текст плана / напоминания', true, title || '', (ok, text) => {
+          if (!ok || !text) return;
+          try {
+            let plans = JSON.parse(localStorage.getItem('oracle_reminders') || '[]') || [];
+            const idx = plans.findIndex((p, i) => String(p.id || i) === String(id));
+            if (idx >= 0) {
+              plans[idx].text = text.trim();
+              if (plans[idx].title !== undefined) plans[idx].title = text.trim();
+              localStorage.setItem('oracle_reminders', JSON.stringify(plans));
+              if (typeof reminders !== 'undefined') {
+                try { reminders = plans; } catch(e) {}
+              }
+              if (typeof renderCalendar === 'function') renderCalendar();
+            }
+          } catch(e) {}
+          if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+          showToast?.('План обновлён', 'success');
+        });
+      }
+    } else if (kind === 'folder' || kind === 'project') {
+      if (typeof showCustomModal === 'function') {
+        showCustomModal('Переименовать проект', 'Новое имя папки', true, title || '', (ok, name) => {
+          if (!ok || !name) return;
+          try {
+            const tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2') || '{}') || {};
+            const folders = tree.folders || [];
+            const f = folders.find(x => String(x.id || x.name) === String(id));
+            if (f) {
+              f.name = name.trim();
+              localStorage.setItem('oracle_project_tree_v2', JSON.stringify(tree));
+            }
+          } catch(e) {}
+          if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+          if (typeof renderSidebarChats === 'function') renderSidebarChats();
+          showToast?.('Проект обновлён', 'success');
+        });
+      }
+    } else if (kind === 'notepad') {
+      if (typeof showCustomModal === 'function') {
+        showCustomModal('Переименовать Coding Project', 'Новое имя', true, title || '', (ok, name) => {
+          if (!ok || !name) return;
+          try {
+            let list = JSON.parse(localStorage.getItem('oracle_projects_list') || '[]') || [];
+            const p = list.find(x => String(x.id || x.name) === String(id));
+            if (p) {
+              p.name = name.trim();
+              if (p.title !== undefined) p.title = name.trim();
+              localStorage.setItem('oracle_projects_list', JSON.stringify(list));
+            }
+          } catch(e) {}
+          if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+          showToast?.('Проект обновлён', 'success');
+        });
+      }
+    }
+  }
+
+  function archiveCtxDelete() {
+    const { kind, id, title } = window._archiveCtx || {};
+    if (!kind || id == null) return;
+    const label = title || id;
+    const go = (fn) => {
+      if (typeof showCustomModal === 'function') {
+        showCustomModal('Удалить?', '«' + label + '» будет удалён без возможности отмены.', false, '', (ok) => {
+          if (ok) fn();
+        });
+      } else if (confirm('Удалить «' + label + '»?')) fn();
+    };
+
+    if (kind === 'story') {
+      go(() => {
+        try {
+          const books = (typeof storyBooks === 'object' && storyBooks) ? storyBooks :
+            JSON.parse(localStorage.getItem('oracle_story_books') || '{}');
+          delete books[id];
+          if (typeof storyBooks === 'object') delete storyBooks[id];
+          localStorage.setItem('oracle_story_books', JSON.stringify(books));
+        } catch(e) {}
+        if (typeof renderSidebarStories === 'function') renderSidebarStories();
+        if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+        showToast?.('История удалена', 'warning');
+      });
+    } else if (kind === 'plan') {
+      go(() => {
+        try {
+          let plans = JSON.parse(localStorage.getItem('oracle_reminders') || '[]') || [];
+          plans = plans.filter((p, i) => String(p.id || i) !== String(id));
+          localStorage.setItem('oracle_reminders', JSON.stringify(plans));
+          if (typeof renderCalendar === 'function') renderCalendar();
+        } catch(e) {}
+        if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+        showToast?.('План удалён', 'warning');
+      });
+    } else if (kind === 'folder' || kind === 'project') {
+      go(() => {
+        try {
+          const tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2') || '{}') || {};
+          tree.folders = (tree.folders || []).filter(x => String(x.id || x.name) !== String(id));
+          localStorage.setItem('oracle_project_tree_v2', JSON.stringify(tree));
+        } catch(e) {}
+        if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+        if (typeof renderSidebarChats === 'function') renderSidebarChats();
+        showToast?.('Проект удалён', 'warning');
+      });
+    } else if (kind === 'notepad') {
+      go(() => {
+        try {
+          let list = JSON.parse(localStorage.getItem('oracle_projects_list') || '[]') || [];
+          list = list.filter(x => String(x.id || x.name) !== String(id));
+          localStorage.setItem('oracle_projects_list', JSON.stringify(list));
+        } catch(e) {}
+        if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+        showToast?.('Coding project удалён', 'warning');
+      });
+    }
+  }
+
+  // Patch unified list contextmenu for non-chat kinds
+  const prevRender = window.renderUnifiedArchive;
+  if (typeof prevRender === 'function' && !window.__archiveCtxRenderHook) {
+    window.__archiveCtxRenderHook = true;
+    window.renderUnifiedArchive = function() {
+      const r = prevRender.apply(this, arguments);
+      const box = document.getElementById('unified-archive-list');
+      if (!box) return r;
+      box.querySelectorAll('.unified-item').forEach(btn => {
+        const kind = btn.dataset.kind;
+        if (kind === 'chat') return; // already has chat menu
+        btn.oncontextmenu = (e) => {
+          const title = btn.querySelector('.unified-item-title')?.textContent || '';
+          showArchiveItemCtx(e, kind, btn.dataset.id, title);
+        };
+      });
+      return r;
+    };
+  }
+})();
