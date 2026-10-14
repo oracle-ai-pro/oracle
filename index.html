@@ -18,6 +18,8 @@
     <meta name="msapplication-TileColor" content="#0a0b10">
     <meta name="format-detection" content="telephone=no">
 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -97,6 +99,11 @@
     </div>
 </div>
 
+<div id="reply-version-bar" class="reply-version-bar" hidden>
+  <button type="button" class="icon-btn" id="rv-prev" onclick="shiftReplyVersion(-1)"><span class="material-symbols-rounded">chevron_left</span></button>
+  <span id="rv-label">1/1</span>
+  <button type="button" class="icon-btn" id="rv-next" onclick="shiftReplyVersion(1)"><span class="material-symbols-rounded">chevron_right</span></button>
+</div>
 <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
 <!-- MODAL: COPYRIGHT & PRIVACY -->
@@ -221,7 +228,7 @@
             <span class="material-symbols-rounded">view_agenda</span> <span id="split-orient-label">Вертикальный Split</span>
         </button>
         <button class="split-menu-item danger" onclick="exitSplitView()">
-            <span class="material-symbols-rounded">fullscreen_exit</span> Выйти из Split View
+            <span class="material-symbols-rounded">fullscreen_exit</span> Выйти из параллельного просмотра
         </button>
     </div>
 </div>
@@ -236,13 +243,21 @@
     <div id="sidebar-archive">
         <div class="sidebar-header">
             <h2>Архив Ядра</h2>
-            <button class="sidebar-close-btn" onclick="toggleSidebar()">
-                <span class="material-symbols-rounded">close</span>
-            </button>
+            <div class="sidebar-header-actions">
+                <button type="button" class="sidebar-icon-btn" id="sidebar-dock-toggle" onclick="toggleSidebarDock()" title="Закрепить / открепить">
+                    <span class="material-symbols-rounded" id="sidebar-dock-icon">keep</span>
+                </button>
+                <button type="button" class="sidebar-icon-btn" onclick="openArchiveSearch()" title="Поиск">
+                    <span class="material-symbols-rounded">search</span>
+                </button>
+                <button type="button" class="sidebar-close-btn" onclick="toggleSidebarOrUndock()" title="Закрыть">
+                    <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
         </div>
 
-        <div id="sidebar-fallbacks" style="display:none; flex-direction:column; gap:6px; margin-bottom:12px;"></div>
-        <div id="sidebar-nav-tabs">
+        <div id="sidebar-fallbacks" style="display:none !important;" hidden></div>
+        <div id="sidebar-nav-tabs" class="sidebar-nav-tabs-compact">
             <button class="sidebar-nav-tab" onclick="switchScreen('chat'); document.getElementById('sidebar-archive')?.classList.remove('open');">
                 <span class="material-symbols-rounded">chat_bubble</span> Chat
             </button>
@@ -253,117 +268,50 @@
                 <span class="material-symbols-rounded">settings</span> Settings
             </button>
         </div>
-        <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-direction: column;">
-            <button onclick="createNewChatSession()" style="width: 100%; background: var(--primary-container); color: var(--primary); border: none; border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <span class="material-symbols-rounded" style="font-size: 16px;">edit_square</span> Chat
+
+        <div class="sidebar-actions-stack">
+            <button type="button" class="sidebar-primary-btn" onclick="openCreateAModal()">
+                <span class="material-symbols-rounded">add</span> Create a…
             </button>
-            <button onclick="switchScreen('calendar')" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--on-surface); border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;">
-                <span class="material-symbols-rounded" style="font-size: 16px; color: var(--primary);">checked_bag</span> Планы и Календари
+            <button type="button" class="sidebar-secondary-btn" onclick="openSkillsHub()">
+                <span class="material-symbols-rounded">extension</span> Навыки и Коннекторы
             </button>
-<button onclick="openSplitSelector()" style="width: 100%; background: var(--surface); border: 1px solid var(--border); color: var(--on-surface); border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 8px;">
-    <span class="material-symbols-rounded" style="font-size: 16px; color: var(--primary);">view_column</span>
-    Split View
-</button>
+            <button type="button" class="sidebar-secondary-btn" onclick="openSplitSelector()">
+                <span class="material-symbols-rounded">view_column</span> Параллельный просмотр
+            </button>
         </div>
 
-        <div style="margin-bottom: 15px;">
-            <input type="text" id="chat-search-input" placeholder="Поиск по архиву..." oninput="filterChats(this.value)" style="width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; color: var(--on-surface); font-size: 12px; outline: none; box-sizing: border-box;">
-        </div>
-
-                <!-- 3. Чаты и папки (простая система) -->
-        <div class="archive-group">
-            <div class="group-header" onclick="toggleGroup('chats')">
-                <span style="display: flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-rounded arrow-icon" id="arrow-chats">expand_more</span>
-                    Чаты и папки
-                </span>
-                <button type="button" onclick="event.stopPropagation(); openCreateFolderModal()" title="Новая папка" style="background:none;border:none;color:var(--primary);cursor:pointer;padding:2px;">
-                    <span class="material-symbols-rounded" style="font-size:18px;">create_new_folder</span>
-                </button>
+        <div class="unified-filter-bar">
+            <div class="unified-filter-title">
+                <span class="material-symbols-rounded" id="unified-filter-icon">notes</span>
+                <span id="unified-filter-label">Все</span>
             </div>
-            <div id="chats-list" class="group-content tree-root">
-                <!-- renderProjectTree() -->
-            </div>
-            <div class="tree-actions-row">
-                <button type="button" class="tree-mini-btn" onclick="openCreateFolderModal()">
-                    <span class="material-symbols-rounded">folder</span> Папка
-                </button>
-                <button type="button" class="tree-mini-btn" onclick="createNewChatSession()">
-                    <span class="material-symbols-rounded">chat</span> Чат
-                </button>
+            <button type="button" class="sidebar-icon-btn" id="unified-filter-btn" onclick="toggleUnifiedFilterMenu(event)" title="Фильтр">
+                <span class="material-symbols-rounded">filter_list</span>
+            </button>
+            <div id="unified-filter-menu" class="unified-filter-menu" hidden>
+                <button type="button" data-filter="all" onclick="setUnifiedFilter('all')"><span class="material-symbols-rounded">notes</span> Все</button>
+                <button type="button" data-filter="plans" onclick="setUnifiedFilter('plans')"><span class="material-symbols-rounded">schedule</span> Планы</button>
+                <button type="button" data-filter="stories" onclick="setUnifiedFilter('stories')"><span class="material-symbols-rounded">history_edu</span> Истории</button>
+                <button type="button" data-filter="projects" onclick="setUnifiedFilter('projects')"><span class="material-symbols-rounded">folder</span> Проекты</button>
+                <button type="button" data-filter="notepad" onclick="setUnifiedFilter('notepad')"><span class="material-symbols-rounded">code</span> Oracle Notepad</button>
+                <button type="button" data-filter="chats" onclick="setUnifiedFilter('chats')"><span class="material-symbols-rounded">chat_bubble</span> Чаты</button>
             </div>
         </div>
 
-
-
-        <!-- 4. Истории Reader (Динамический список с ПКМ) -->
-        <div class="archive-group">
-            <div class="group-header" onclick="toggleGroup('stories')">
-                <span style="display: flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-rounded arrow-icon" id="arrow-stories">expand_more</span> 
-                    Истории (ПКМ для опций)
-                </span>
-                <button onclick="createNewStoryBook(event)" style="background: none; border: none; font-size: 16px; color: var(--primary); cursor: pointer;" title="Создать книгу">+</button>
-            </div>
-            <div id="stories-list" class="group-content">
-                <!-- Заполняется динамически из JS -->
-            </div>
+        <div id="unified-archive-list" class="unified-archive-list">
+            <!-- filled by renderUnifiedArchive() -->
         </div>
 
-        <!-- Библиотека файлов -->
-        <div class="archive-group">
-            <div class="group-header" onclick="toggleGroup('library')">
-                <span style="display: flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-rounded arrow-icon" id="arrow-library">expand_more</span>
-                    Библиотека файлов
-                </span>
-            </div>
-            <div id="library-list" class="group-content">
-                <div id="memory-usage-card" class="chat-card" style="margin-bottom:10px; padding:12px;">
-                    <div style="display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px;">
-                        <span>Память ИИ</span>
-                        <span id="memory-used-label">0 МБ / 1024 МБ</span>
-                    </div>
-                    <div style="width:100%; height:6px; background:var(--surface); border-radius:4px; overflow:hidden;">
-                        <div id="memory-bar" style="width:0%; height:100%; background:var(--primary); transition:width 0.3s;"></div>
-                    </div>
-                    <button onclick="clearFileLibrary()" style="margin-top:8px; width:100%; padding:6px; border-radius:8px; border:1px dashed var(--border); background:transparent; color:var(--on-surface-variant); font-size:11px; cursor:pointer;">Очистить память</button>
-                </div>
-                <div id="library-files"></div>
-            </div>
-        </div>
-
-        <!-- Notepad Coding Projects (sync with Oracle Notepad) -->
-        <div class="archive-group">
-            <div class="group-header" onclick="toggleGroup('np-projects')">
-                <span style="display: flex; align-items: center; gap: 6px;">
-                    <span class="material-symbols-rounded arrow-icon" id="arrow-np-projects">expand_more</span>
-                    Notepad Coding Projects
-                </span>
-                <button type="button" onclick="event.stopPropagation(); createNotepadProjectFromCore()" style="background: none; border: none; font-size: 16px; color: var(--primary); cursor: pointer;" title="Новый проект">+</button>
-            </div>
-            <div id="np-projects-list" class="group-content">
-                <div style="font-size:11px;color:var(--on-surface-variant);padding:6px 4px;">Загрузка…</div>
-            </div>
-            <div class="np-projects-actions">
-                <button type="button" class="np-mini-btn" onclick="downloadNotepadProjectsPack()" title="Экспорт JSON">
-                    <span class="material-symbols-rounded">download</span> Экспорт
-                </button>
-                <button type="button" class="np-mini-btn" onclick="promptImportNotepadProjects()" title="Импорт JSON">
-                    <span class="material-symbols-rounded">upload</span> Импорт
-                </button>
-            </div>
-            <div class="np-projects-hint">Ключи общие с <b>oracle-notepad</b>: oracle_projects_list</div>
-        </div>
-
-        <button id="sidebar-dock-toggle" onclick="toggleSidebarDock()" style="margin-top:auto; width:100%; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--surface); color:var(--on-surface); font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px;">
-            <span class="material-symbols-rounded" style="font-size:16px;">dock_to_left</span>
-            <span id="dock-toggle-label">Закрепить меню</span>
-        </button>
+        <!-- Hidden legacy containers for existing JS hooks -->
+        <div id="chats-list" class="group-content tree-root" style="display:none !important;" aria-hidden="true"></div>
+        <div id="stories-list" class="group-content" style="display:none !important;" aria-hidden="true"></div>
+        <div id="np-projects-list" class="group-content" style="display:none !important;" aria-hidden="true"></div>
+        <div id="library-files" style="display:none !important;" aria-hidden="true"></div>
+        <div id="library-list" style="display:none !important;" aria-hidden="true"></div>
     </div>
 
-    <!-- CONTEXT MENU -->
-    <div id="context-menu">
+<div id="context-menu">
         <div class="context-item" onclick="cmRename()">
             <span class="material-symbols-rounded">edit</span> Переименовать
         </div>
@@ -373,12 +321,12 @@
         <div class="context-item" id="cm-branch-opt" onclick="cmBranch()">
             <span class="material-symbols-rounded">call_split</span> Создать ветвь
         </div>
+        <div class="context-item" id="cm-pin-opt" onclick="cmTogglePin()"><span class="material-symbols-rounded">push_pin</span> <span id="cm-pin-label">Закрепить</span></div>
         <div class="context-item" id="cm-share-opt" onclick="cmShare()">
-            <span class="material-symbols-rounded">share</span> Поделиться <span style="font-size:10px;background:var(--primary);color:var(--bg);padding:2px 6px;border-radius:6px;margin-left:4px;font-weight:700;">НОВОЕ</span>
+            <span class="material-symbols-rounded">share</span> Поделиться
         </div>
         <div class="context-item" id="cm-sidenotes-opt" onclick="cmSideNotesFromChat()" style="display:none;">
-            <span class="material-symbols-rounded">sticky_note_2</span> Side Notes from This Chat
-            <span style="font-size:10px;background:var(--primary);color:var(--bg);padding:2px 6px;border-radius:6px;margin-left:4px;font-weight:700;">НОВИНКА</span>
+            <span class="material-symbols-rounded">sticky_note_2</span> Side Notes
         </div>
         <div class="context-item danger" onclick="cmDelete()">
             <span class="material-symbols-rounded">delete</span> Удалить
@@ -481,6 +429,34 @@
         </div>
     </main>
 
+    
+    <main id="screen-maps" class="app-screen">
+        <div class="maps-toolbar">
+            <div class="maps-title">
+                <span class="material-symbols-rounded">map</span>
+                Карты · бета
+            </div>
+            <div class="maps-actions">
+                <button type="button" class="icon-btn" onclick="mapsLocateMe()" title="Моя позиция">
+                    <span class="material-symbols-rounded">my_location</span>
+                </button>
+                <button type="button" class="icon-btn" onclick="mapsClearMarkers()" title="Очистить метки">
+                    <span class="material-symbols-rounded">delete</span>
+                </button>
+                <button type="button" class="icon-btn" onclick="mapsCycleLayer()" title="Сменить слой карты">
+                    <span class="material-symbols-rounded">layers</span>
+                </button>
+            </div>
+        </div>
+        <div class="maps-search-row">
+            <input type="text" id="maps-search" placeholder="Поиск места / улицы…" autocomplete="off">
+            <button type="button" class="modal-btn modal-btn-accept maps-search-btn" onclick="mapsSearch()">Найти</button>
+        </div>
+        <div id="maps-results" class="maps-results" hidden></div>
+        <div id="maps-leaflet" class="maps-leaflet"></div>
+        <p class="maps-hint">Клик — метка. Тайлы: Esri / OpenTopo / OSM FR (без ключа). Поиск: до 8 вариантов улиц. Слои — ⧉.</p>
+    </main>
+
     <main id="screen-chat" class="app-screen active-screen">
         <div id="welcome-ambient" aria-hidden="true">
             <div class="ambient-blob ambient-blob-a"></div>
@@ -537,6 +513,23 @@
             <p id="welcome-subtext" style="font-size: 14px; color: var(--on-surface-variant); margin: 0; opacity: 0.8;">
                 Готов к работе. Чем я могу помочь тебе сегодня?
             </p>
+            <div id="temp-persona-chooser" class="temp-persona-chooser" hidden>
+                <button type="button" class="temp-persona-card selected" data-mode="with" onclick="setTempPersona('with')">
+                    <div class="temp-persona-top">
+                        <span class="temp-persona-title">С персонализацией</span>
+                        <span class="material-symbols-rounded temp-persona-check">check</span>
+                    </div>
+                    <p class="temp-persona-desc">Этот чат может использовать память, плагины и пользовательские инструкции</p>
+                </button>
+                <button type="button" class="temp-persona-card" data-mode="without" onclick="setTempPersona('without')">
+                    <div class="temp-persona-top">
+                        <span class="temp-persona-title">Без персонализации</span>
+                        <span class="material-symbols-rounded temp-persona-check">check</span>
+                    </div>
+                    <p class="temp-persona-desc">Этот чат будет игнорировать память, плагины и пользовательские инструкции</p>
+                </button>
+                <p class="temp-persona-hint">Выбор только до первого сообщения. Потом — только новый временный чат.</p>
+            </div>
         </div>
 
         
@@ -715,11 +708,25 @@
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <span style="width:64px; font-size:12px; color:var(--on-surface-variant);">Слот 2</span>
-                                <select id="nav-slot-2" onchange="saveNavTabsFromUI()" style="flex:1; padding:8px 12px; border-radius:10px; background:var(--surface-variant); border:1px solid var(--border); color:var(--on-surface); font-size:13px; outline:none;"></select>
+                                <div class="custom-select nav-slot-select" id="nav-slot-2-wrap" style="width:100%;margin-bottom:10px" data-slot="2">
+                                  <button type="button" class="custom-select-btn" id="nav-slot-2-btn" onclick="toggleNavSlotMenu(event,'2')">
+                                    <span id="nav-slot-2-label">—</span>
+                                    <span class="material-symbols-rounded" style="font-size:18px;">expand_more</span>
+                                  </button>
+                                  <div class="custom-select-menu" id="nav-slot-2-menu"></div>
+                                  <input type="hidden" id="nav-slot-2" value="reader">
+                                </div>
                             </div>
                             <div style="display:flex; align-items:center; gap:8px;">
                                 <span style="width:64px; font-size:12px; color:var(--on-surface-variant);">Слот 3</span>
-                                <select id="nav-slot-3" onchange="saveNavTabsFromUI()" style="flex:1; padding:8px 12px; border-radius:10px; background:var(--surface-variant); border:1px solid var(--border); color:var(--on-surface); font-size:13px; outline:none;"></select>
+                                <div class="custom-select nav-slot-select" id="nav-slot-3-wrap" style="width:100%" data-slot="3">
+                                  <button type="button" class="custom-select-btn" id="nav-slot-3-btn" onclick="toggleNavSlotMenu(event,'3')">
+                                    <span id="nav-slot-3-label">—</span>
+                                    <span class="material-symbols-rounded" style="font-size:18px;">expand_more</span>
+                                  </button>
+                                  <div class="custom-select-menu" id="nav-slot-3-menu"></div>
+                                  <input type="hidden" id="nav-slot-3" value="reader">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1113,7 +1120,19 @@
                     </div>
                 </div>
 
-                <div id="section-about" class="setting-section" style="display:none;">
+                
+        <div class="chat-card" id="later-gen-settings-card" style="margin-top:12px;">
+          <div style="font-weight:700;font-size:13px;margin-bottom:6px;">Later Generate</div>
+          <p style="font-size:12px;color:var(--on-surface-variant);line-height:1.45;margin:0 0 10px;">
+            Показать кнопку «Сгенерировать позже», если у API-провайдера сильная нагрузка.
+          </p>
+          <label class="settings-toggle-row" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" id="set-later-gen" onchange="toggleLaterGenSetting(this.checked)">
+            <span>Показать кнопку Later Generate</span>
+          </label>
+        </div>
+
+<div id="section-about" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Информация о системе</h3>
                     <div class="chat-card" style="text-align: center; padding: 24px;">
                         <div style="font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">Oracle AI · Material Expensive 3</div>
@@ -1131,6 +1150,36 @@
     <span class="live-try-tip-text">Попробуйте поговорить с ИИ вживую! <small>(Используется лёгкая модель)</small></span>
     <button type="button" class="live-try-tip-go" onclick="acceptLiveTryTip()">Live</button>
     <button type="button" class="live-try-tip-x" onclick="dismissLiveTryTip()" title="Закрыть">✕</button>
+</div>
+
+
+<div id="offline-banner" class="cn-banner offline-banner" hidden>
+  <span class="material-symbols-rounded">wifi_off</span>
+  <span>Офлайн: новые сообщения недоступны. Планы, Reader и чтение чатов работают.</span>
+</div>
+<div id="edit-msg-banner" class="cn-banner edit-msg-banner" hidden>
+  <span class="material-symbols-rounded">edit</span>
+  <span>Редактирование сообщения — крестик отменяет</span>
+  <button type="button" class="cn-banner-x" onclick="cancelEditMessage()" title="Отмена">✕</button>
+</div>
+<div id="connector-popup" class="connector-popup" hidden>
+  <div class="connector-popup-title">Коннекторы</div>
+  <button type="button" class="connector-item" data-conn="tasks" data-label="Задачи">
+    <span class="material-symbols-rounded">task_alt</span>
+    <span><b>Задачи</b><small>Задания, если сайт и вы разрешили</small></span>
+  </button>
+  <button type="button" class="connector-item" data-conn="oracle-notepad" data-label="Oracle-Notepad">
+    <span class="material-symbols-rounded">code</span>
+    <span><b>Oracle Notepad</b><small>Умственно кодить</small></span>
+  </button>
+  <button type="button" class="connector-item" data-conn="letter-write" data-label="Letter-Write">
+    <span class="material-symbols-rounded">mail</span>
+    <span><b>Letter Write</b><small>Make a Letter with AI</small></span>
+  </button>
+  <button type="button" class="connector-item" data-conn="verify-ai" data-label="Verify-AI">
+    <span class="material-symbols-rounded">verified</span>
+    <span><b>Verify AI</b><small>Проверка материалов</small></span>
+  </button>
 </div>
 
 <div id="main-input-box" class="glass-input-box">
@@ -1167,6 +1216,9 @@
 
     <button id="stop-gen-btn" class="icon-btn stop-gen-btn hidden" onclick="stopGeneration()" title="Остановить">
         <span class="material-symbols-rounded">stop</span>
+    </button>
+    <button id="later-gen-btn" class="icon-btn later-gen-btn hidden" onclick="queueLaterGenerate()" title="Сгенерировать позже">
+        <span class="material-symbols-rounded">schedule_send</span>
     </button>
     <button id="send-btn" class="icon-btn send-btn" onclick="sendMsg()" title="Отправить">
         <span class="material-symbols-rounded">send</span>
@@ -1245,7 +1297,7 @@
     <div class="modal-card" style="max-width: 440px;">
         <div class="modal-header">
             <span class="material-symbols-rounded">view_column</span>
-            <h3 class="modal-title">Открыть Split View</h3>
+            <h3 class="modal-title">Параллельный просмотр</h3>
         </div>
         <p class="modal-subtitle" style="margin:0 0 8px;">Выберите пару панелей</p>
         <div class="split-mode-grid">
@@ -1320,7 +1372,8 @@
         </button>
     </div>
 
-    <textarea id="fs-user-input" placeholder="Введите ваш запрос..." rows="8"></textarea>
+    <div id="fs-user-editor" class="fs-user-editor" contenteditable="true" role="textbox" data-placeholder="Введите ваш запрос..."></div>
+    <textarea id="fs-user-input" class="hidden" aria-hidden="true"></textarea>
 
     <div class="fs-format-bar">
         <button class="fs-format-btn" onclick="fsFormat('bold')" title="Жирный"><b>B</b></button>
@@ -1363,9 +1416,11 @@
 
 <!-- NAV CONTEXT MENU -->
 <div id="nav-context-menu">
-    <button class="nav-ctx-item" onclick="navCtxCompact()"><span class="material-symbols-rounded">view_compact</span> Сделать компактнее</button>
-    <button class="nav-ctx-item" onclick="navCtxMove()" id="nav-ctx-move"><span class="material-symbols-rounded">swap_vert</span> Переместить вниз</button>
-    <button class="nav-ctx-item" onclick="navCtxFlush()"><span class="material-symbols-rounded">vertical_align_bottom</span> Слиять с концами</button>
+    <button class="nav-ctx-item" id="nav-ctx-compact" onclick="navCtxCompact()"><span class="material-symbols-rounded">view_compact</span> <span class="nav-ctx-label">Сделать Компактнее навигацию</span></button>
+    <button class="nav-ctx-item" id="nav-ctx-move" onclick="navCtxMove()"><span class="material-symbols-rounded">swap_vert</span> <span class="nav-ctx-label">Переместить вниз</span></button>
+    <button class="nav-ctx-item" id="nav-ctx-flush" onclick="navCtxFlush()"><span class="material-symbols-rounded">width_full</span> <span class="nav-ctx-label">Слиять с Концами</span></button>
+    <div class="nav-ctx-divider" id="nav-ctx-divider" hidden></div>
+    <div id="nav-ctx-extras"></div>
 </div>
 
 <div id="reader-tour-modal" class="modal-overlay">
@@ -1417,13 +1472,7 @@
             <span class="material-symbols-rounded">save</span>
             <h3 class="modal-title">Сохранить чат?</h3>
         </div>
-        <p class="modal-subtitle">Теперь этот чат появится в вашей истории. На него будут распространяться ваши настройки памяти и обучения моделей для обычных чатов.</p>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0;cursor:pointer;">
-            <input type="radio" name="temp-save-mode" value="with" checked> С персонализацией
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0;cursor:pointer;">
-            <input type="radio" name="temp-save-mode" value="without"> Без персонализации
-        </label>
+        <p class="modal-subtitle">Теперь этот чат появится в вашей истории. На него будут распространяться настройки памяти и обучения моделей для обычных чатов (как у любого сохранённого чата).</p>
         <div class="modal-actions">
             <button class="modal-btn modal-btn-reject" onclick="closeSaveTempModal()">Отмена</button>
             <button class="modal-btn modal-btn-accept" onclick="confirmSaveTempChat()">Принимаю</button>
@@ -1681,14 +1730,6 @@
 </div>
 
 
-<div id="page-ctx-menu" style="display:none;position:fixed;z-index:6000;min-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.45);">
-    <button type="button" class="nav-ctx-item" id="cm-ask-screenshot" onclick="askCoreNodeScreenshot()">
-        <span class="material-symbols-rounded">screenshot_region</span>
-        Ask Core Node about this Screenshot
-        <span class="setting-new-badge">НОВИНКА</span>
-    </button>
-</div>
-
 
 <!-- LIVE CHAT PRIVACY (first time) -->
 <div id="live-privacy-modal" class="modal-overlay">
@@ -1718,6 +1759,25 @@
 
 <div id="onboarding-overlay"></div>
 
+
+
+<div id="oct14-novelty-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:460px;">
+    <div class="modal-header">
+      <span class="material-symbols-rounded">auto_awesome</span>
+      <h3 class="modal-title">Новинки 14.10</h3>
+    </div>
+    <p class="modal-subtitle" style="line-height:1.55;">
+      <b>1.</b> Офлайн: Планы, Reader и чтение чатов — без сети. Новые сообщения только онлайн.<br>
+      <b>2.</b> Расширенный Reader (с 20.10) — форматирование и медиа офлайн.<br>
+      <b>3.</b> Карты / Навигатор — вкладка в бета.<br>
+      <b>4.</b> @коннекторы, Later Generate, история ответов 1/2, новый «Изменить».
+    </p>
+    <div class="modal-actions">
+      <button class="modal-btn modal-btn-accept" onclick="dismissOct14Novelty()">Понятно</button>
+    </div>
+  </div>
+</div>
 
 <script src="script.js"></script>
 
@@ -1785,6 +1845,63 @@
   else window.addEventListener('load', register);
 })();
 </script>
+
+
+<!-- Archive search -->
+<div id="archive-search-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:440px;max-height:85vh;display:flex;flex-direction:column;">
+    <div class="modal-header">
+      <span class="material-symbols-rounded">search</span>
+      <h3 class="modal-title">Поиск по архиву</h3>
+    </div>
+    <input type="text" id="archive-search-input" class="archive-search-input" placeholder="Чаты, проекты, истории…" autocomplete="off" oninput="runArchiveSearch(this.value)">
+    <div id="archive-search-results" class="archive-search-results"></div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-reject" onclick="closeArchiveSearch()">Закрыть</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create a… -->
+<div id="create-a-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="material-symbols-rounded">add_circle</span>
+      <h3 class="modal-title">Create a…</h3>
+    </div>
+    <p class="modal-subtitle">Чат создаётся только после первого сообщения.</p>
+    <div class="create-a-grid">
+      <button type="button" class="create-a-item" onclick="createAPick('chat')"><span class="material-symbols-rounded">chat_bubble</span> Chat</button>
+      <button type="button" class="create-a-item" onclick="createAPick('project')"><span class="material-symbols-rounded">folder</span> Project</button>
+      <button type="button" class="create-a-item" onclick="createAPick('history')"><span class="material-symbols-rounded">history_edu</span> History</button>
+      <button type="button" class="create-a-item" onclick="createAPick('coding')"><span class="material-symbols-rounded">code</span> Coding Project</button>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-reject" onclick="closeCreateAModal()">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- Skills hub -->
+<main id="screen-skills" class="app-screen">
+  <div class="skills-hub-top">
+    <button type="button" class="skills-hub-tab active" data-skills-tab="store" onclick="setSkillsTab('store')">
+      <span class="material-symbols-rounded">settings_ethernet</span> Магазин коннекторов
+    </button>
+    <button type="button" class="skills-hub-tab" data-skills-tab="skills" onclick="setSkillsTab('skills')">
+      <span class="material-symbols-rounded">history_edu</span> Навыки
+    </button>
+    <button type="button" class="skills-hub-tab" onclick="closeSkillsHub()">
+      <span class="material-symbols-rounded">close</span> Закрыть
+    </button>
+  </div>
+  <div id="skills-panel-store" class="skills-panel">
+    <div class="chat-card"><b>@ Коннекторы</b><p style="font-size:13px;color:var(--on-surface-variant);margin:8px 0 0;">Задачи · Oracle Notepad · Letter Write · Verify AI — вызываются через <code>@</code> в поле ввода.</p></div>
+  </div>
+  <div id="skills-panel-skills" class="skills-panel" hidden>
+    <div class="chat-card"><b>AI Skills</b><p style="font-size:13px;color:var(--on-surface-variant);margin:8px 0 0;">Включайте навыки под задачу — экономия лимитов. Полный каталог расширим позже.</p></div>
+  </div>
+</main>
 
 </body>
 </html>
