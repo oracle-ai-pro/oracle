@@ -133,23 +133,23 @@
 
     <div id="update-overlay" class="hidden">
         <div class="update-card">
-            <div class="update-tag">Доступно ядро 3.5</div>
-            <h2 style="color: #00ccff; margin-bottom: 10px;">TITAN UPDATE</h2>
-            <p style="font-size: 13px; opacity: 0.7; line-height: 1.4;">Обнаружена новая версия архитектуры. Рекомендуется немедленная синхронизация.</p>
+            <div class="update-tag">Секретный протокол 3.5</div>
+            <h2 style="color: #00ccff; margin-bottom: 10px;">TITAN EVOLUTION</h2>
+            <p style="font-size: 13px; opacity: 0.7; line-height: 1.4;">Обнаружено скрытое ядро нового поколения. Что скрывают разработчики?</p>
             
             <div class="update-features">
-                <div class="update-item">⚡ <span>Архитектура без задержек</span></div>
-                <div class="update-item">📬 <span>Архив ответов из ячейки F</span></div>
-                <div class="update-item">🤖 <span>Свободно летающий AI Помощник</span></div>
-                <div class="update-item">🎮 <span>Drag & Drop управление окон</span></div>
-                <div class="update-item">🎨 <span>Персонализация Engineering Bay</span></div>
+                <div class="update-item">⚡ <span>Сверхскоростной квантовый поток</span></div>
+                <div class="update-item">📬 <span>Доступ к засекреченному архиву F</span></div>
+                <div class="update-item">🤖 <span>Автономный ИИ-помощник нового типа</span></div>
+                <div class="update-item">🎮 <span>Интерактивный контроль интерфейса</span></div>
+                <div class="update-item">🎨 <span>Полная кастомизация Engineering Bay</span></div>
             </div>
 
             <button class="btn" style="background: #00ccff; color: #000; font-weight: bold; margin-top: 5px;" 
         onclick="window.location.href='t_os.3.5.html';">
-    ОБНОВИТЬ СИСТЕМУ 🔑)
+    РАСКРЫТЬ ЯДРО 3.5 🔑)
 </button>
-            <button class="btn-text" style="color: #ff453a; font-size: 12px; margin-top: 12px;" onclick="closeUpdateWindow()">Пропустить (Не рекомендуется)</button>
+            <button class="btn-text" style="color: #ff453a; font-size: 12px; margin-top: 12px;" onclick="closeUpdateWindow()">Остаться в неведении...</button>
         </div>
     </div>
 
@@ -256,7 +256,6 @@
                     s.style.opacity = '0'; 
                     setTimeout(() => {
                         s.remove();
-                        // ПОСЛЕ СПЛЕШ-СКРИНА АКТИВИРУЕМ ОКНО ОБНОВЛЕНИЯ С ТЕМНЫМ НЕОНОВЫМ БЛЮРОМ
                         document.getElementById('update-overlay').classList.remove('hidden');
                     }, 800); 
                 }
@@ -265,7 +264,7 @@
 
         function closeUpdateWindow() {
             document.getElementById('update-overlay').classList.add('hidden');
-            showToast("Ядро 3.4 запущено в ограниченном режиме", "⚠️");
+            showToast("Вы остались в тени... 3.4 активна", "🔮");
         }
 
         function showScreen(id) {
