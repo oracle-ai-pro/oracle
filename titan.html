@@ -35,7 +35,7 @@
             background: var(--card); width: 100%; max-width: 390px; padding: 30px; 
             border-radius: 30px; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.04); max-height: 85vh; overflow-y: auto; 
-            text-align: center; 
+            text-align: center; position: relative;
             /* РАЗНОЦВЕТНАЯ НЕОНОВАЯ ТЕНЬ (Мигает) */
             box-shadow: 0 15px 50px -10px var(--shadow), 0 0 20px -5px var(--accent);
             animation: neonGlow 4s ease-in-out infinite;
@@ -83,6 +83,35 @@
         
         /* Стилизация скролла iOS */
         .card::-webkit-scrollbar { width: 0px; background: transparent; }
+
+        /* Плавающий баннер ограниченной версии внизу контейнера */
+        .limited-banner {
+            margin-top: 15px;
+            padding: 12px 15px;
+            background: rgba(255, 69, 58, 0.1);
+            border: 1px solid rgba(255, 69, 58, 0.3);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .limited-banner span {
+            font-size: 12px;
+            color: var(--danger);
+            font-weight: 600;
+            text-align: left;
+        }
+        .limited-banner a {
+            background: var(--danger);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 700;
+            text-decoration: none;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
@@ -95,6 +124,12 @@
             <div id="timer">01:00</div>
             <button class="btn" onclick="startSystem()" data-key="btn_activate">Отправить Запрос</button>
             <button class="btn btn-text" onclick="showScreen('screen-search')" data-key="btn_archive">Поиск Ответов</button>
+            
+            <!-- Баннер для ограниченной версии (появляется при отклонении) -->
+            <div id="limited-badge" class="limited-banner" style="display: none;">
+                <span>Вы используете ограниченную версию</span>
+                <a href="titan_system.html">Update</a>
+            </div>
         </div>
     </div>
 
@@ -137,17 +172,32 @@
             <button class="btn" style="background:#3a3a3c; color:#fff;" onclick="showScreen('screen-main')" data-key="btn_close">ЗАКРЫТЬ</button>
         </div>
     </div>
-<div id="update-modal" style="position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,0.6); backdrop-filter:blur(10px);">
-    <div class="card" style="width:100%; max-width:340px; padding:25px; animation: iosPop 0.4s ease;">
-        <h2 style="font-size: 18px; margin-bottom: 10px;">⚠️ Обновление TITAN SYSTEM</h2>
-        <p style="font-size: 14px; color: var(--sub); margin-bottom: 20px; line-height: 1.4;">
-            Эта версия TITAN SYSTEM устарела.<br><br>
-            В новой версии доступны: расширенные настройки Flow Graphics (анимации, фон, ассистент).
-        </p>
-        <a href="titan_system.html" class="btn" style="text-decoration:none; display:block; margin-bottom:10px;">ОБНОВИТЬ</a>
-        <button class="btn btn-text" onclick="this.parentElement.parentElement.style.display='none'">Продолжить в этой версии</button>
+
+    <!-- Модалка 1: Урезаем Titan System -->
+    <div id="update-modal" style="position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,0.6); backdrop-filter:blur(10px);">
+        <div class="card" style="width:100%; max-width:340px; padding:25px; animation: iosPop 0.4s ease;">
+            <h2 style="font-size: 18px; margin-bottom: 10px;">⚠️ Урезаем Titan System</h2>
+            <p style="font-size: 14px; color: var(--sub); margin-bottom: 20px; line-height: 1.4;">
+                Данная версия уже неподдерживается, а это значит что в нее вступают ограничения а в будущем вовсе и удаления, попробуйте уже обновится на Новую версию Titan System!
+            </p>
+            <a href="titan_system.html" class="btn" style="text-decoration:none; display:block; margin-bottom:10px;">ОБНОВИТЬ</a>
+            <button class="btn btn-text" onclick="showConfirmModal()">Отклонить</button>
+        </div>
     </div>
-</div>
+
+    <!-- Модалка 2: Подтверждение отклонения (скрыта по умолчанию) -->
+    <div id="confirm-modal" style="position:fixed; inset:0; z-index:10000; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,0.6); backdrop-filter:blur(10px);">
+        <div class="card" style="width:100%; max-width:340px; padding:25px; animation: iosPop 0.4s ease;">
+            <h2 style="font-size: 18px; margin-bottom: 10px;">❓ Внимание</h2>
+            <p style="font-size: 14px; color: var(--sub); margin-bottom: 20px; line-height: 1.4;">
+                Вы уверены, что хотите Отклонить это обновление?<br><br>
+                Старые версии уже имеют испорченный код! И может быть, вовсе не работать отправка.
+            </p>
+            <button class="btn" style="background: var(--danger); margin-bottom:10px;" onclick="forceDismiss()">Все равно отклонить</button>
+            <button class="btn btn-text" onclick="closeConfirmModal()">Вернуться назад</button>
+        </div>
+    </div>
+
     <script>
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzlDNCzP0A8rCxIvTxoKJpCYOEf9vK00ZRn-uugmE4QIMUb7g__alwMGYtwJnCzD6t9XQ/exec";
         
@@ -174,6 +224,21 @@
                 staff: "STAFF: ", re_ph: "Your Re..."
             }
         };
+
+        function showConfirmModal() {
+            document.getElementById('update-modal').style.display = 'none';
+            document.getElementById('confirm-modal').style.display = 'flex';
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').style.display = 'none';
+            document.getElementById('update-modal').style.display = 'flex';
+        }
+
+        function forceDismiss() {
+            document.getElementById('confirm-modal').style.display = 'none';
+            document.getElementById('limited-badge').style.display = 'flex';
+        }
 
         function toggleLang() {
             currentLang = currentLang === 'ru' ? 'en' : 'ru';
@@ -206,7 +271,7 @@
         function updateShadowColor() {
             const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
             const isLight = document.body.classList.contains('light-theme');
-            const shadowBase = isLight ? accent + '26' : accent + '4d'; // Глубина тени
+            const shadowBase = isLight ? accent + '26' : accent + '4d'; 
             document.documentElement.style.setProperty('--shadow', shadowBase);
         }
 
@@ -226,7 +291,6 @@
                 action: 'send', id: Date.now(),
                 email: document.getElementById('f-email').value,
                 sub: document.getElementById('f-sub').value,
-                cat: document.getElementById('f-cat').value,
                 msg: document.getElementById('f-msg').value,
                 pin: document.getElementById('f-pin').value
             };
