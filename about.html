@@ -590,7 +590,11 @@
         <div class="hero-actions">
             <a href="index.html" class="action-btn" id="mainActionBtn">
                 <span class="material-symbols-rounded">rocket_launch</span>
-                Запустить 2.6 PRO
+                Открыть Core Node 2.6 PRO
+            </a>
+            <a href="https://oracle-ai-pro.github.io/oracle-notepad" class="action-btn ghost" target="_blank" rel="noopener">
+                <span class="material-symbols-rounded">terminal</span>
+                Воспользоваться Oracle Notepad
             </a>
             <a href="#whats-new" class="action-btn ghost">Что нового</a>
         </div>
@@ -727,6 +731,71 @@
                     Ч/Б без записи в историю. PIN при входе, безопасный поиск, уведомления планов.
                 </div>
                 <div class="preview" style="font-weight:600;">Зашли случайно?</div>
+            </div>
+
+            <div class="card new">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">view_carousel</span></div>
+                </div>
+                <div class="card-heading">OOBE · первый запуск</div>
+                <div class="card-text">
+                    Один баннер вместо кучи модалок: новинки 14.10, «Вы хозяин функций»,
+                    Side Core Node, совместные чаты и проекты. Пропуск или «Далее».
+                </div>
+                <div class="preview" style="font-weight:600;">previewOnboarding()</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">search</span></div>
+                </div>
+                <div class="card-heading">Поиск в настройках</div>
+                <div class="card-text">
+                    Ищет по функциям: «Тема» → Персонализация, скролл к опции и тройная подсветка.
+                </div>
+                <div class="preview">Тема · PIN · Акцент · API</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">tune</span></div>
+                </div>
+                <div class="card-heading">Настройка бокового меню</div>
+                <div class="card-text">
+                    До 4 кнопок на выбор: Split, Планы, Карты, Навыки, Библиотека.
+                    Create a… и Настройка всегда на местах.
+                </div>
+                <div class="preview">Макс. 4 слота · кастомные галочки</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">password</span></div>
+                </div>
+                <div class="card-heading">PIN · резервная почта</div>
+                <div class="card-text">
+                    Смена только после текущего PIN. Удаление PIN, блокировка через 5 мин,
+                    скрытие содержимого чатов. Восстановление через confirm.html + резервный email.
+                </div>
+                <div class="preview">Забыл PIN → ссылка 30 мин</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">map</span></div>
+                </div>
+                <div class="card-heading">Карты · Leaflet + OSM</div>
+                <div class="card-text">
+                    Вкладка «Карты» на бесплатных тайлах. Поиск улиц, несколько совпадений.
+                </div>
+                <div class="preview">OpenStreetMap · Carto · Esri</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row">
+                    <div class="card-icon"><span class="material-symbols-rounded">folder_open</span></div>
+                </div>
+                <div class="card-heading">Архив «Все»</div>
+                <div class="card-text">
+                    Чаты, планы, истории, проекты и Notepad в одном меню с фильтрами,
+                    закреплением и ПКМ.
+                </div>
+                <div class="preview">Create a… · Chat · Project · History</div>
             </div>
         </div>
 
@@ -1009,9 +1078,16 @@
                 <div class="settings-item">
                     <div>
                         <div class="settings-item-title">Безопасность</div>
-                        <div class="settings-item-desc">PIN, сброс, безопасный поиск.</div>
+                        <div class="settings-item-desc">PIN, резервная почта, блокировка 5 мин, скрытие чатов.</div>
                     </div>
                     <div class="setting-badge-pill">shield</div>
+                </div>
+                <div class="settings-item">
+                    <div>
+                        <div class="settings-item-title">Боковое меню · НОВИНКА</div>
+                        <div class="settings-item-desc">До 4 быстрых кнопок: Split, Планы, Карты, Навыки…</div>
+                    </div>
+                    <div class="setting-badge-pill">tune</div>
                 </div>
             </div>
             <div class="log-terminal">
@@ -1022,6 +1098,8 @@
                 &gt;_ PUBLIC_LINKS · SPLIT_VIEW · NOTEPAD_PROJECTS<br>
                 &gt;_ THEME: TRUE_BLACK | LIGHT | DARK<br>
                 &gt;_ LOCAL_STORAGE_SYNC: oracle_* KEYS SHARED<br>
+                &gt;_ OOBE · SETTINGS_SEARCH · SIDEBAR_TUNE · PIN_RECOVERY<br>
+                &gt;_ MAPS: LEAFLET+OSM · ARCHIVE_ALL · TEMP_CHAT<br>
                 &gt;_ ROADMAP: SCENARIO · NAV×4 · NOTEPAD_AGENT · FOCUS_30M<br>
                 &gt;_ STATUS: ALL SYSTEMS OPERATIONAL
             </div>
@@ -1036,6 +1114,11 @@
                 <div class="changelog-item"><span class="tag">Share</span> Публичные ссылки, вкладка управления</div>
                 <div class="changelog-item"><span class="tag">Split</span> Notepad / два чата / Side Notes, проекты в боковом меню</div>
                 <div class="changelog-item"><span class="tag">Theme</span> True Black: #000 фон, спокойный primary</div>
+                <div class="changelog-item"><span class="tag">OOBE</span> Единый баннер первого запуска вместо стопки модалок</div>
+                <div class="changelog-item"><span class="tag">Security</span> PIN: смена/удаление, резервная почта, confirm.html, блокировка 5 мин</div>
+                <div class="changelog-item"><span class="tag">Settings</span> Поиск по функциям + вспышка опции · настройка сайдбара до 4 кнопок</div>
+                <div class="changelog-item"><span class="tag">Maps</span> Карты на Leaflet + OSM, мульти-поиск улиц</div>
+                <div class="changelog-item"><span class="tag">Archive</span> Единое меню «Все»: чаты, планы, истории, проекты</div>
                 <div class="changelog-item"><span class="tag">Soon</span> Сценарист · 4 вкладки · агент Notepad · умные ограничения / навыки</div>
             </div>
         </div>
