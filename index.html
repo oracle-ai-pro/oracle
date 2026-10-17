@@ -25,45 +25,6 @@
 <body>
 
 
-<!-- CONSENT 1/2 -->
-<div id="consent-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width:420px;">
-        <div class="modal-header">
-            <span class="material-symbols-rounded">verified_user</span>
-            <h3 class="modal-title">Вы хозяин функций</h3>
-        </div>
-        <p class="modal-subtitle" style="line-height:1.55;">
-            Данные Core Node хранятся <b>только у вас в браузере</b> и не передаются третьим лицам — даже в зашифрованном виде.<br><br>
-            Мы храним только: <b>Чаты, Настройки, Истории, Файлы</b>.<br>
-            На серверы ничего не уходит без вашего согласия.
-        </p>
-        <p style="font-size:12px;color:var(--on-surface-variant);margin:0;">Рекламы у вас не появятся.</p>
-        <div class="modal-actions" style="flex-wrap:wrap;gap:8px;">
-            <button class="modal-btn modal-btn-reject" onclick="acceptConsent('necessary')">Только необходимые</button>
-            <button class="modal-btn modal-btn-accept" onclick="acceptConsent('all')">Принять</button>
-        </div>
-    </div>
-</div>
-
-<!-- SHARE TIP 2/2 -->
-<div id="share-tip-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width:420px;">
-        <div class="modal-header">
-            <span class="material-symbols-rounded">share</span>
-            <h3 class="modal-title">Новинка: Совместные чаты</h3>
-        </div>
-        <p class="modal-subtitle" style="line-height:1.55;">
-            Откройте боковое меню → <b>ПКМ по чату</b> → <b>Поделиться · НОВОЕ</b>.<br><br>
-            Создастся ссылка вида <code style="color:var(--primary);">?public-chat=ID</code>.<br>
-            Ею можно поделиться. Получатель вставит ссылку — появится окно загрузки чата.<br><br>
-            Ссылку можно <b>заблокировать</b> (обратно не вернуть). У получателя будет ошибка доступа.
-        </p>
-        <div class="modal-actions">
-            <button class="modal-btn modal-btn-accept" onclick="closeShareTip()">Понятно</button>
-        </div>
-    </div>
-</div>
-
 <!-- PUBLIC CHAT IMPORT -->
 <div id="public-chat-modal" class="modal-overlay">
     <div class="modal-card" style="max-width:400px;">
@@ -269,15 +230,13 @@
             </button>
         </div>
 
-        <div class="sidebar-actions-stack">
+        <div class="sidebar-actions-stack" id="sidebar-actions-stack">
             <button type="button" class="sidebar-primary-btn" onclick="openCreateAModal()">
                 <span class="material-symbols-rounded">add</span> Create a…
             </button>
-            <button type="button" class="sidebar-secondary-btn" onclick="openSkillsHub()">
-                <span class="material-symbols-rounded">extension</span> Навыки и Коннекторы
-            </button>
-            <button type="button" class="sidebar-secondary-btn" onclick="openSplitSelector()">
-                <span class="material-symbols-rounded">view_column</span> Параллельный просмотр
+            <div id="sidebar-dynamic-actions"><!-- renderSidebarActionButtons() --></div>
+            <button type="button" class="sidebar-secondary-btn sidebar-settings-btn" onclick="openSidebarSettings()">
+                <span class="material-symbols-rounded">settings</span> Настройка
             </button>
         </div>
 
@@ -605,7 +564,15 @@
             </button>
             <span id="settings-mobile-title">Настройки</span>
         </div>
-        <div class="settings-container">
+        <div class="settings-search-wrap">
+                <span class="material-symbols-rounded">search</span>
+                <input type="search" id="settings-search-input" class="settings-search-input" placeholder="Поиск в настройках…" autocomplete="off" oninput="runSettingsSearch(this.value)">
+                <button type="button" class="settings-search-clear" id="settings-search-clear" onclick="clearSettingsSearch()" hidden title="Очистить">
+                  <span class="material-symbols-rounded">close</span>
+                </button>
+            </div>
+            <div id="settings-search-results" class="settings-search-results" hidden></div>
+            <div class="settings-container">
             <div class="sidebar-menu">
                 <button class="nav-item active" id="btn-sec-general" onclick="showSection('general')">
                     <span class="material-symbols-rounded">palette</span> Персонализация
@@ -634,6 +601,10 @@
                     <span class="material-symbols-rounded">link</span>
                     <span class="nav-text">Публичные ссылки</span>
                 </button>
+                <button class="nav-item" id="btn-sec-sidebar-menu" onclick="showSection('sidebar-menu')">
+                    <span class="material-symbols-rounded">tune</span>
+                    <span class="nav-text">Настройка бокового меню <span class="nav-new-badge">НОВИНКА</span></span>
+                </button>
                 <button class="nav-item" id="btn-sec-about" onclick="showSection('about')">
                     <span class="material-symbols-rounded">info</span>
                     <span class="nav-text">О проекте</span>
@@ -647,7 +618,7 @@
                     
                     <h3 style="margin-top: 20px; font-size: 14px; color: var(--on-surface-variant); letter-spacing: 0.3px;">Основные</h3>
                     <div class="chat-card" style="margin-bottom:12px;">
-                        <div style="font-weight:600;font-size:13px;margin-bottom:6px;">Анимация думания модели</div>
+                        <div id="settings-target-thinking" style="font-weight:600;font-size:13px;margin-bottom:6px;">Анимация думания модели</div>
                         <div style="font-size:11px;color:var(--on-surface-variant);margin-bottom:10px;">Пока ИИ генерирует ответ</div>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
                             <button type="button" class="think-style-btn" data-style="dots" onclick="setThinkingStyle('dots')" id="think-style-dots">Две точки</button>
@@ -660,7 +631,7 @@
                     <div class="chat-card" style="margin-bottom:12px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
                             <div>
-                                <div style="font-weight:600;font-size:13px;">Новая анимация логотипа <span class="setting-new-badge">НОВИНКА</span></div>
+                                <div style="font-weight:600;font-size:13px;"><span id="settings-target-logo-anim">Новая анимация логотипа</span> <span class="setting-new-badge">НОВИНКА</span></div>
                                 <div style="font-size:11px;color:var(--on-surface-variant);margin-top:4px;">Бета · SVG-кольца. Выкл — классические блобы</div>
                             </div>
                             <label class="switch" style="flex-shrink:0;">
@@ -750,15 +721,15 @@
                                 <div style="font-size:11px; color:var(--on-surface-variant);">Светлая / Тёмная / True Black</div>
                             </div>
                             <div style="display:flex; gap:6px;">
-                                <button onclick="setThemeMode('light')" id="theme-btn-light" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:11px; cursor:pointer;">Светлая</button>
+                                <div id="settings-target-theme"></div><button onclick="setThemeMode('light')" id="theme-btn-light" data-settings-target="theme" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:11px; cursor:pointer;">Светлая</button>
                                 <button onclick="setThemeMode('dark')" id="theme-btn-dark" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:11px; cursor:pointer;">Тёмная</button>
                                 <button onclick="setThemeMode('trueblack')" id="theme-btn-black" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:11px; cursor:pointer;">True Black</button>
                             </div>
                         </div>
 
                         <div class="chat-card" style="margin-bottom:12px;">
-                            <label style="display:block; margin-bottom:10px; font-weight:600; font-size:13px;">Акцентный цвет</label>
-                            <div style="display:flex; gap:8px; flex-wrap:wrap;" id="oracle-theme-presets">
+                            <label id="settings-target-accent" style="display:block; margin-bottom:10px; font-weight:600; font-size:13px;">Акцентный цвет</label>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;" id="oracle-theme-presets" data-settings-target="accent">
                                 <button onclick="changeOracleThemeBW()" class="matte-dot" style="background:linear-gradient(135deg,#000 50%,#fff 50%);" title="Ч/Б (адаптивный)"></button>
                                 <button onclick="changeOracleTheme('#adc6ff','#254487','#1f202e')" class="matte-dot" style="background:#adc6ff;" title="Космический синий"></button>
                                 <button onclick="changeOracleTheme('#e8bbf1','#573366','#261c2b')" class="matte-dot" style="background:#e8bbf1;" title="Матовый нео-пурпур"></button>
@@ -965,10 +936,20 @@
                 <div id="section-security" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Расширенная безопасность</h3>
 
-                    <div class="chat-card" style="margin-bottom:12px;">
+                    <div class="chat-card" style="margin-bottom:12px;" id="settings-target-pin">
                         <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Пароль / PIN</div>
                         <div style="font-size:12px;color:var(--on-surface-variant);margin-bottom:10px;" id="pin-status-label">Пароль не задан</div>
                         <button onclick="openSetPinModal()" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-weight:600;cursor:pointer;font-size:13px;margin-bottom:8px;">Создать / изменить пароль</button>
+                        <button type="button" id="delete-pin-btn" onclick="openDeletePinModal()" style="display:none;width:100%;padding:10px;border-radius:10px;border:1px solid #ff5252;background:transparent;color:#ff5252;font-weight:600;cursor:pointer;font-size:13px;margin-bottom:10px;">Удалить PIN</button>
+                        <div id="settings-target-backup-email" style="margin-top:4px;padding-top:10px;border-top:1px solid var(--border);">
+                            <div style="font-weight:600;font-size:12px;margin-bottom:4px;">Резервная почта</div>
+                            <div style="font-size:11px;color:var(--on-surface-variant);margin-bottom:8px;line-height:1.4;">Если забудете PIN — ссылка подтверждения уйдёт на этот адрес (не сам PIN). Без сервера письмо можно отправить себе через «mailto» или скопировать ссылку.</div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                                <input type="email" id="backup-email-input" placeholder="you@example.com" autocomplete="email" style="flex:1;min-width:160px;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:13px;outline:none;">
+                                <button type="button" onclick="saveBackupEmail()" style="padding:10px 14px;border-radius:10px;border:none;background:var(--primary-container);color:var(--primary);font-weight:600;cursor:pointer;font-size:12px;">Сохранить</button>
+                            </div>
+                            <div id="backup-email-status" style="font-size:11px;color:var(--on-surface-variant);margin-top:6px;"></div>
+                        </div>
                         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;">
                             <div style="font-size:12px;">Спрашивать PIN при входе</div>
                             <button id="pin-on-entry-btn" onclick="togglePinFlag('oracle_pin_on_entry','pin-on-entry-btn')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--surface-variant);color:var(--on-surface);cursor:pointer;font-weight:bold;font-size:11px;">ВЫКЛ</button>
@@ -979,37 +960,33 @@
                         </div>
                         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
                             <div>
-                                <div style="font-size:12px;font-weight:600;">Безопасный поиск</div>
+                                <div id="settings-target-safe-search" style="font-size:12px;font-weight:600;">Безопасный поиск</div>
                                 <div style="font-size:11px;color:var(--on-surface-variant);">Мягкий фильтр вредоносных / опасных запросов</div>
                             </div>
                             <button id="safe-search-btn" onclick="togglePinFlag('oracle_safe_search','safe-search-btn')" style="padding:6px 12px;border-radius:8px;border:none;background:var(--surface-variant);color:var(--on-surface);cursor:pointer;font-weight:bold;font-size:11px;">ВЫКЛ</button>
                         </div>
-                        <p style="font-size:11px;color:#ff9f0a;margin:10px 0 0;">Если забудете PIN — поможет только сброс данных Core Node.</p>
+                        <p style="font-size:11px;color:#ff9f0a;margin:10px 0 0;">Если забудете PIN — поможет только сброс данных Core Node, или если вы введете верный резервный адрес, если он у вас есть.</p>
                         <p id="pin-honest-note" style="font-size:11px;color:var(--on-surface-variant);margin:8px 0 0;line-height:1.45;">
                             PIN — <b>локальная блокировка экрана</b>, не шифрование. Данные лежат в браузере; кто имеет доступ к устройству и DevTools, теоретически может их прочитать. Это защита от случайного просмотра, не от целевой атаки.
                         </p>
                     </div>
 
-<div class="chat-card" style="margin-bottom:12px;">
-                        <div style="font-weight:600; margin-bottom:8px;">Master Password</div>
-                        <span style="display:block; margin-bottom:6px; font-size:13px;">Установлен: <b>1234</b></span>
-                        <span style="font-size:12px; color:#ff5252;">*Сбрасывается при закрытии вкладки.</span>
-                    </div>
-                    <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+
+                    <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" id="settings-target-lock-screen">
                         <div>
                             <div style="font-weight:600; font-size:13px;">Блокировка экрана</div>
-                            <div style="font-size:11px; color:var(--on-surface-variant);">Запрос пароля после 5 мин бездействия</div>
+                            <div style="font-size:11px; color:var(--on-surface-variant);">Запрос PIN после 5 мин бездействия</div>
                         </div>
                         <button id="lock-screen-btn" onclick="toggleLockScreen()" style="padding:8px 14px; border-radius:8px; border:none; background:var(--surface-variant); color:var(--on-surface); cursor:pointer; font-weight:bold; font-size:12px;">ВКЛЮЧИТЬ</button>
                     </div>
-                    <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" id="settings-target-hide-history">
                         <div>
-                            <div style="font-weight:600; font-size:13px;">Скрыть историю чатов</div>
-                            <div style="font-size:11px; color:var(--on-surface-variant);">Чаты не отображаются в боковом меню</div>
+                            <div style="font-weight:600; font-size:13px;">Скрыть содержимое чатов</div>
+                            <div style="font-size:11px; color:var(--on-surface-variant);">Не показывать сообщения, пока не введён PIN</div>
                         </div>
                         <button id="hide-history-btn" onclick="toggleHideHistory()" style="padding:8px 14px; border-radius:8px; border:none; background:var(--surface-variant); color:var(--on-surface); cursor:pointer; font-weight:bold; font-size:12px;">ВКЛЮЧИТЬ</button>
                     </div>
-                    <div class="chat-card" style="margin-bottom:12px;">
+                    <div class="chat-card" style="margin-bottom:12px;" id="settings-target-clear-data">
                         <div style="font-weight:600; font-size:13px; margin-bottom:8px;">Очистка данных</div>
                         <button onclick="clearAllLocalData()" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ff5252; background:transparent; color:#ff5252; font-weight:600; cursor:pointer; font-size:13px;">Удалить все локальные данные</button>
                     </div>
@@ -1050,6 +1027,18 @@
 
                 
                 <div id="section-api-keys" class="setting-section" style="display:none;">
+                    <div class="chat-card" id="later-gen-settings-card" style="margin-top:12px;display:none;">
+                      <div style="font-weight:700;font-size:13px;margin-bottom:6px;">Later Generate</div>
+                      <p style="font-size:12px;color:var(--on-surface-variant);line-height:1.45;margin:0 0 10px;">
+                        Показать кнопку «Сгенерировать позже», если у API-провайдера сильная нагрузка. Только при стороннем API.
+                      </p>
+                      <label class="cn-check">
+                        <input type="checkbox" id="set-later-gen" onchange="toggleLaterGenSetting(this.checked)">
+                        <span class="cn-check-box"></span>
+                        <span class="cn-check-label">Показать кнопку Later Generate</span>
+                      </label>
+                    </div>
+
                     <h3 style="margin-top:0;font-size:14px;color:var(--on-surface-variant);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                         <span class="material-symbols-rounded" style="color:var(--primary);">auto_awesome</span>
                         Сторонние API ключи
@@ -1121,18 +1110,31 @@
                 </div>
 
                 
-        <div class="chat-card" id="later-gen-settings-card" style="margin-top:12px;">
-          <div style="font-weight:700;font-size:13px;margin-bottom:6px;">Later Generate</div>
-          <p style="font-size:12px;color:var(--on-surface-variant);line-height:1.45;margin:0 0 10px;">
-            Показать кнопку «Сгенерировать позже», если у API-провайдера сильная нагрузка.
-          </p>
-          <label class="settings-toggle-row" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-            <input type="checkbox" id="set-later-gen" onchange="toggleLaterGenSetting(this.checked)">
-            <span>Показать кнопку Later Generate</span>
-          </label>
-        </div>
+                <div id="section-sidebar-menu" class="setting-section" style="display:none;">
+                    <h3 style="margin-top:0;font-size:14px;color:var(--on-surface-variant);">Настройка бокового меню <span class="setting-new-badge">НОВИНКА</span></h3>
+                    <p style="font-size:12px;color:var(--on-surface-variant);line-height:1.5;margin:0 0 14px;">
+                        <b>Create a…</b> всегда первая, <b>Настройка</b> — всегда последняя (их нельзя убрать).
+                        Дополнительно можно включить <b>до 4 кнопок</b> из списка ниже.
+                    </p>
+                    <div class="chat-card" style="margin-bottom:12px;">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:10px;">Кнопки бокового меню</div>
+                        <div id="sidebar-btn-checklist" class="sidebar-btn-checklist">
+                            <!-- filled by JS -->
+                        </div>
+                        <div id="sidebar-btn-limit-hint" style="font-size:11px;color:var(--on-surface-variant);margin-top:10px;">Выбрано: 0 / 4</div>
+                    </div>
+                    <div class="chat-card">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:6px;">Фильтр «Все»</div>
+                        <p style="font-size:12px;color:var(--on-surface-variant);margin:0 0 10px;">Раздельный доступ к типам архива (как сейчас через иконку фильтра).</p>
+                        <label class="cn-check">
+                            <input type="checkbox" id="sidebar-split-all-filters" checked onchange="toggleSidebarSplitFilters(this.checked)">
+                            <span class="cn-check-box"></span>
+                            <span class="cn-check-label">Показывать фильтры: Чаты, Истории, Проекты, Code, Планы…</span>
+                        </label>
+                    </div>
+                </div>
 
-<div id="section-about" class="setting-section" style="display:none;">
+                <div id="section-about" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Информация о системе</h3>
                     <div class="chat-card" style="text-align: center; padding: 24px;">
                         <div style="font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">Oracle AI · Material Expensive 3</div>
@@ -1183,6 +1185,16 @@
 </div>
 
 <div id="main-input-box" class="glass-input-box">
+    <div id="input-mode-chips" class="input-mode-chips">
+      <button type="button" class="mode-chip locked" onclick="openComingSoonModal('Chat')">
+        <span class="material-symbols-rounded">chat_bubble</span> Chat
+        <span class="material-symbols-rounded lock-ico">lock</span>
+      </button>
+      <button type="button" class="mode-chip locked" onclick="openComingSoonModal('Task')">
+        <span class="material-symbols-rounded">task_alt</span> Task
+        <span class="material-symbols-rounded lock-ico">lock</span>
+      </button>
+    </div>
     <div id="attach-chips" class="attach-chips" style="display:none;"></div>
 
     
@@ -1490,7 +1502,8 @@
         <input type="password" id="pin-input" inputmode="numeric" maxlength="12" placeholder="••••" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:18px;letter-spacing:4px;text-align:center;outline:none;box-sizing:border-box;">
         <input type="password" id="pin-input-2" inputmode="numeric" maxlength="12" placeholder="Повтор" autocomplete="off" style="display:none;width:100%;margin-top:8px;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:18px;letter-spacing:4px;text-align:center;outline:none;box-sizing:border-box;">
         <div class="modal-actions" style="flex-wrap:wrap;">
-            <button type="button" class="modal-btn modal-btn-reject" id="pin-reset-btn" onclick="openResetPinConfirm()" style="display:none;border-color:#ff5252;color:#ff5252;">Сброс PIN</button>
+            <button type="button" class="modal-btn modal-btn-reject" id="pin-forgot-btn" onclick="openForgotPinModal()" style="display:none;">Забыл PIN</button>
+            <button type="button" class="modal-btn modal-btn-reject" id="pin-reset-btn" onclick="openResetPinConfirm()" style="display:none;border-color:#ff5252;color:#ff5252;">Сброс данных</button>
             <button type="button" class="modal-btn modal-btn-reject" id="pin-cancel-btn" onclick="closePinModal()">Отмена</button>
             <button type="button" class="modal-btn modal-btn-accept" onclick="submitPinModal()">OK</button>
         </div>
@@ -1509,6 +1522,50 @@
         </div>
     </div>
 </div>
+<div id="delete-pin-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width:400px;">
+        <div class="modal-header">
+            <span class="material-symbols-rounded" style="color:#ff5252;">lock_open</span>
+            <h3 class="modal-title">Удалить PIN</h3>
+        </div>
+        <p class="modal-subtitle">Введите текущий PIN, чтобы снять защиту. После удаления вход по PIN не потребуется.</p>
+        <input type="password" id="delete-pin-input" inputmode="numeric" maxlength="12" placeholder="Текущий PIN" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:18px;letter-spacing:4px;text-align:center;outline:none;box-sizing:border-box;">
+        <div class="modal-actions">
+            <button class="modal-btn modal-btn-reject" onclick="closeDeletePinModal()">Отмена</button>
+            <button class="modal-btn modal-btn-accept" style="background:#ff5252;color:#fff;" onclick="confirmDeletePin()">Удалить PIN</button>
+        </div>
+    </div>
+</div>
+<div id="serious-pin-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width:400px;">
+        <div class="modal-header">
+            <span class="material-symbols-rounded" style="color:#ff9f0a;">verified_user</span>
+            <h3 class="modal-title" id="serious-pin-title">Подтверждение</h3>
+        </div>
+        <p class="modal-subtitle" id="serious-pin-text">Введите текущий PIN, чтобы продолжить.</p>
+        <input type="password" id="serious-pin-input" inputmode="numeric" maxlength="12" placeholder="Текущий PIN" autocomplete="off" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:18px;letter-spacing:4px;text-align:center;outline:none;box-sizing:border-box;">
+        <div class="modal-actions">
+            <button class="modal-btn modal-btn-reject" onclick="closeSeriousPinModal()">Отмена</button>
+            <button class="modal-btn modal-btn-accept" onclick="submitSeriousPin()">Подтвердить</button>
+        </div>
+    </div>
+</div>
+<div id="forgot-pin-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width:420px;">
+        <div class="modal-header">
+            <span class="material-symbols-rounded">mark_email_read</span>
+            <h3 class="modal-title">Восстановление PIN</h3>
+        </div>
+        <p class="modal-subtitle">Введите резервную почту. При совпадении будет создана ссылка подтверждения (не содержит PIN). Реальная доставка письма возможна через mailto или ваш сервер.</p>
+        <input type="email" id="forgot-pin-email" placeholder="Резервная почта" autocomplete="email" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:14px;outline:none;box-sizing:border-box;">
+        <div id="forgot-pin-result" style="display:none;margin-top:12px;font-size:12px;line-height:1.45;color:var(--on-surface-variant);"></div>
+        <div class="modal-actions" style="flex-wrap:wrap;">
+            <button class="modal-btn modal-btn-reject" onclick="closeForgotPinModal()">Отмена</button>
+            <button class="modal-btn modal-btn-accept" onclick="requestPinRecovery()">Создать ссылку</button>
+        </div>
+    </div>
+</div>
+
 <div id="send-all-ctx" style="display:none;position:fixed;z-index:5000;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;min-width:200px;box-shadow:0 12px 30px rgba(0,0,0,0.4);">
     <button type="button" class="nav-ctx-item" onclick="sendMsgToAllSplitChats()"><span class="material-symbols-rounded">forum</span> Отправить на все чаты</button>
 </div>
@@ -1617,28 +1674,6 @@
 </div>
 
 
-<!-- TREE FEATURE INTRO -->
-<div id="tree-feature-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width:440px;">
-        <div class="modal-header">
-            <span class="material-symbols-rounded">account_tree</span>
-            <h3 class="modal-title">Чаты и папки</h3>
-        </div>
-        <p class="modal-subtitle" style="line-height:1.55;">
-            Простая структура: <b>чаты</b> и по желанию <b>папки</b>.<br><br>
-            • Первый раз — нажмите <b>Чат</b>, чтобы начать.<br>
-            • Папку создайте кнопкой <b>+</b> у заголовка «Чаты и папки».<br>
-            • ПКМ по чату → <b>Перенести в папку</b>.<br><br>
-            В папке можно хранить чаты и файлы проекта.
-        </p>
-        <div class="modal-actions">
-            <button class="modal-btn modal-btn-reject" onclick="closeTreeFeatureModal(false)">Позже</button>
-            <button class="modal-btn modal-btn-accept" onclick="closeTreeFeatureModal(true)">Понятно</button>
-        </div>
-    </div>
-</div>
-
-
 <!-- LIKE / DISLIKE FEEDBACK -->
 <div id="ai-feedback-modal" class="modal-overlay">
     <div class="modal-card" style="max-width:420px;">
@@ -1695,42 +1730,6 @@
 </div>
 
 
-<!-- SIDE CORE NODE PROMO (desktop) -->
-<div id="side-core-promo-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width:440px;">
-        <div class="modal-header">
-            <span class="material-symbols-rounded">extension</span>
-            <h3 class="modal-title">Side Core Node</h3>
-        </div>
-        <p class="modal-subtitle" style="line-height:1.55;">
-            Урезанный Core Node в <b>боковой панели браузера</b> (Chrome / Edge).
-            Alt+Shift+C · ПКМ «Ask Core Node» · свой API в настройках панели.
-            <br><br>Не обязательно — можно закрыть и пользоваться сайтом как обычно.
-        </p>
-        <div class="modal-actions" style="flex-wrap:wrap;gap:8px;">
-            <button type="button" class="modal-btn modal-btn-reject" onclick="dismissSideCorePromo()">Не сейчас</button>
-            <button type="button" class="modal-btn modal-btn-reject" onclick="openSideCoreZipHint()">Локально ZIP</button>
-            <button type="button" class="modal-btn modal-btn-accept" onclick="openSideCoreExtHint()">Расширения</button>
-        </div>
-    </div>
-</div>
-
-<!-- SIDE CORE INSTALL HINT -->
-<div id="side-core-hint-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width:420px;">
-        <div class="modal-header">
-            <span class="material-symbols-rounded">download</span>
-            <h3 class="modal-title" id="side-core-hint-title">Установка</h3>
-        </div>
-        <p class="modal-subtitle" id="side-core-hint-text" style="line-height:1.55;"></p>
-        <div class="modal-actions">
-            <button type="button" class="modal-btn modal-btn-accept" onclick="closeSideCoreHint()">Понятно</button>
-        </div>
-    </div>
-</div>
-
-
-
 <!-- LIVE CHAT PRIVACY (first time) -->
 <div id="live-privacy-modal" class="modal-overlay">
     <div class="modal-card" style="max-width:420px;">
@@ -1757,27 +1756,34 @@
     </div>
 </div>
 
-<div id="onboarding-overlay"></div>
-
-
-
-<div id="oct14-novelty-modal" class="modal-overlay">
-  <div class="modal-card" style="max-width:460px;">
-    <div class="modal-header">
-      <span class="material-symbols-rounded">auto_awesome</span>
-      <h3 class="modal-title">Новинки 14.10</h3>
+<div id="coming-soon-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:360px;text-align:center;">
+    <div class="modal-header" style="justify-content:center;">
+      <span class="material-symbols-rounded" style="font-size:36px;color:var(--primary);">lock</span>
     </div>
-    <p class="modal-subtitle" style="line-height:1.55;">
-      <b>1.</b> Офлайн: Планы, Reader и чтение чатов — без сети. Новые сообщения только онлайн.<br>
-      <b>2.</b> Расширенный Reader (с 20.10) — форматирование и медиа офлайн.<br>
-      <b>3.</b> Карты / Навигатор — вкладка в бета.<br>
-      <b>4.</b> @коннекторы, Later Generate, история ответов 1/2, новый «Изменить».
-    </p>
-    <div class="modal-actions">
-      <button class="modal-btn modal-btn-accept" onclick="dismissOct14Novelty()">Понятно</button>
+    <h3 class="modal-title" id="coming-soon-title">Скоро в релизе</h3>
+    <p class="modal-subtitle" id="coming-soon-text">Эта функция появится в следующем обновлении Core Node.</p>
+    <div class="modal-actions" style="justify-content:center;">
+      <button type="button" class="modal-btn modal-btn-accept" onclick="closeComingSoonModal()">Ок</button>
     </div>
   </div>
 </div>
+
+<div id="onboarding-overlay" class="onboarding-overlay" hidden>
+  <div class="onboarding-banner" role="dialog" aria-modal="true">
+    <div class="onboarding-progress"><div id="onboarding-progress-bar"></div></div>
+    <div class="onboarding-icon"><span class="material-symbols-rounded" id="onboarding-icon">auto_awesome</span></div>
+    <h2 id="onboarding-title">Добро пожаловать</h2>
+    <p id="onboarding-text"></p>
+    <div class="onboarding-dots" id="onboarding-dots"></div>
+    <div class="onboarding-actions">
+      <button type="button" class="modal-btn modal-btn-reject" onclick="skipOnboarding()">Пропустить</button>
+      <button type="button" class="modal-btn modal-btn-accept" id="onboarding-next-btn" onclick="nextOnboarding()">Далее</button>
+    </div>
+  </div>
+</div>
+
+
 
 <script src="script.js"></script>
 
