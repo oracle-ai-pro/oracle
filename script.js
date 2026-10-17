@@ -47,6 +47,15 @@ function showSection(sectionId) {
     const activeBtn = document.getElementById('btn-sec-' + sectionId);
     if (activeBtn) activeBtn.classList.add('active');
 
+    // Later Generate card только во вкладке Сторонние API
+    const laterCard = document.getElementById('later-gen-settings-card');
+    if (laterCard) {
+        laterCard.style.display = (sectionId === 'api-keys') ? 'block' : 'none';
+    }
+    if (sectionId === 'sidebar-menu' && typeof renderSidebarBtnChecklist === 'function') {
+        try { renderSidebarBtnChecklist(); } catch(e) {}
+    }
+
     // Mobile: drill into section
     if (window.matchMedia('(max-width: 767px)').matches) {
         const titles = {
@@ -58,6 +67,7 @@ function showSection(sectionId) {
             notifications: 'Уведомления',
             'public-links': 'Публичные ссылки',
             'api-keys': 'Сторонние API',
+            'sidebar-menu': 'Настройка бокового меню',
             about: 'О проекте'
         };
         const screen = document.getElementById('screen-settings');
@@ -1467,6 +1477,14 @@ function _changeOracleThemeImpl(primary, container, variant) {
         const overlay = document.getElementById('screensaver-overlay');
         if (overlay) overlay.style.display = 'none';
         resetScreensaverTimer();
+        // PIN после заставки
+        if (localStorage.getItem('oracle_pin_on_screensaver') === 'true'
+            && localStorage.getItem('oracle_pin_hash')
+            && sessionStorage.getItem('oracle_pin_ok') !== '1') {
+            if (typeof showPinUnlockModal === 'function') {
+                showPinUnlockModal('После заставки', 'Введите PIN, чтобы продолжить');
+            }
+        }
     }
 
     ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt => {
@@ -2618,40 +2636,125 @@ document.addEventListener('click', (e) => {
 });
 
 // ===== ONBOARDING TIPS =====
-function startOnboarding() {
-    if (localStorage.getItem('oracle_onboarding_done') === 'true') return;
-    const tips = [
-        { title: 'Live Chat', text: 'Кнопка рядом с микрофоном — скоро живой диалог с ИИ.', sel: '#live-chat-btn' },
-        { title: 'Расширенная Персонализация', text: 'Навигация сверху/снизу, темы и анимации — в Settings → Персонализация.', sel: '#btn-tab-settings' },
-        { title: 'Точные Лимиты', text: 'Прозрачные лимиты использования в разделе Лимиты.', sel: '#btn-tab-settings' },
-        { title: 'Вкладка «О вас»', text: 'Имя, роль и инструкции для ИИ — персональный профиль.', sel: '#btn-tab-settings' }
-    ];
-    let i = 0;
+const ONBOARDING_SLIDES = [
+    { icon: 'auto_awesome', title: 'Новинки 14.10', text: 'Офлайн-режим для Планов и Reader, Карты в бете, @коннекторы, Later Generate, история ответов 1/2 и новый «Изменить» запрос.' },
+    { icon: 'verified_user', title: 'Вы хозяин функций', text: 'Данные Core Node хранятся только у вас в браузере и не уходят третьим лицам без вашего согласия. Чаты, настройки, истории и файлы — локально. Рекламы не будет.' },
+    { icon: 'extension', title: 'Side Core Node', text: 'Мини-ИИ в боковой панели браузера. Тема, акцент и API настраиваются там же. Скачайте расширение ZIP с официального сайта.', download: 'https://oracle-ai-pro.github.io/oracle/side-core-node.zip', downloadLabel: 'Скачать Side Core Node' },
+    { icon: 'share', title: 'Новинка: Совместные чаты', text: 'ПКМ по чату → «Поделиться». Ссылка вида /public-chat/…. Вы управляете доступом и можете отозвать ссылку в любой момент.' },
+    { icon: 'folder_open', title: 'Представляем Проекты с Чатами и файлами', text: 'Папки-проекты с жёсткими источниками, ветки чатов и файлы в одном дереве. Порядок вместо хаоса длинных списков.' }
+];
+let _onboardingIndex = 0;
+let _onboardingTimer = null;
+let _onboardingPreview = false;
+
+function renderOnboardingSlide() {
     const overlay = document.getElementById('onboarding-overlay');
     if (!overlay) return;
-
-    function showTip() {
-        overlay.innerHTML = '';
-        if (i >= tips.length) {
-            localStorage.setItem('oracle_onboarding_done', 'true');
-            return;
-        }
-        const tip = tips[i];
-        const el = document.querySelector(tip.sel);
-        const rect = el ? el.getBoundingClientRect() : { top: 80, left: 80, width: 40, height: 40 };
-        const div = document.createElement('div');
-        div.className = 'onboard-tip';
-        div.style.top = (rect.bottom + 12) + 'px';
-        div.style.left = Math.min(rect.left, window.innerWidth - 240) + 'px';
-        div.innerHTML = `<strong>${tip.title}</strong><p>${tip.text}</p><button type="button">Далее</button>`;
-        div.querySelector('button').onclick = () => { i++; showTip(); };
-        overlay.appendChild(div);
+    const slides = ONBOARDING_SLIDES;
+    const i = _onboardingIndex;
+    const s = slides[i] || slides[0];
+    const icon = document.getElementById('onboarding-icon');
+    const title = document.getElementById('onboarding-title');
+    const text = document.getElementById('onboarding-text');
+    const bar = document.getElementById('onboarding-progress-bar');
+    const dots = document.getElementById('onboarding-dots');
+    const nextBtn = document.getElementById('onboarding-next-btn');
+    if (icon) icon.textContent = s.icon;
+    if (title) title.textContent = s.title;
+    if (text) text.textContent = s.text;
+    let extra = document.getElementById('onboarding-extra');
+    if (!extra && text && text.parentElement) {
+        extra = document.createElement('div');
+        extra.id = 'onboarding-extra';
+        extra.className = 'onboarding-extra';
+        text.parentElement.insertBefore(extra, text.nextSibling);
     }
-    setTimeout(showTip, 800);
+    if (extra) {
+        if (s.download) {
+            extra.innerHTML = '<a class="onboarding-download-btn" href="' + s.download + '" download target="_blank" rel="noopener">' +
+                '<span class="material-symbols-rounded">download</span> ' + (s.downloadLabel || 'Скачать') + '</a>';
+            extra.hidden = false;
+        } else {
+            extra.innerHTML = '';
+            extra.hidden = true;
+        }
+    }
+    if (bar) bar.style.width = (((i + 1) / slides.length) * 100) + '%';
+    if (dots) {
+        dots.innerHTML = slides.map((_, di) =>
+            '<span class="onboarding-dot' + (di === i ? ' active' : '') + '"></span>'
+        ).join('');
+    }
+    if (nextBtn) nextBtn.textContent = (i >= slides.length - 1) ? 'Готово' : 'Далее';
 }
 
+function startOnboarding(force) {
+    if (!force && localStorage.getItem('oracle_onboarding_done') === 'true') return;
+    _onboardingPreview = !!force;
+    _onboardingIndex = 0;
+    const overlay = document.getElementById('onboarding-overlay');
+    if (!overlay) return;
+    overlay.hidden = false;
+    overlay.classList.add('active');
+    renderOnboardingSlide();
+    clearInterval(_onboardingTimer);
+    _onboardingTimer = setInterval(() => {
+        if (_onboardingIndex < ONBOARDING_SLIDES.length - 1) {
+            _onboardingIndex++;
+            renderOnboardingSlide();
+        } else {
+            clearInterval(_onboardingTimer);
+        }
+    }, 5500);
+}
+
+function nextOnboarding() {
+    if (_onboardingIndex >= ONBOARDING_SLIDES.length - 1) {
+        finishOnboarding();
+        return;
+    }
+    _onboardingIndex++;
+    renderOnboardingSlide();
+    clearInterval(_onboardingTimer);
+    _onboardingTimer = setInterval(() => {
+        if (_onboardingIndex < ONBOARDING_SLIDES.length - 1) {
+            _onboardingIndex++;
+            renderOnboardingSlide();
+        } else clearInterval(_onboardingTimer);
+    }, 5500);
+}
+
+function skipOnboarding() { finishOnboarding(); }
+
+function finishOnboarding() {
+    clearInterval(_onboardingTimer);
+    const overlay = document.getElementById('onboarding-overlay');
+    if (overlay) {
+        overlay.classList.remove('active');
+        overlay.hidden = true;
+    }
+    if (!_onboardingPreview) {
+        localStorage.setItem('oracle_onboarding_done', 'true');
+        // Старые отдельные модалки заменены OOBE — помечаем всё просмотренным
+        localStorage.setItem('oracle_consent', localStorage.getItem('oracle_consent') || 'all');
+        localStorage.setItem('oracle_share_tip_seen', 'true');
+        localStorage.setItem('oracle_tree_feature_seen_v1', 'true');
+        localStorage.setItem('oracle_oct14_novelty', '1');
+        localStorage.setItem('oracle_side_core_promo', '1');
+    }
+    _onboardingPreview = false;
+    document.body.classList.remove('onboarding-open');
+}
+
+/** Консоль: previewOnboarding() — показать обучение снова */
+window.previewOnboarding = function() {
+    localStorage.removeItem('oracle_onboarding_done');
+    startOnboarding(true);
+};
+window.startOnboarding = startOnboarding;
+
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(startOnboarding, 600);
+    setTimeout(() => startOnboarding(false), 700);
 });
 
 
@@ -2883,41 +2986,115 @@ window.undockSidebar = undockSidebar;
 
 
 // ===== SECURITY TOGGLES =====
-function toggleLockScreen() {
+let _lockScreenIdleTimer = null;
+const LOCK_SCREEN_IDLE_MS = 5 * 60 * 1000; // 5 мин
+
+function syncLockScreenBtn() {
     const on = localStorage.getItem('oracle_lock_screen') === 'true';
-    localStorage.setItem('oracle_lock_screen', on ? 'false' : 'true');
     const btn = document.getElementById('lock-screen-btn');
     if (btn) {
-        btn.innerText = !on ? 'ВЫКЛЮЧИТЬ' : 'ВКЛЮЧИТЬ';
-        btn.style.background = !on ? 'var(--primary-container)' : 'var(--surface-variant)';
-        btn.style.color = !on ? 'var(--primary)' : 'var(--on-surface)';
+        btn.innerText = on ? 'ВЫКЛЮЧИТЬ' : 'ВКЛЮЧИТЬ';
+        btn.style.background = on ? 'var(--primary-container)' : 'var(--surface-variant)';
+        btn.style.color = on ? 'var(--primary)' : 'var(--on-surface)';
     }
-    showToast(!on ? 'Блокировка экрана включена' : 'Блокировка выключена', 'success');
 }
+function resetLockScreenIdle() {
+    clearTimeout(_lockScreenIdleTimer);
+    if (localStorage.getItem('oracle_lock_screen') !== 'true') return;
+    if (!localStorage.getItem('oracle_pin_hash')) return;
+    if (document.body.classList.contains('pin-locked')) return;
+    _lockScreenIdleTimer = setTimeout(() => {
+        if (localStorage.getItem('oracle_lock_screen') !== 'true') return;
+        if (!localStorage.getItem('oracle_pin_hash')) return;
+        sessionStorage.removeItem('oracle_pin_ok');
+        if (typeof showPinUnlockModal === 'function') showPinUnlockModal('Блокировка', 'Введите PIN — экран был неактивен 5 минут');
+        else if (typeof maybeAskPinOnEntry === 'function') {
+            // force unlock UI
+            sessionStorage.removeItem('oracle_pin_ok');
+            localStorage.setItem('oracle_pin_on_entry', 'true');
+            maybeAskPinOnEntry();
+        }
+    }, LOCK_SCREEN_IDLE_MS);
+}
+function initLockScreenIdle() {
+    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
+        window.addEventListener(evt, () => resetLockScreenIdle(), { passive: true });
+    });
+    resetLockScreenIdle();
+}
+function toggleLockScreen() {
+    if (!localStorage.getItem('oracle_pin_hash')) {
+        showToast('Сначала создайте PIN', 'warning');
+        return;
+    }
+    const on = localStorage.getItem('oracle_lock_screen') === 'true';
+    localStorage.setItem('oracle_lock_screen', on ? 'false' : 'true');
+    syncLockScreenBtn();
+    if (!on) resetLockScreenIdle();
+    else clearTimeout(_lockScreenIdleTimer);
+    showToast(!on ? 'Блокировка экрана: PIN через 5 мин бездействия' : 'Блокировка экрана выключена', 'success');
+}
+
+/** Раньше «Скрыть историю» → теперь: не показывать содержимое чатов без PIN */
 function toggleHideHistory() {
-    const on = localStorage.getItem('oracle_hide_history') === 'true';
-    localStorage.setItem('oracle_hide_history', on ? 'false' : 'true');
+    if (!localStorage.getItem('oracle_pin_hash')) {
+        showToast('Сначала создайте PIN', 'warning');
+        return;
+    }
+    const on = localStorage.getItem('oracle_pin_hide_content') === 'true';
+    localStorage.setItem('oracle_pin_hide_content', on ? 'false' : 'true');
+    // legacy key cleanup
+    localStorage.removeItem('oracle_hide_history');
     const btn = document.getElementById('hide-history-btn');
     if (btn) {
         btn.innerText = !on ? 'ВЫКЛЮЧИТЬ' : 'ВКЛЮЧИТЬ';
         btn.style.background = !on ? 'var(--primary-container)' : 'var(--surface-variant)';
         btn.style.color = !on ? 'var(--primary)' : 'var(--on-surface)';
     }
-    document.getElementById('chats-list')?.classList.toggle('hidden', !on);
-    showToast(!on ? 'История скрыта' : 'История видна', 'success');
+    applyPinContentLock();
+    showToast(!on ? 'Содержимое чатов скрыто до ввода PIN' : 'Содержимое чатов видно', 'success');
+}
+function applyPinContentLock() {
+    const need = localStorage.getItem('oracle_pin_hide_content') === 'true'
+        && !!localStorage.getItem('oracle_pin_hash')
+        && sessionStorage.getItem('oracle_pin_ok') !== '1';
+    document.body.classList.toggle('pin-content-locked', need);
+    if (need && typeof showPinUnlockModal === 'function' && !document.body.classList.contains('pin-locked')) {
+        showPinUnlockModal('Содержимое скрыто', 'Введите PIN, чтобы увидеть сообщения');
+    }
+}
+function syncHideContentBtn() {
+    const on = localStorage.getItem('oracle_pin_hide_content') === 'true';
+    const btn = document.getElementById('hide-history-btn');
+    if (btn) {
+        btn.innerText = on ? 'ВЫКЛЮЧИТЬ' : 'ВКЛЮЧИТЬ';
+        btn.style.background = on ? 'var(--primary-container)' : 'var(--surface-variant)';
+        btn.style.color = on ? 'var(--primary)' : 'var(--on-surface)';
+    }
 }
 function clearAllLocalData() {
-    showCustomModal('Удалить всё?', 'Будут удалены чаты, истории, файлы и настройки. Это необратимо.', false, '', (ok) => {
-        if (!ok) return;
-        const keep = ['oracle_onboarding_done'];
-        Object.keys(localStorage).forEach(k => {
-            if (k.startsWith('oracle_') && !keep.includes(k)) localStorage.removeItem(k);
+    const doWipe = () => {
+        showCustomModal('Удалить всё?', 'Будут удалены чаты, истории, файлы и настройки. Это необратимо.', false, '', (ok) => {
+            if (!ok) return;
+            const keep = ['oracle_onboarding_done', 'oracle_consent'];
+            Object.keys(localStorage).forEach(k => {
+                if (k.startsWith('oracle_') && !keep.includes(k)) localStorage.removeItem(k);
+            });
+            sessionStorage.clear();
+            showToast('Данные очищены. Перезагрузите страницу.', 'warning');
+            setTimeout(() => location.reload(), 900);
         });
-        showToast('Данные очищены. Перезагрузите страницу.', 'warning');
-    });
+    };
+    // Серьёзная операция: если PIN есть — сначала подтвердить
+    if (localStorage.getItem('oracle_pin_hash')) {
+        requireCurrentPin('Очистка данных', 'Введите текущий PIN, чтобы удалить все локальные данные Core Node.', doWipe);
+    } else {
+        doWipe();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    if (typeof updatePinStatusUI === 'function') updatePinStatusUI();
     updateMemoryUI();
     renderLibraryFiles();
     updateAttachLimitUI();
@@ -2934,23 +3111,14 @@ let pendingPublicImport = null;
 let lastShareId = null;
 
 function acceptConsent(mode) {
-    localStorage.setItem('oracle_consent', mode);
-    document.getElementById('consent-modal')?.classList.remove('active');
-    // 2/2 tip about shared chats
-    if (localStorage.getItem('oracle_share_tip_seen') !== 'true') {
-        setTimeout(() => {
-            document.getElementById('share-tip-modal')?.classList.add('active');
-        }, 400);
-    }
+    localStorage.setItem('oracle_consent', mode || 'all');
+    localStorage.setItem('oracle_share_tip_seen', 'true');
+    // Старые модалки удалены — всё покрывает onboarding OOBE
 }
-
 function closeShareTip() {
     localStorage.setItem('oracle_share_tip_seen', 'true');
-    document.getElementById('share-tip-modal')?.classList.remove('active');
 }
 
-
-// ===== PUBLIC LINKS MANAGEMENT =====
 function buildPublicShareUrl(shareId, payload) {
     try {
         const encoded = btoa(unescape(encodeURIComponent(JSON.stringify({
@@ -3338,8 +3506,9 @@ document.addEventListener('contextmenu', (e) => {
 }, true);
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('oracle_consent')) {
-        document.getElementById('consent-modal')?.classList.add('active');
+    if (!localStorage.getItem('oracle_consent') && !localStorage.getItem('oracle_onboarding_done')) {
+        /* consent modal removed — OOBE covers this */
+        localStorage.setItem('oracle_consent', 'all');
     }
     checkPublicChatLink();
 });
@@ -4847,14 +5016,19 @@ let pinModalMode = 'set'; // set | change | unlock
 function openSetPinModal() {
     const has = !!localStorage.getItem('oracle_pin_hash');
     pinModalMode = has ? 'change' : 'set';
+    window._pinChangeStep = has ? 1 : 0; // 1=verify old, 2=enter new+confirm
     document.getElementById('pin-modal-title').textContent = has ? 'Изменить PIN' : 'Создать PIN';
     document.getElementById('pin-modal-text').textContent = has
-        ? 'Введите текущий PIN, затем новый во втором поле.'
+        ? 'Сначала подтвердите текущий PIN.'
         : 'Придумайте PIN (мин. 4). Если забудете — только сброс данных Core Node.';
-    document.getElementById('pin-input').value = '';
-    document.getElementById('pin-input-2').style.display = 'block';
-    document.getElementById('pin-input-2').value = '';
-    document.getElementById('pin-input').placeholder = has ? 'Текущий PIN' : 'Новый PIN';
+    const i1 = document.getElementById('pin-input');
+    const i2 = document.getElementById('pin-input-2');
+    if (i1) { i1.value = ''; i1.placeholder = has ? 'Текущий PIN' : 'Новый PIN'; }
+    if (i2) {
+        i2.value = '';
+        i2.style.display = has ? 'none' : 'block';
+        i2.placeholder = 'Повтор нового PIN';
+    }
     const note = document.getElementById('pin-local-note');
     if (note) note.style.display = 'none';
     document.getElementById('pin-cancel-btn') && (document.getElementById('pin-cancel-btn').style.display = 'inline-flex');
@@ -4862,6 +5036,7 @@ function openSetPinModal() {
     document.getElementById('pin-modal')?.classList.remove('pin-unlock-mode');
     document.body.classList.remove('pin-locked');
     document.getElementById('pin-modal')?.classList.add('active');
+    setTimeout(() => i1?.focus(), 60);
 }
 
 function closePinModal() {
@@ -4891,10 +5066,34 @@ function submitPinModal() {
     }
     if (pinModalMode === 'change') {
         const cur = localStorage.getItem('oracle_pin_hash');
-        if (simpleHash(a) !== cur) { showToast('Неверный текущий PIN', 'error'); return; }
-        if (b.length < 4) { showToast('Новый PIN: минимум 4', 'warning'); return; }
-        // second field is new pin in change mode
-        localStorage.setItem('oracle_pin_hash', simpleHash(b));
+        const step = window._pinChangeStep || 1;
+        if (step === 1) {
+            if (simpleHash(a) !== cur) { showToast('Неверный текущий PIN', 'error'); return; }
+            // old PIN ok → ask for new + confirm
+            window._pinChangeStep = 2;
+            const i1 = document.getElementById('pin-input');
+            const i2 = document.getElementById('pin-input-2');
+            const t = document.getElementById('pin-modal-text');
+            if (t) t.textContent = 'Введите новый PIN и повторите. Оставьте оба поля пустыми — чтобы удалить PIN.';
+            if (i1) { i1.value = ''; i1.placeholder = 'Новый PIN'; }
+            if (i2) { i2.style.display = 'block'; i2.value = ''; i2.placeholder = 'Повтор нового PIN'; }
+            showToast('Текущий PIN подтверждён', 'success');
+            setTimeout(() => i1?.focus(), 40);
+            return;
+        }
+        // step 2: a = new, b = confirm; пустые оба поля = удалить PIN
+        if (!a && !b) {
+            localStorage.removeItem('oracle_pin_hash');
+            window._pinChangeStep = 0;
+            closePinModal();
+            updatePinStatusUI();
+            showToast('PIN удалён', 'success');
+            return;
+        }
+        if (a.length < 4) { showToast('Новый PIN: минимум 4 (или оставьте пустым, чтобы удалить)', 'warning'); return; }
+        if (a !== b) { showToast('PIN не совпадает', 'error'); return; }
+        localStorage.setItem('oracle_pin_hash', simpleHash(a));
+        window._pinChangeStep = 0;
         closePinModal();
         updatePinStatusUI();
         showToast('PIN изменён', 'success');
@@ -4906,6 +5105,9 @@ function submitPinModal() {
             pinModalMode = 'set'; // allow close
             document.getElementById('pin-modal')?.classList.remove('active', 'pin-unlock-mode');
             document.body.classList.remove('pin-locked');
+            document.body.classList.remove('pin-content-locked');
+            if (typeof applyPinContentLock === 'function') applyPinContentLock();
+            if (typeof resetLockScreenIdle === 'function') resetLockScreenIdle();
             showToast('Доступ разрешён', 'success');
         } else showToast('Неверный PIN', 'error');
         return;
@@ -4915,10 +5117,18 @@ function updatePinStatusUI() {
     const has = !!localStorage.getItem('oracle_pin_hash');
     const el = document.getElementById('pin-status-label');
     if (el) el.textContent = has ? 'PIN задан' : 'Пароль не задан';
+    const delBtn = document.getElementById('delete-pin-btn');
+    if (delBtn) delBtn.style.display = has ? 'block' : 'none';
     ['oracle_pin_on_entry','oracle_pin_on_screensaver','oracle_safe_search'].forEach((k,i) => {
         const ids = ['pin-on-entry-btn','pin-on-screensaver-btn','safe-search-btn'];
         syncToggleBtn(ids[i], localStorage.getItem(k) === 'true');
     });
+    // backup email status
+    const st = document.getElementById('backup-email-status');
+    const inp = document.getElementById('backup-email-input');
+    const masked = localStorage.getItem('oracle_backup_email_mask') || '';
+    if (st) st.textContent = masked ? ('Сохранено: ' + masked) : 'Резервная почта не задана';
+    if (inp && masked && !inp.value) inp.placeholder = masked;
 }
 function togglePinFlag(key, btnId) {
     const on = localStorage.getItem(key) !== 'true';
@@ -4933,15 +5143,13 @@ function syncToggleBtn(id, on) {
     b.style.background = on ? 'var(--primary-container)' : 'var(--surface-variant)';
     b.style.color = on ? 'var(--primary)' : 'var(--on-surface)';
 }
-function maybeAskPinOnEntry() {
-    if (localStorage.getItem('oracle_pin_on_entry') !== 'true') return;
+function showPinUnlockModal(titleText, bodyText) {
     if (!localStorage.getItem('oracle_pin_hash')) return;
-    if (sessionStorage.getItem('oracle_pin_ok') === '1') return;
     pinModalMode = 'unlock';
     const title = document.getElementById('pin-modal-title');
-    const text = document.getElementById('pin-modal-text');
-    if (title) title.textContent = 'Вход';
-    if (text) text.textContent = 'Введите PIN, чтобы открыть Core Node';
+    const textEl = document.getElementById('pin-modal-text');
+    if (title) title.textContent = titleText || 'Вход';
+    if (textEl) textEl.textContent = bodyText || 'Введите PIN, чтобы открыть Core Node';
     const i2 = document.getElementById('pin-input-2');
     if (i2) i2.style.display = 'none';
     const inp = document.getElementById('pin-input');
@@ -4949,15 +5157,33 @@ function maybeAskPinOnEntry() {
     const modal = document.getElementById('pin-modal');
     const cancel = document.getElementById('pin-cancel-btn');
     const reset = document.getElementById('pin-reset-btn');
+    const forgot = document.getElementById('pin-forgot-btn');
     const note = document.getElementById('pin-local-note');
     if (modal) modal.classList.add('pin-unlock-mode');
     if (cancel) cancel.style.display = 'none';
-    if (reset) reset.style.display = 'inline-flex';
+    // Одна кнопка: восстановление если есть почта, иначе сброс данных
+    if (reset) {
+        reset.style.display = 'inline-flex';
+        const hasMail = !!localStorage.getItem('oracle_backup_email_hash');
+        reset.textContent = hasMail ? 'Забыл PIN' : 'Сброс данных';
+        reset.onclick = function() {
+            if (localStorage.getItem('oracle_backup_email_hash')) openForgotPinModal();
+            else openResetPinConfirm();
+        };
+    }
+    if (forgot) forgot.style.display = 'none';
     if (note) note.style.display = 'block';
     document.body.classList.add('pin-locked');
     modal?.classList.add('active');
     setTimeout(() => inp?.focus(), 80);
 }
+function maybeAskPinOnEntry() {
+    if (localStorage.getItem('oracle_pin_on_entry') !== 'true') return;
+    if (!localStorage.getItem('oracle_pin_hash')) return;
+    if (sessionStorage.getItem('oracle_pin_ok') === '1') return;
+    showPinUnlockModal('Вход', 'Введите PIN, чтобы открыть Core Node');
+}
+window.showPinUnlockModal = showPinUnlockModal;
 
 // ===== NOTIFICATIONS SETTINGS =====
 function toggleNotifFlag(key, btnId) {
@@ -5172,6 +5398,196 @@ function confirmResetPinAndData() {
 }
 // show reset only in unlock mode
 // also when opening unlock manually
+
+// ===== SERIOUS OPS + DELETE PIN + BACKUP EMAIL =====
+window._seriousPinCb = null;
+
+function requireCurrentPin(title, textMsg, onOk) {
+    if (!localStorage.getItem('oracle_pin_hash')) {
+        if (typeof onOk === 'function') onOk();
+        return;
+    }
+    window._seriousPinCb = onOk;
+    const modal = document.getElementById('serious-pin-modal');
+    const t = document.getElementById('serious-pin-title');
+    const d = document.getElementById('serious-pin-text');
+    const inp = document.getElementById('serious-pin-input');
+    if (t) t.textContent = title || 'Подтверждение';
+    if (d) d.textContent = textMsg || 'Введите текущий PIN, чтобы продолжить.';
+    if (inp) inp.value = '';
+    modal?.classList.add('active');
+    setTimeout(() => inp?.focus(), 60);
+}
+function closeSeriousPinModal() {
+    document.getElementById('serious-pin-modal')?.classList.remove('active');
+    window._seriousPinCb = null;
+}
+function submitSeriousPin() {
+    const v = document.getElementById('serious-pin-input')?.value || '';
+    const cur = localStorage.getItem('oracle_pin_hash');
+    if (!cur || simpleHash(v) !== cur) {
+        showToast('Неверный PIN', 'error');
+        return;
+    }
+    const cb = window._seriousPinCb;
+    closeSeriousPinModal();
+    if (typeof cb === 'function') cb();
+}
+
+function openDeletePinModal() {
+    if (!localStorage.getItem('oracle_pin_hash')) {
+        showToast('PIN не задан', 'warning');
+        return;
+    }
+    const inp = document.getElementById('delete-pin-input');
+    if (inp) inp.value = '';
+    document.getElementById('delete-pin-modal')?.classList.add('active');
+    setTimeout(() => inp?.focus(), 60);
+}
+function closeDeletePinModal() {
+    document.getElementById('delete-pin-modal')?.classList.remove('active');
+}
+function confirmDeletePin() {
+    const v = document.getElementById('delete-pin-input')?.value || '';
+    const cur = localStorage.getItem('oracle_pin_hash');
+    if (!cur || simpleHash(v) !== cur) {
+        showToast('Неверный текущий PIN', 'error');
+        return;
+    }
+    localStorage.removeItem('oracle_pin_hash');
+    closeDeletePinModal();
+    updatePinStatusUI();
+    showToast('PIN удалён', 'success');
+}
+
+function maskEmail(email) {
+    const s = String(email || '').trim().toLowerCase();
+    const at = s.indexOf('@');
+    if (at < 1) return s ? '***' : '';
+    const user = s.slice(0, at);
+    const domain = s.slice(at);
+    const vis = user.slice(0, Math.min(2, user.length));
+    return vis + '***' + domain;
+}
+function saveBackupEmail() {
+    const inp = document.getElementById('backup-email-input');
+    const raw = (inp?.value || '').trim().toLowerCase();
+    if (!raw) {
+        requireCurrentPin('Удалить резервную почту', 'Введите PIN, чтобы удалить резервную почту.', () => {
+            localStorage.removeItem('oracle_backup_email_hash');
+            localStorage.removeItem('oracle_backup_email_mask');
+            if (inp) inp.value = '';
+            updatePinStatusUI();
+            showToast('Резервная почта удалена', 'success');
+        });
+        return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) {
+        showToast('Некорректный email', 'warning');
+        return;
+    }
+    const apply = () => {
+        localStorage.setItem('oracle_backup_email_hash', simpleHash(raw));
+        localStorage.setItem('oracle_backup_email_mask', maskEmail(raw));
+        if (inp) inp.value = '';
+        updatePinStatusUI();
+        showToast('Резервная почта сохранена', 'success');
+    };
+    if (localStorage.getItem('oracle_pin_hash')) {
+        requireCurrentPin('Резервная почта', 'Подтвердите PIN, чтобы сохранить резервный адрес.', apply);
+    } else {
+        apply();
+    }
+}
+
+function getDeviceFingerprint() {
+    const nav = navigator || {};
+    return {
+        ua: nav.userAgent || '',
+        platform: nav.platform || '',
+        lang: nav.language || '',
+        languages: (nav.languages || []).join(', '),
+        screen: (window.screen ? (screen.width + '×' + screen.height) : ''),
+        tz: (Intl.DateTimeFormat().resolvedOptions().timeZone || ''),
+        when: new Date().toISOString(),
+        host: location.host || ''
+    };
+}
+
+function openForgotPinModal() {
+    document.getElementById('pin-modal')?.classList.remove('active');
+    const r = document.getElementById('forgot-pin-result');
+    if (r) { r.style.display = 'none'; r.innerHTML = ''; }
+    const e = document.getElementById('forgot-pin-email');
+    if (e) e.value = '';
+    document.getElementById('forgot-pin-modal')?.classList.add('active');
+}
+function closeForgotPinModal() {
+    document.getElementById('forgot-pin-modal')?.classList.remove('active');
+    if (document.body.classList.contains('pin-locked')) {
+        document.getElementById('pin-modal')?.classList.add('active');
+    }
+}
+function requestPinRecovery() {
+    const email = (document.getElementById('forgot-pin-email')?.value || '').trim().toLowerCase();
+    const hash = localStorage.getItem('oracle_backup_email_hash');
+    if (!hash) {
+        showToast('Резервная почта не настроена', 'warning');
+        return;
+    }
+    if (simpleHash(email) !== hash) {
+        showToast('Почта не совпадает с резервной', 'error');
+        return;
+    }
+    const token = 'r' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const device = getDeviceFingerprint();
+    const payload = {
+        token,
+        created: Date.now(),
+        expires: Date.now() + 30 * 60 * 1000,
+        device
+    };
+    localStorage.setItem('oracle_recovery_pending', JSON.stringify(payload));
+    const info = btoa(unescape(encodeURIComponent(JSON.stringify({
+        platform: device.platform,
+        screen: device.screen,
+        tz: device.tz,
+        lang: device.lang,
+        when: device.when,
+        host: device.host
+    }))));
+    const base = location.href.replace(/[^/]*$/, '');
+    const link = base + 'confirm.html?t=' + encodeURIComponent(token) + '&info=' + encodeURIComponent(info);
+    const box = document.getElementById('forgot-pin-result');
+    if (box) {
+        box.style.display = 'block';
+        const safeLink = link.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+        box.innerHTML = '<b>Ссылка восстановления (30 мин):</b><br><code style="word-break:break-all;font-size:11px;">' + safeLink + '</code>' +
+            '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+            '<button type="button" class="modal-btn modal-btn-accept" style="flex:1;" id="copy-recovery-link-btn">Копировать</button>' +
+            '<a class="modal-btn modal-btn-reject" style="flex:1;text-align:center;text-decoration:none;" href="mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent('Core Node — подтверждение восстановления') + '&body=' + encodeURIComponent('Откройте ссылку на том же устройстве/браузере, где стоит Core Node:\n\n' + link + '\n\nСсылка действует 30 минут. PIN в письме не передаётся.') + '">Открыть mailto</a>' +
+            '</div><p style="margin:10px 0 0;font-size:11px;">confirm.html без параметров пустой. С токеном — данные устройства и «Это я» / «Это не я» / «Удалённый сброс».</p>';
+        setTimeout(() => {
+            document.getElementById('copy-recovery-link-btn')?.addEventListener('click', () => {
+                navigator.clipboard.writeText(link).then(() => showToast('Скопировано', 'success')).catch(() => showToast('Не удалось скопировать', 'error'));
+            });
+        }, 30);
+    }
+    showToast('Ссылка создана', 'success');
+}
+
+window.openDeletePinModal = openDeletePinModal;
+window.closeDeletePinModal = closeDeletePinModal;
+window.confirmDeletePin = confirmDeletePin;
+window.requireCurrentPin = requireCurrentPin;
+window.closeSeriousPinModal = closeSeriousPinModal;
+window.submitSeriousPin = submitSeriousPin;
+window.saveBackupEmail = saveBackupEmail;
+window.openForgotPinModal = openForgotPinModal;
+window.closeForgotPinModal = closeForgotPinModal;
+window.requestPinRecovery = requestPinRecovery;
+
+
 // ===== PLAN MODAL =====
 let planModalState = { mode: 'create', editId: null, notify: 10, color: '' };
 
@@ -5992,7 +6408,7 @@ function retryLastApiRequest(btn) {
 function getProviderModel(provider, forLive) {
     const p = String(provider || '').toLowerCase();
     const live = forLive || (typeof CoreState !== 'undefined' && CoreState.isLiveChat);
-    if (p === 'gemini') return live ? 'gemini-2.0-flash-lite' : 'gemini-2.0-flash';
+    if (p === 'gemini') return live ? 'gemini-3.5-flash-lite' : 'gemini-3.8-flash';
     if (p === 'openai') return live ? 'gpt-4o-mini' : 'gpt-4o-mini';
     if (p === 'claude') return live ? 'claude-3-5-haiku-20241022' : 'claude-3-5-haiku-20241022';
     if (p === 'grok') return live ? 'grok-2-latest' : 'grok-2-latest';
@@ -6841,7 +7257,7 @@ function maybeShowTreeFeatureModal() {
         if (localStorage.getItem('oracle_tree_feature_seen_v1') === 'true') return;
         const consent = document.getElementById('consent-modal');
         if (consent && consent.classList.contains('active')) return;
-        document.getElementById('tree-feature-modal')?.classList.add('active');
+/* tree-feature-modal removed — OOBE */
     }, 1600);
 }
 document.addEventListener('DOMContentLoaded', maybeShowTreeFeatureModal);
@@ -6990,7 +7406,7 @@ function maybeShowSideCorePromo() {
     }
     setTimeout(() => {
         if (localStorage.getItem('oracle_side_core_promo_v1') === '1') return;
-        document.getElementById('side-core-promo-modal')?.classList.add('active');
+        void 0 /* modal removed */;
     }, 2200);
 }
 
@@ -7006,7 +7422,7 @@ function openSideCoreZipHint() {
     const b = document.getElementById('side-core-hint-text');
     if (t) t.textContent = 'Локально ZIP';
     if (b) b.innerHTML = '1. Скачайте <b>side-core-node.zip</b> из репозитория / артефактов сборки.<br>2. Распакуйте папку.<br>3. Chrome → <code>chrome://extensions</code> → Режим разработчика → <b>Загрузить распакованное</b>.<br>4. Alt+Shift+C — боковая панель.';
-    document.getElementById('side-core-hint-modal')?.classList.add('active');
+    void 0 /* modal removed */;
 }
 
 function openSideCoreExtHint() {
@@ -7016,7 +7432,7 @@ function openSideCoreExtHint() {
     const b = document.getElementById('side-core-hint-text');
     if (t) t.textContent = 'Расширения Chrome';
     if (b) b.innerHTML = 'Когда расширение будет в Chrome Web Store, установка — в один клик.<br><br>Сейчас доступна <b>распакованная</b> версия (ZIP + Режим разработчика).<br>После установки: иконка расширения или <b>Alt+Shift+C</b>.';
-    document.getElementById('side-core-hint-modal')?.classList.add('active');
+    void 0 /* modal removed */;
 }
 
 function closeSideCoreHint() {
@@ -7677,49 +8093,8 @@ function requestNotificationPermissionForPlans() {
     document.getElementById('oct14-novelty-modal')?.classList.remove('active');
   };
 
-  function maybeNovelty() {
-    if (localStorage.getItem('oracle_oct14_novelty') === '1') return;
-    setTimeout(() => {
-      if (localStorage.getItem('oracle_oct14_novelty') === '1') return;
-      document.getElementById('oct14-novelty-modal')?.classList.add('active');
-    }, 2400);
-  }
-
-  // ---- Advanced reader date note ----
-  window.noteAdvancedReader = function() {
-    const unlock = new Date('2026-10-20T00:00:00');
-    if (Date.now() < unlock.getTime()) {
-      showToast?.('Расширенный редактор Reader — с 20.10.2026', 'info', 3200);
-      return false;
-    }
-    return true;
-  };
-
-  document.addEventListener('DOMContentLoaded', () => {
-    wireConnectors();
-    syncLaterGenBtn();
-    maybeNovelty();
-    updateOfflineUI();
-  });
-  if (document.readyState !== 'loading') {
-    setTimeout(() => {
-      wireConnectors();
-      syncLaterGenBtn();
-      maybeNovelty();
-      updateOfflineUI();
-    }, 100);
-  }
-})();
-
-
-
-/* ===== Core Node Maps: Leaflet + OSM ===== */
-(function coreMapsModule() {
-  let map = null;
-  let markersLayer = null;
-  let userMarker = null;
-  const MARKS_KEY = 'oracle_maps_markers_v1';
-
+  function maybeNovelty() { /* OOBE */ return; }
+  
   function loadMarks() {
     try { return JSON.parse(localStorage.getItem(MARKS_KEY) || '[]') || []; }
     catch (e) { return []; }
@@ -8547,3 +8922,275 @@ window.mapsCycleLayer = function() {
     };
   }
 })();
+
+
+/* ===== Sidebar menu configurator ===== */
+(function sidebarMenuConfig() {
+  const KEY = 'oracle_sidebar_action_btns_v1';
+  const FILTER_KEY = 'oracle_sidebar_split_filters';
+  const CATALOG = [
+    { id: 'split', label: 'Параллельный просмотр', icon: 'split_scene', action: 'openSplitSelector' },
+    { id: 'plans', label: 'Запланировано', icon: 'schedule', action: 'openPlansFromSidebar' },
+    { id: 'maps', label: 'Карты', icon: 'map', action: 'openMapsFromSidebar' },
+    { id: 'skills', label: 'Навыки и Коннекторы', icon: 'extension', action: 'openSkillsHub' },
+    { id: 'library', label: 'Библиотека файлов', icon: 'local_library', action: 'openLibraryFromSidebar' }
+  ];
+  const MAX = 4;
+
+  function loadBtns() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (Array.isArray(raw)) return raw.filter(id => CATALOG.some(c => c.id === id)).slice(0, MAX);
+    } catch (e) {}
+    return ['skills', 'split']; // default like before
+  }
+  function saveBtns(arr) {
+    localStorage.setItem(KEY, JSON.stringify(arr.slice(0, MAX)));
+  }
+
+  window.openPlansFromSidebar = function() {
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+    if (typeof switchScreen === 'function') switchScreen('calendar');
+  };
+  window.openMapsFromSidebar = function() {
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+    if (typeof switchScreen === 'function') switchScreen('maps');
+  };
+  window.openLibraryFromSidebar = function() {
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+    if (typeof switchScreen === 'function') switchScreen('library');
+    if (typeof refreshLibraryUI === 'function') refreshLibraryUI();
+  };
+
+  window.renderSidebarActionButtons = function() {
+    const box = document.getElementById('sidebar-dynamic-actions');
+    if (!box) return;
+    const ids = loadBtns();
+    box.innerHTML = ids.map(id => {
+      const c = CATALOG.find(x => x.id === id);
+      if (!c) return '';
+      return '<button type="button" class="sidebar-secondary-btn" onclick="' + c.action + '()">' +
+        '<span class="material-symbols-rounded">' + c.icon + '</span> ' + c.label +
+        '</button>';
+    }).join('');
+  };
+
+  window.renderSidebarBtnChecklist = function() {
+    const box = document.getElementById('sidebar-btn-checklist');
+    if (!box) return;
+    const selected = loadBtns();
+    box.innerHTML = CATALOG.map(c => {
+      const on = selected.includes(c.id);
+      return '<label class="cn-check sidebar-btn-check' + (on ? ' is-on' : '') + '" data-id="' + c.id + '">' +
+        '<input type="checkbox" ' + (on ? 'checked' : '') + (selected.length >= MAX && !on ? ' disabled' : '') + '>' +
+        '<span class="cn-check-box"></span>' +
+        '<span class="material-symbols-rounded cn-check-icon">' + c.icon + '</span>' +
+        '<span class="cn-check-label">' + c.label + '</span>' +
+        '</label>';
+    }).join('');
+    box.querySelectorAll('.cn-check').forEach(lab => {
+      const inp = lab.querySelector('input');
+      inp.addEventListener('change', () => {
+        let cur = loadBtns();
+        const id = lab.dataset.id;
+        if (inp.checked) {
+          if (cur.length >= MAX) {
+            inp.checked = false;
+            showToast?.('Максимум 4 кнопки', 'warning');
+            return;
+          }
+          if (!cur.includes(id)) cur.push(id);
+        } else {
+          cur = cur.filter(x => x !== id);
+        }
+        saveBtns(cur);
+        renderSidebarBtnChecklist();
+        renderSidebarActionButtons();
+        const hint = document.getElementById('sidebar-btn-limit-hint');
+        if (hint) hint.textContent = 'Выбрано: ' + loadBtns().length + ' / ' + MAX;
+      });
+    });
+    const hint = document.getElementById('sidebar-btn-limit-hint');
+    if (hint) hint.textContent = 'Выбрано: ' + selected.length + ' / ' + MAX;
+  };
+
+  window.toggleSidebarSplitFilters = function(on) {
+    localStorage.setItem(FILTER_KEY, on ? '1' : '0');
+    const bar = document.querySelector('.unified-filter-bar');
+    if (bar) bar.style.display = on ? '' : 'none';
+  };
+
+  window.openSidebarSettings = function() {
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+    if (typeof switchScreen === 'function') switchScreen('settings');
+    setTimeout(() => {
+      if (typeof showSection === 'function') showSection('sidebar-menu');
+      renderSidebarBtnChecklist();
+      const f = document.getElementById('sidebar-split-all-filters');
+      if (f) f.checked = localStorage.getItem(FILTER_KEY) !== '0';
+    }, 60);
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    renderSidebarActionButtons();
+    if (localStorage.getItem(FILTER_KEY) === '0') {
+      const bar = document.querySelector('.unified-filter-bar');
+      if (bar) bar.style.display = 'none';
+    }
+  });
+  if (document.readyState !== 'loading') {
+    setTimeout(() => {
+      renderSidebarActionButtons();
+      if (localStorage.getItem(FILTER_KEY) === '0') {
+        const bar = document.querySelector('.unified-filter-bar');
+        if (bar) bar.style.display = 'none';
+      }
+    }, 200);
+  }
+})();
+
+
+/* ===== Coming soon + Settings search ===== */
+window.openComingSoonModal = function(name) {
+  const m = document.getElementById('coming-soon-modal');
+  const t = document.getElementById('coming-soon-title');
+  const p = document.getElementById('coming-soon-text');
+  if (t) t.textContent = (name || 'Функция') + ' · Скоро в релизе';
+  if (p) p.textContent = '«' + (name || 'Эта функция') + '» появится в следующем обновлении Core Node PRO.';
+  if (m) m.classList.add('active');
+};
+window.closeComingSoonModal = function() {
+  document.getElementById('coming-soon-modal')?.classList.remove('active');
+};
+
+const SETTINGS_SEARCH_INDEX = [
+  // Вкладки
+  { q: 'персонализация внешний вид навигация', section: 'general', title: 'Персонализация', sub: 'Вкладка настроек внешнего вида', icon: 'palette', target: null },
+  { q: 'тема светлая тёмная темная true black trueblack режим', section: 'general', title: 'Тема', sub: 'Персонализация → ниже тема', icon: 'contrast', target: 'settings-target-theme' },
+  { q: 'акцент цвет акцентный primary matte', section: 'general', title: 'Акцентный цвет', sub: 'Персонализация → ниже акцент', icon: 'palette', target: 'settings-target-accent' },
+  { q: 'анимация думания точки обводка thinking', section: 'general', title: 'Анимация думания', sub: 'Персонализация → Основные', icon: 'progress_activity', target: 'settings-target-thinking' },
+  { q: 'логотип анимация svg кольца блобы', section: 'general', title: 'Анимация логотипа', sub: 'Персонализация → Основные', icon: 'animation', target: 'settings-target-logo-anim' },
+  { q: 'о вас имя роль инструкции профиль', section: 'user', title: 'О вас', sub: 'Профиль и инструкции', icon: 'person', target: null },
+  { q: 'лимиты использование api недельный', section: 'limits', title: 'Лимиты', sub: 'Текущее и недельное использование', icon: 'analytics', target: null },
+  { q: 'сонный режим подушка screensaver заставка', section: 'system', title: 'Сонный режим', sub: 'Заставка и таймаут', icon: 'bedtime', target: null },
+  { q: 'безопасность пин пароль pin lock', section: 'security', title: 'Безопасность', sub: 'PIN и защита', icon: 'lock', target: null },
+  { q: 'пин пароль изменить создать pin password', section: 'security', title: 'Пароль / PIN', sub: 'Безопасность → создать или изменить', icon: 'password', target: 'settings-target-pin' },
+  { q: 'безопасный поиск фильтр', section: 'security', title: 'Безопасный поиск', sub: 'Безопасность → ниже', icon: 'shield', target: 'settings-target-safe-search' },
+  { q: 'блокировка экрана бездействие', section: 'security', title: 'Блокировка экрана', sub: 'Безопасность → PIN после простоя', icon: 'lock_clock', target: 'settings-target-lock-screen' },
+  { q: 'скрыть историю чатов', section: 'security', title: 'Скрыть историю', sub: 'Безопасность', icon: 'visibility_off', target: 'settings-target-hide-history' },
+  { q: 'очистка данных удалить всё сброс', section: 'security', title: 'Очистка данных', sub: 'Безопасность → удалить локальные данные', icon: 'delete_forever', target: 'settings-target-clear-data' },
+  { q: 'уведомления планы лимиты', section: 'notifications', title: 'Уведомления', sub: 'Планы и лимиты', icon: 'notifications', target: null },
+  { q: 'api ключ gemini chatgpt claude grok later generate', section: 'api-keys', title: 'Сторонние API', sub: 'Ключи и Later Generate', icon: 'auto_awesome', target: null },
+  { q: 'публичные ссылки share поделиться', section: 'public-links', title: 'Публичные ссылки', sub: 'Совместные чаты', icon: 'link', target: null },
+  { q: 'боковое меню сайдбар кнопки split карты навыки библиотека', section: 'sidebar-menu', title: 'Настройка бокового меню', sub: 'До 4 быстрых кнопок', icon: 'tune', target: null },
+  { q: 'о проекте версия about', section: 'about', title: 'О проекте', sub: 'Версия и статус', icon: 'info', target: null }
+];
+
+window.runSettingsSearch = function(q) {
+  const box = document.getElementById('settings-search-results');
+  const clear = document.getElementById('settings-search-clear');
+  if (!box) return;
+  q = String(q || '').trim().toLowerCase();
+  if (clear) clear.hidden = !q;
+  if (!q) {
+    box.hidden = true;
+    box.innerHTML = '';
+    return;
+  }
+  const words = q.split(/\s+/).filter(Boolean);
+  const hits = SETTINGS_SEARCH_INDEX.filter(x => {
+    const hay = (x.q + ' ' + x.title + ' ' + (x.sub || '')).toLowerCase();
+    return hay.includes(q) || words.every(w => hay.includes(w)) || words.some(w => w.length > 2 && hay.includes(w));
+  });
+  box.hidden = false;
+  if (!hits.length) {
+    box.innerHTML = '<div class="settings-search-empty">Ничего не найдено</div>';
+    return;
+  }
+  box.innerHTML = hits.map((h, idx) =>
+    '<button type="button" class="settings-search-hit" onclick="jumpSettingsSection(\'' + h.section + '\', \'' + (h.target || '') + '\')">' +
+    '<span class="material-symbols-rounded">' + h.icon + '</span>' +
+    '<span class="settings-search-hit-text"><b>' + h.title + '</b>' +
+    (h.sub ? '<small>' + h.sub + '</small>' : '') +
+    '</span></button>'
+  ).join('');
+};
+window.clearSettingsSearch = function() {
+  const inp = document.getElementById('settings-search-input');
+  if (inp) inp.value = '';
+  runSettingsSearch('');
+};
+window.jumpSettingsSection = function(sectionId, targetId) {
+  if (typeof switchScreen === 'function') switchScreen('settings');
+  setTimeout(() => {
+    if (typeof showSection === 'function') showSection(sectionId);
+    clearSettingsSearch();
+    if (targetId) {
+      setTimeout(() => {
+        const el = document.getElementById(targetId);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.remove('settings-flash-hit');
+        void el.offsetWidth;
+        el.classList.add('settings-flash-hit');
+        setTimeout(() => el.classList.remove('settings-flash-hit'), 1600);
+      }, 120);
+    }
+  }, 40);
+};
+
+window.showSettingsSearchTip = function() {
+  if (localStorage.getItem('oracle_settings_search_tip') === '1') return;
+  const tip = document.createElement('div');
+  tip.id = 'settings-search-tip';
+  tip.className = 'settings-search-tip';
+  tip.innerHTML = '<span class="material-symbols-rounded">search</span>' +
+    '<div><b>Поиск в настройках</b><p>Кажется хаос? Найдите нужный раздел сверху в Settings.</p></div>' +
+    '<button type="button" onclick="this.parentElement.remove();localStorage.setItem(\'oracle_settings_search_tip\',\'1\')">Понятно</button>';
+  document.body.appendChild(tip);
+  setTimeout(() => { try { tip.remove(); localStorage.setItem('oracle_settings_search_tip','1'); } catch(e){} }, 8000);
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (document.getElementById('screen-settings')?.classList.contains('active-screen')) {
+      showSettingsSearchTip();
+    }
+  }, 1200);
+});
+
+// Fix onboarding click-through
+(function hardenOnboarding() {
+  const prevStart = window.startOnboarding;
+  if (typeof prevStart === 'function' && !window.__onbHard) {
+    window.__onbHard = true;
+    window.startOnboarding = function(force) {
+      const r = prevStart.apply(this, arguments);
+      const ov = document.getElementById('onboarding-overlay');
+      if (ov && !ov.hidden) {
+        ov.style.pointerEvents = 'auto';
+        ov.style.zIndex = '20000';
+        document.body.classList.add('onboarding-open');
+      }
+      return r;
+    };
+  }
+  const prevFin = window.finishOnboarding;
+  if (typeof prevFin === 'function') {
+    window.finishOnboarding = function() {
+      document.body.classList.remove('onboarding-open');
+      return prevFin.apply(this, arguments);
+    };
+  }
+})();
+
+
+window.dismissOct14Novelty = function(){ localStorage.setItem('oracle_oct14_novelty','1'); };
+window.dismissSideCorePromo = function(){ localStorage.setItem('oracle_side_core_promo','1'); };
+window.openSideCoreZipHint = function(){
+  window.open('https://oracle-ai-pro.github.io/oracle/side-core-node.zip', '_blank');
+};
+window.openSideCoreExtHint = function(){
+  window.open('https://oracle-ai-pro.github.io/oracle/side-core-node.zip', '_blank');
+};
+window.closeTreeFeatureModal = function(){ localStorage.setItem('oracle_tree_feature_seen_v1','true'); };
