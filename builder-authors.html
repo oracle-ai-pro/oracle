@@ -144,6 +144,15 @@ textarea#ai-q{flex:1;border:0;background:transparent;color:var(--text);padding:1
 .modal-btn.secondary{background:var(--ai-bg);color:var(--text)}
 @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 @keyframes neonPulse{0%,100%{opacity:.88}50%{opacity:1}}
+
+/* Pack restriction notice */
+.ba-pack-notice{
+ margin:0 0 10px;padding:10px 12px;border-radius:12px;
+ border:1px solid #ff3b3040;background:#ff3b3020;color:var(--danger,#ff3b30);
+ font-size:11px;font-weight:700;line-height:1.4;
+}
+.ba-pack-notice a{color:inherit;text-decoration:underline;font-weight:900}
+
 </style>
 </head>
 <body data-theme="dark">
@@ -162,6 +171,11 @@ textarea#ai-q{flex:1;border:0;background:transparent;color:var(--text);padding:1
     <div class="menu-item" data-action="clear"><span class="material-symbols-rounded">delete</span> Очистить терминал</div>
   </div>
   <div id="chat">
+    <div class="ba-pack-notice" role="status">
+      <span class="material-symbols-rounded" style="font-size:16px;vertical-align:middle">warning</span>
+      С 24 Октября 2026 года наши Помощники не смогут или будут затруднение с скачиваниями неподерживаемых паков через Помощников.
+      <a href="https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000009" target="_blank" rel="noopener">Подробнее...</a>
+    </div>
     <h1 id="greeting-title" class="derzky-title">Kosmo Builder AI</h1>
     <p class="hero-sub" id="hero-sub">Правки кода · 2D карта · приоритет · вложения · v4.1</p>
     <div class="quick-chips" id="quick-chips">
