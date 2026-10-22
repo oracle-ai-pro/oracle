@@ -1168,6 +1168,85 @@ textarea{
  }
 }
 
+
+/* ===== Pack restriction notice (from 24 Oct 2026) ===== */
+.fa-pack-restrict-banner{
+ position:absolute;
+ top:48px;
+ left:12px;
+ right:12px;
+ z-index:80;
+ display:flex;
+ flex-direction:column;
+ gap:6px;
+ pointer-events:none;
+}
+.fa-pack-restrict-banner > *{pointer-events:auto}
+.fa-pack-notice{
+ padding:9px 12px;
+ border-radius:12px;
+ border:1px solid #ff3b3040;
+ background:#ff3b3020;
+ color:var(--danger);
+ font-size:11px;
+ font-weight:700;
+ line-height:1.4;
+ box-shadow:0 6px 18px var(--shadow);
+}
+.fa-pack-notice a{
+ color:var(--danger);
+ text-decoration:underline;
+ font-weight:900;
+}
+.fa-pack-notice .material-symbols-rounded{
+ font-size:16px;
+ vertical-align:middle;
+ margin-right:4px;
+}
+.fa-provider-reject{
+ display:none;
+ margin:0 4px 8px;
+ padding:9px 12px;
+ border-radius:12px;
+ border:1px solid #ff3b3040;
+ background:#ff3b3018;
+ color:var(--danger);
+ font-size:11px;
+ font-weight:700;
+ line-height:1.4;
+}
+.fa-provider-reject.visible{display:block;animation:up .25s ease}
+.pack-restrict-err{
+ margin-top:10px;
+ padding:10px 12px;
+ border-radius:12px;
+ border:1px solid #ff3b3040;
+ background:#ff3b3020;
+ color:var(--danger);
+ font-size:12px;
+ font-weight:800;
+ line-height:1.45;
+}
+.pack-result.restricted-fade .pack-info,
+.pack-result.restricted-fade .pack-tags,
+.pack-result.restricted-fade .pack-actions{
+ opacity:.35;
+ filter:grayscale(.4);
+}
+body.halloween-mode .fa-pack-notice,
+body.halloween-mode .fa-provider-reject,
+body.halloween-mode .pack-restrict-err{
+ border-color:#ff6b0040;
+ background:rgba(255,107,0,.18);
+ color:#ffb340;
+}
+body.halloween-mode .fa-pack-notice a{color:#ffb340}
+.card.has-pack-notice{padding-top:148px}
+@media(max-width:520px){
+ .fa-pack-restrict-banner{top:52px;left:8px;right:8px}
+ .card.has-pack-notice{padding-top:168px}
+}
+
 /* ===== FA 4.4 Sidebar + Settings + Modals ===== */
 .sidebar-overlay{
  position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:4000;
@@ -1769,7 +1848,7 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
 
 <body data-theme="light">
 
-<div class="card" id="main-card">
+<div class="card has-pack-notice" id="main-card">
 
 <button class="icon-btn menu-btn-left" id="sidebar-open-btn" title="Чаты">
  <span class="material-symbols-rounded">menu</span>
@@ -1974,6 +2053,17 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
 </div>
 
 <div id="ai-head">FAST MODEL 4.4 · LOCAL <span class="material-symbols-rounded model-lock" style="font-size:14px">lock</span></div>
+
+<div class="fa-pack-restrict-banner" id="fa-pack-restrict-banner" role="status">
+ <div class="fa-pack-notice">
+  <span class="material-symbols-rounded">warning</span>
+  С 24 Октября 2026 года наши Помощники не смогут или будут затруднение с скачиваниями неподерживаемых паков через Помощников.
+  <a href="https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000009" target="_blank" rel="noopener">Подробнее...</a>
+  <br>
+  <span style="font-weight:600;opacity:.95">AI Search не сможет давать паки 1.0, 2.0, 2.2, 2.5, 2.8, 2.8.1, 2.9, 3.0, 3.1 на данный момент.</span>
+ </div>
+</div>
+
 
 <div class="controls">
  <button class="icon-btn" id="menu-btn">
@@ -2379,6 +2469,7 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
   </button>
  </div>
 
+ <div class="fa-provider-reject" id="fa-provider-reject" role="status">Ваш лимит не был исчерпан так как операция была отказана провайдером</div>
  <div class="fa-limit-banner" id="fa-limit-banner" role="status"></div>
  <div class="input-area">
 
@@ -2447,6 +2538,77 @@ const versions=[
  ["3.4","Kosmo Level 3.4"],
  ["3.3","Kosmo Level 3.3"]
 ];
+
+
+/* =========================================================
+   PACK RESTRICTIONS (from 24 Oct 2026)
+========================================================= */
+const FA_PACK_RESTRICT_URL = "https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000009";
+const FA_RESTRICTED_PACK_VERSIONS = new Set([
+  "1.0","2.0","2.2","2.5","2.8","2.8.1","2.9","3.0","3.1"
+]);
+function isRestrictedPackVersion(v){
+  if(v==null) return false;
+  return FA_RESTRICTED_PACK_VERSIONS.has(String(v).trim());
+}
+function isRestrictedPack(pack){
+  return !!(pack && isRestrictedPackVersion(pack.version));
+}
+function packRestrictErrorHtml(){
+  return `<div class="pack-restrict-err">Ошибка в выдаче Информации о паке, Подробнее: Ограничения с 24 Октября</div>`;
+}
+function showProviderRejectNotice(ms){
+  const el = document.getElementById("fa-provider-reject");
+  if(!el) return;
+  el.classList.add("visible");
+  clearTimeout(showProviderRejectNotice._t);
+  showProviderRejectNotice._t = setTimeout(()=>{
+    el.classList.remove("visible");
+  }, typeof ms==="number" ? ms : 6000);
+}
+function hideProviderRejectNotice(){
+  document.getElementById("fa-provider-reject")?.classList.remove("visible");
+}
+function refundLastLimitUsage(){
+  try{
+    if(typeof loadLimits!=="function"||typeof saveLimits!=="function") return;
+    const s = typeof maybeRollLimits==="function" ? maybeRollLimits(loadLimits()) : loadLimits();
+    const hist = s.history || [];
+    const last = hist.length ? hist[hist.length-1] : null;
+    if(!last || !last.cost) return;
+    const cost = Number(last.cost)||0;
+    s.shortUsed = Math.max(0, Math.round((Math.min(100,s.shortUsed||0) - cost)*10)/10);
+    s.weekUsed = Math.max(0, Math.round((Math.min(100,s.weekUsed||0) - cost*0.35)*10)/10);
+    s.history = hist.slice(0, -1);
+    saveLimits(s);
+    if(typeof refreshLimitUI==="function") refreshLimitUI();
+  }catch(e){}
+}
+/** Показать результат, через миллисекунды — красная ошибка; лимит не списываем */
+function scheduleRestrictedPackReveal(bubble){
+  if(!bubble) return false;
+  const cards = bubble.querySelectorAll(".pack-result[data-restricted='1']");
+  if(!cards.length) return false;
+  try{ refundLastLimitUsage(); }catch(e){}
+  showProviderRejectNotice(7000);
+  setTimeout(()=>{
+    cards.forEach(card=>{
+      card.classList.add("restricted-fade");
+      card.querySelectorAll("a.pack-action").forEach(a=>a.remove());
+      if(!card.querySelector(".pack-restrict-err")){
+        card.insertAdjacentHTML("beforeend", packRestrictErrorHtml());
+      }
+    });
+    if(!bubble.querySelector(".pack-restrict-err-global")){
+      const g=document.createElement("div");
+      g.className="pack-restrict-err pack-restrict-err-global";
+      g.textContent="Ошибка в выдаче Информации о паке, Подробнее: Ограничения с 24 Октября";
+      bubble.insertBefore(g, bubble.firstChild);
+    }
+    try{ saveChat(); }catch(e){}
+  }, 80);
+  return true;
+}
 
 /* =========================================================
    AI SEARCH PACKS DATABASE
@@ -3865,7 +4027,8 @@ function packCard(pack){
   `)
   .join("");
 
- const download=pack.download
+ const restricted=typeof isRestrictedPack==="function"&&isRestrictedPack(pack);
+ const download=(!restricted && pack.download)
   ?`
    <a class="pack-action"
       href="${esc(pack.download)}"
@@ -3877,7 +4040,7 @@ function packCard(pack){
   :"";
 
  return `
-  <div class="pack-result">
+  <div class="pack-result"${restricted?' data-restricted="1"':''}>
 
    <div class="pack-result-head">
 
@@ -4738,6 +4901,8 @@ function addAI(html){
  b.innerHTML=html;
 
  chat.appendChild(b);
+
+ try{ scheduleRestrictedPackReveal(b); }catch(e){}
 
  scroll();
 
