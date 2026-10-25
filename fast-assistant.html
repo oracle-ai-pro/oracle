@@ -1170,7 +1170,8 @@ textarea{
 
 
 /* ===== Pack restriction notice (from 24 Oct 2026) ===== */
-.fa-pack-restrict-banner{
+.fa-pack-restrict-banner{display:none!important}
+.fa-pack-restrict-banner-legacy{
  position:absolute;
  top:48px;
  left:12px;
@@ -1241,10 +1242,10 @@ body.halloween-mode .pack-restrict-err{
  color:#ffb340;
 }
 body.halloween-mode .fa-pack-notice a{color:#ffb340}
-.card.has-pack-notice{padding-top:148px}
+
 @media(max-width:520px){
  .fa-pack-restrict-banner{top:52px;left:8px;right:8px}
- .card.has-pack-notice{padding-top:168px}
+
 }
 
 /* ===== FA 4.4 Sidebar + Settings + Modals ===== */
@@ -1843,12 +1844,39 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
  vertical-align:middle;
 }
 
+
+/* ===== Enterprise mode ===== */
+body.enterprise-mode .fa-enterprise-banner{
+  position:absolute; top:48px; left:12px; right:12px; z-index:85;
+  padding:8px 12px; border-radius:12px; border:1px solid #007aff40;
+  background:#007aff18; color:var(--text); font-size:11px; font-weight:700;
+  line-height:1.4; display:flex; gap:8px; align-items:flex-start;
+  box-shadow:0 6px 18px var(--shadow);
+}
+body.enterprise-mode .fa-enterprise-banner .material-symbols-rounded{color:#007aff;flex-shrink:0}
+body.enterprise-mode .fa-enterprise-banner small{display:block;font-weight:600;color:var(--sub);margin-top:2px}
+body.enterprise-mode .agent-row[data-agent="Builder"],
+body.enterprise-mode .agent-row[data-agent="Worldpack AI"],
+body.enterprise-mode .agent-row[data-agent="Ask Event"],
+body.enterprise-mode .agent-row[data-agent="Core Node"]{opacity:.45;pointer-events:none}
+body.enterprise-mode #plus-priority{display:none!important}
+body.enterprise-mode .pack-mini[data-pack-risk="high"]{display:none!important}
+body.enterprise-mode .char-counter{
+  position:absolute; right:54px; bottom:52px; font-size:10px; font-weight:800;
+  color:var(--sub); z-index:20; pointer-events:none;
+}
+body.enterprise-mode .char-counter.over{color:var(--danger)}
+body.enterprise-mode .send-btn.enterprise-block{
+  opacity:1!important; pointer-events:auto!important;
+  background:var(--warning)!important; color:#111!important;
+}
+
 </style>
 </head>
 
 <body data-theme="light">
 
-<div class="card has-pack-notice" id="main-card">
+<div class="card " id="main-card">
 
 <button class="icon-btn menu-btn-left" id="sidebar-open-btn" title="Чаты">
  <span class="material-symbols-rounded">menu</span>
@@ -2053,17 +2081,6 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
 </div>
 
 <div id="ai-head">FAST MODEL 4.4 · LOCAL <span class="material-symbols-rounded model-lock" style="font-size:14px">lock</span></div>
-
-<div class="fa-pack-restrict-banner" id="fa-pack-restrict-banner" role="status">
- <div class="fa-pack-notice">
-  <span class="material-symbols-rounded">warning</span>
-  С 24 Октября 2026 года наши Помощники не смогут или будут затруднение с скачиваниями неподерживаемых паков через Помощников.
-  <a href="https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000009" target="_blank" rel="noopener">Подробнее...</a>
-  <br>
-  <span style="font-weight:600;opacity:.95">AI Search не сможет давать паки 1.0, 2.0, 2.2, 2.5, 2.8, 2.8.1, 2.9, 3.0, 3.1 на данный момент.</span>
- </div>
-</div>
-
 
 <div class="controls">
  <button class="icon-btn" id="menu-btn">
@@ -7144,6 +7161,171 @@ window.FastAssistant={
 
 };
 
+</script>
+
+
+<script>
+/* =========================================================
+   ENTERPRISE MODE — ?enterprise=true | ?enterprise=1
+   Корпоративный ограниченный режим (как FA 3.4 limits)
+========================================================= */
+(function enterpriseMode(){
+  const ENT_KEY = "fastAssistant.enterprise.session";
+  const MAX_CHARS = 150;
+
+  function detectEnterprise(){
+    try{
+      const p = new URLSearchParams(location.search);
+      const v = (p.get("enterprise") || p.get("ent") || "").toLowerCase();
+      if (v === "true" || v === "1" || v === "yes" || v === "on") {
+        sessionStorage.setItem(ENT_KEY, "1");
+        return true;
+      }
+      if (v === "false" || v === "0" || v === "off") {
+        sessionStorage.removeItem(ENT_KEY);
+        return false;
+      }
+      // hash support: #enterprise
+      if (/[#&?]enterprise(=true|=1)?\b/i.test(location.hash)) {
+        sessionStorage.setItem(ENT_KEY, "1");
+        return true;
+      }
+      return sessionStorage.getItem(ENT_KEY) === "1";
+    }catch(e){ return false; }
+  }
+
+  window.isEnterpriseMode = function(){
+    return document.body.classList.contains("enterprise-mode");
+  };
+
+  function ensureCounter(){
+    let c = document.getElementById("fa-ent-counter");
+    if (c) return c;
+    const wrap = document.querySelector(".input-wrapper") || document.querySelector(".input-area")?.parentElement;
+    c = document.createElement("div");
+    c.id = "fa-ent-counter";
+    c.className = "char-counter";
+    c.textContent = "0 / " + MAX_CHARS;
+    if (wrap) wrap.appendChild(c);
+    else document.body.appendChild(c);
+    return c;
+  }
+
+  function applyEnterpriseUI(){
+    document.body.classList.add("enterprise-mode");
+    document.title = (document.title || "Fast Assistant") + " · Enterprise";
+    const ban = document.getElementById("fa-enterprise-banner");
+    if (ban) ban.hidden = false;
+    // lock agents
+    document.querySelectorAll(".agent-row").forEach(row=>{
+      const name = row.dataset.agent || row.textContent || "";
+      if (/Builder|Worldpack|Ask Event|Core Node/i.test(name)) {
+        row.classList.add("locked");
+        row.dataset.locked = "1";
+        row.dataset.lockReason = "Недоступно в Enterprise";
+      }
+    });
+    // priority force medium/low
+    try{
+      const s = JSON.parse(localStorage.getItem("fastAssistant.settings")||"{}");
+      if (s.replyPriority === "high") {
+        s.replyPriority = "medium";
+        localStorage.setItem("fastAssistant.settings", JSON.stringify(s));
+      }
+    }catch(e){}
+    ensureCounter();
+    try{
+      if (typeof showAlert === "function") {
+        // quiet boot toast once
+        if (sessionStorage.getItem(ENT_KEY+"_toast") !== "1") {
+          sessionStorage.setItem(ENT_KEY+"_toast","1");
+          setTimeout(()=>showAlert("Enterprise: лимит 150 символов на сообщение"), 900);
+        }
+      }
+    }catch(e){}
+  }
+
+  function enforceInput(){
+    const input = document.getElementById("ai-q") || document.querySelector("textarea");
+    const sendBtn = document.querySelector(".send-btn");
+    if (!input) return;
+    const counter = ensureCounter();
+    const val = input.value || "";
+    const n = val.length;
+    counter.textContent = n + " / " + MAX_CHARS;
+    counter.classList.toggle("over", n > MAX_CHARS);
+    if (n > MAX_CHARS) {
+      if (sendBtn) {
+        sendBtn.classList.add("enterprise-block","active");
+        sendBtn.title = "Слишком длинно для Enterprise (макс. "+MAX_CHARS+")";
+        const icon = sendBtn.querySelector(".material-symbols-rounded");
+        if (icon) icon.textContent = "workspace_premium";
+      }
+    } else {
+      if (sendBtn) {
+        sendBtn.classList.remove("enterprise-block");
+        sendBtn.title = "";
+      }
+    }
+  }
+
+  function blockLongSend(text){
+    if (!window.isEnterpriseMode()) return false;
+    if ((text||"").length > MAX_CHARS) {
+      try{
+        if (typeof showAlert === "function")
+          showAlert("Enterprise: максимум "+MAX_CHARS+" символов. Укоротите запрос.");
+        else alert("Enterprise: максимум "+MAX_CHARS+" символов");
+      }catch(e){}
+      return true;
+    }
+    return false;
+  }
+
+  // patch send paths
+  function patchSends(){
+    if (typeof window.sendUserMessage === "function" && !window._entSendPatched) {
+      window._entSendPatched = true;
+      const prev = window.sendUserMessage;
+      window.sendUserMessage = function(text){
+        const t = typeof text === "string" ? text : (document.querySelector("textarea")?.value||"");
+        if (blockLongSend(t)) return;
+        return prev.apply(this, arguments);
+      };
+    }
+    // intercept send button
+    const sendBtn = document.querySelector(".send-btn");
+    if (sendBtn && !sendBtn.dataset.entHook) {
+      sendBtn.dataset.entHook = "1";
+      sendBtn.addEventListener("click", function(e){
+        if (!window.isEnterpriseMode()) return;
+        const input = document.querySelector("textarea");
+        const t = (input && input.value) || "";
+        if (t.length > MAX_CHARS) {
+          e.preventDefault();
+          e.stopPropagation();
+          blockLongSend(t);
+        }
+      }, true);
+    }
+  }
+
+  function boot(){
+    if (!detectEnterprise()) return;
+    applyEnterpriseUI();
+    const input = document.querySelector("textarea");
+    input?.addEventListener("input", enforceInput);
+    input?.addEventListener("keyup", enforceInput);
+    enforceInput();
+    patchSends();
+    setTimeout(patchSends, 800);
+    setTimeout(patchSends, 2000);
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+  else boot();
+  window.addEventListener("load", ()=>{ if (window.isEnterpriseMode()) { patchSends(); enforceInput(); } });
+})();
 </script>
 
 </body>
