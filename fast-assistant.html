@@ -236,6 +236,41 @@ code{
  font-weight:900
 }
 
+
+/* Agent special screens */
+.agent-hero--model .agent-icon{background:linear-gradient(145deg,#111,#333);color:#fff}
+.agent-hero--reader .agent-icon{background:linear-gradient(145deg,#1d4ed8,#3b82f6);color:#fff}
+.agent-hero--packs .agent-icon{background:linear-gradient(145deg,#0f766e,#14b8a6);color:#fff}
+.agent-hero--builder .agent-icon{background:linear-gradient(145deg,#b45309,#f59e0b);color:#1a0800}
+.agent-hero--overlay .agent-icon{background:linear-gradient(145deg,#7c3aed,#a78bfa);color:#fff}
+.agent-hero--world .agent-icon{background:linear-gradient(145deg,#334155,#64748b);color:#fff}
+.agent-hero--event .agent-icon{background:linear-gradient(145deg,#9f1239,#fb7185);color:#fff}
+.agent-hero--core .agent-icon{background:linear-gradient(145deg,#1e3a8a,#60a5fa);color:#fff}
+.agent-screen-actions{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:4px 0 12px;
+}
+.agent-screen-btn{
+  display:flex;align-items:flex-start;gap:8px;text-align:left;
+  padding:10px;border-radius:14px;border:1px solid var(--border);
+  background:var(--ai);color:var(--text);cursor:pointer;
+}
+.agent-screen-btn:hover{border-color:var(--text);background:var(--card)}
+.agent-screen-btn .material-symbols-rounded{font-size:20px;flex-shrink:0;margin-top:1px}
+.agent-screen-btn b{display:block;font-size:12px;font-weight:800}
+.agent-screen-btn small{display:block;font-size:10px;color:var(--sub);margin-top:2px;line-height:1.3}
+.agent-screen-note{
+  margin-top:4px;padding:10px 12px;border-radius:12px;font-size:11px;line-height:1.45;
+  color:var(--sub);border:1px dashed var(--border);background:transparent;
+}
+.agent-screen-note b{color:var(--text)}
+.builder-types .card-btn.active{
+  border-color:var(--text);box-shadow:0 0 0 1px var(--text);
+}
+@media(max-width:420px){
+  .agent-screen-actions{grid-template-columns:1fr}
+}
+
+
 .agent-sub{
  margin-top:6px;
  color:var(--sub);
@@ -1250,6 +1285,132 @@ body.halloween-mode .fa-pack-notice a{color:#ffb340}
 
 
 
+
+
+/* Compact wardrobe controls */
+.wardrobe-react-row,.wardrobe-mix-row,.wardrobe-pet-row{
+  gap:5px;margin:0 0 8px;
+}
+.mix-chip,.react-chip,.pet-chip{
+  padding:6px 10px;font-size:10px;font-weight:800;
+  border-radius:999px;line-height:1.2;
+  min-height:28px;
+}
+.wardrobe-card{
+  min-height:72px;padding:10px;border-radius:12px;
+  display:flex;flex-direction:column;gap:4px;align-items:flex-start;
+  border:1px solid var(--border);background:var(--ai);cursor:pointer;
+  text-align:left;color:var(--text);
+}
+.wardrobe-card .wc-emoji{font-size:22px;line-height:1;min-height:24px}
+.wardrobe-card b{font-size:11px;font-weight:800}
+.wardrobe-card small{font-size:9px;color:var(--sub);line-height:1.3}
+.wardrobe-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px;overflow-y:auto;flex:1;min-height:0;padding-bottom:4px;
+}
+.wardrobe-actions{
+  display:flex;gap:6px;flex-shrink:0;margin-top:8px;
+}
+.wardrobe-actions button{
+  flex:1;padding:10px 8px;border-radius:12px;border:1px solid var(--border);
+  font-weight:800;font-size:11px;cursor:pointer;line-height:1.2;
+}
+.wardrobe-actions .save{background:var(--accent,#ff8c00);color:#1a0800;border-color:transparent}
+.wardrobe-actions .reset{background:var(--ai);color:var(--text)}
+body.halloween-mode .wardrobe-actions .save{background:linear-gradient(135deg,#ff8c00,#ff5e00);color:#1a0800}
+.lc-outfit-name{text-align:center;z-index:1}
+.lc-outfit-name b, .lc-outfit-name{font-size:13px;font-weight:800}
+.lc-outfit-name small{display:block;font-size:10px;color:var(--sub);font-weight:600;margin-top:2px}
+
+/* iframe: hide screenshot */
+html.is-iframe #wardrobe-shot,
+body.is-iframe #wardrobe-shot{display:none!important}
+
+/* Enterprise: new note button */
+.fa-side-actions{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+body.enterprise-mode .fa-side-actions{flex-direction:row;gap:8px}
+body.enterprise-mode .fa-side-actions .fa-new-chat,
+body.enterprise-mode .fa-side-actions .fa-new-note{flex:1;margin-bottom:0}
+.fa-new-note{
+  display:none;width:100%;padding:11px;border-radius:12px;
+  border:1px solid var(--border);background:var(--ai);color:var(--text);
+  font-weight:800;font-size:12px;cursor:pointer;
+  align-items:center;justify-content:center;gap:6px;
+}
+body.enterprise-mode .fa-new-note{display:flex}
+.fa-new-note:hover{background:var(--card);border-color:var(--text)}
+.fa-chat-item .agent-ico{
+  font-size:18px;color:var(--sub);flex-shrink:0;width:22px;text-align:center;
+}
+body.enterprise-mode .fa-chat-item .agent-ico{color:#007aff}
+
+/* ===== Enterprise mode ===== */
+body.enterprise-mode #wardrobe-btn,
+body.enterprise-mode #wardrobe-panel,
+body.enterprise-mode .fa-pack-restrict-banner,
+body.enterprise-mode #fa-pack-restrict-banner{
+  display:none!important;
+}
+body.enterprise-mode{
+  --accent:#007aff;
+}
+body.enterprise-mode.halloween-mode{
+  /* enterprise overrides halloween fun theme */
+}
+.enterprise-banner{
+  display:none;
+  margin:0 0 8px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid #007aff40;
+  background:color-mix(in srgb, #007aff 12%, var(--ai));
+  color:var(--text);
+  font-size:12px;
+  line-height:1.45;
+  font-weight:600;
+}
+body.enterprise-mode .enterprise-banner{display:block;animation:up .25s ease}
+.enterprise-banner strong{color:#007aff}
+.enterprise-banner .ent-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:2px 8px;border-radius:999px;font-size:9px;font-weight:900;
+  background:#007aff20;color:#007aff;letter-spacing:.4px;margin-right:6px;
+}
+.ent-char-row{
+  display:none;
+  justify-content:flex-end;
+  align-items:center;
+  gap:8px;
+  margin:0 4px 6px;
+  font-size:11px;
+  font-weight:700;
+  color:var(--sub);
+}
+body.enterprise-mode .ent-char-row{display:flex}
+.ent-char-row .ent-count.warn{color:var(--warning)}
+.ent-char-row .ent-count.over{color:var(--danger)}
+body.enterprise-mode .priority-opt[data-prio="high"]{
+  opacity:.4;pointer-events:none;position:relative;
+}
+body.enterprise-mode .priority-opt[data-prio="high"]::after{
+  content:"ENT";position:absolute;top:2px;right:4px;font-size:8px;font-weight:900;color:var(--sub);
+}
+body.enterprise-mode .agent-row[data-agent="Builder"],
+body.enterprise-mode .agent-row[data-agent="Worldpack AI"],
+body.enterprise-mode .agent-row[data-agent="Ask Event"],
+body.enterprise-mode .agent-row[data-agent="Core Node"],
+body.enterprise-mode .agent-row[data-agent="Creating Overlay"],
+body.enterprise-mode .agent-row[data-agent="Конструктор Авторов"]{
+  opacity:.5;
+}
+body.enterprise-mode #ai-head::after{
+  content:" · ENTERPRISE";
+  color:#007aff;
+  font-weight:900;
+  letter-spacing:.5px;
+}
+
 /* Restriction banner removed — date passed (24 Oct 2026) */
 .fa-pack-restrict-banner,
 #fa-pack-restrict-banner,
@@ -2013,6 +2174,31 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
 .set-card.limits-entry:hover{border-color:var(--text)}
 
 
+
+.agent-warn{
+  display:flex;gap:10px;align-items:flex-start;
+  margin:0 0 12px;padding:10px 12px;border-radius:12px;
+  border:1px solid color-mix(in srgb, var(--warning,#ff9500) 45%, var(--border));
+  background:color-mix(in srgb, var(--warning,#ff9500) 12%, var(--ai));
+  font-size:11px;line-height:1.45;color:var(--text);font-weight:600;
+}
+.agent-warn .material-symbols-rounded{
+  font-size:20px;color:var(--warning,#ff9500);flex-shrink:0;margin-top:1px;
+}
+.agent-warn b{font-weight:900}
+.agent-row-default{
+  border:1px solid color-mix(in srgb, var(--accent,#000) 35%, var(--border));
+  background:color-mix(in srgb, var(--accent,#000) 6%, var(--ai));
+}
+.agent-row-default .agent-cost{
+  background:var(--text);color:var(--card);font-size:9px;letter-spacing:.3px;
+}
+body.enterprise-mode .agent-warn{
+  border-color:#007aff50;
+  background:color-mix(in srgb, #007aff 10%, var(--ai));
+}
+body.enterprise-mode .agent-warn .material-symbols-rounded{color:#007aff}
+
 /* Fast Model 4.4 locks + priority */
 .agent-row.locked{
  opacity:.55;
@@ -2122,9 +2308,14 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
    <span class="material-symbols-rounded">close</span>
   </button>
  </div>
- <button type="button" class="fa-new-chat" id="fa-new-chat-btn">
-  <span class="material-symbols-rounded">add</span> Новый чат
- </button>
+ <div class="fa-side-actions">
+  <button type="button" class="fa-new-chat" id="fa-new-chat-btn">
+   <span class="material-symbols-rounded">add</span> Новый чат
+  </button>
+  <button type="button" class="fa-new-note" id="fa-new-note-btn" title="Только Enterprise">
+   <span class="material-symbols-rounded">sticky_note_2</span> Новая Заметка
+  </button>
+ </div>
  <div class="fa-chats-label">Недавние · ПКМ для опций</div>
  <div class="fa-chats-list" id="fa-chats-list"></div>
  <div class="fa-side-foot">
@@ -2420,6 +2611,14 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
  </div>
 
  <div class="feature">
+  <span class="material-symbols-rounded">auto_awesome</span>
+  <div>
+   <b>Fast Model 4.4</b>
+   <small>Агент по умолчанию · умнее · больше запросов. Узкие агенты с дек. 2026 → Enterprise</small>
+  </div>
+ </div>
+
+ <div class="feature">
   <span class="material-symbols-rounded">menu</span>
   <div>
    <b>Чаты и боковое меню</b>
@@ -2667,11 +2866,31 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
 
  <h2>Выбор ИИ-Агента</h2>
 
+ <div class="agent-warn" id="agent-enterprise-warn">
+  <span class="material-symbols-rounded">warning</span>
+  <div>
+   <b>С декабря 2026</b> отдельные агенты останутся <b>только в Enterprise</b> и там тоже будут урезаны.
+   На замену используйте <b>Fast Model 4.4</b> — умнее, больше типов запросов, без привязки к узкому агенту.
+  </div>
+ </div>
+
  <input class="agent-search"
         id="agent-search"
         placeholder="Поиск агента...">
 
  <div class="agent-list">
+
+  <div class="agent-row agent-row-default"
+       data-agent="Fast Model 4.4"
+       data-icon="auto_awesome"
+       data-cost="0"
+       data-cost-label="базовая модель · по умолчанию">
+
+   <span class="material-symbols-rounded">auto_awesome</span>
+   Fast Model 4.4
+   <span class="agent-cost">default</span>
+
+  </div>
 
   <div class="agent-row"
        data-agent="AI Reader"
@@ -2747,8 +2966,8 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
 
  </div>
  <p style="margin:10px 0 0;font-size:10px;color:var(--sub);line-height:1.4">
-  Fast Model <b>4.4</b> · продвинутые агенты с 🔒 недоступны.
-  Core Node — отдельное приложение, не агент FA.
+  <b>Fast Model 4.4</b> — агент по умолчанию. Агенты с 🔒 ограничены.
+  С <b>декабря 2026</b> узкие агенты → только Enterprise (и там урезанные). Core Node — отдельное приложение.
  </p>
 
 </div>
@@ -2813,6 +3032,11 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
  </div>
 
  <div class="fa-provider-reject" id="fa-provider-reject" role="status">Ваш лимит не был исчерпан так как операция была отказана провайдером</div>
+ <div class="enterprise-banner" id="enterprise-banner" role="status">
+  <span class="ent-badge">ENTERPRISE</span>
+  Режим для организаций · лимит <strong>150 символов</strong> на сообщение · часть агентов недоступна · без сезонных развлечений
+ </div>
+ <div class="ent-char-row" id="ent-char-row"><span>Символы</span><span class="ent-count" id="ent-char-count">0 / 150</span></div>
  <div class="fa-limit-banner" id="fa-limit-banner" role="status"></div>
  <div class="input-area">
 
@@ -3320,6 +3544,12 @@ function saveChat(){
    // не затираем сохранённый наряд / спец. чаты пустым html случайно? всегда пишем DOM
    map[id].html=chat.innerHTML;
    map[id].updated=Date.now();
+   try{
+    if(state.agent && state.agent.name){
+      map[id].agentName=state.agent.name;
+      map[id].agentIcon=state.agent.icon||"";
+    }
+   }catch(e){}
    if(!map[id].title||map[id].title==="Новый чат"){
     const u=chat.querySelector(".bubble.user .text-content, .bubble.user");
     if(u&&u.textContent.trim()) map[id].title=u.textContent.trim().slice(0,48);
@@ -3374,462 +3604,269 @@ function renderHome(){
 
  const a=state.agent?.name;
 
- if(!a){
-  renderDefaultHome();
-  return;
- }
-
- if(a==="AI Reader")
-  renderReaderHome();
-
- else if(a==="Worldpack AI")
-  renderWorldpackHome();
-
- else if(a==="Конструктор Авторов")
-  renderBuilderHome();
-
- else if(a==="Ask Event")
-  renderEventHome();
-
- else if(a==="Core Node")
-  renderCoreHome();
-
- else if(a==="AI Search Packs")
-  renderSearchPacksHome();
-
- else
-  renderDefaultHome();
-
- function homeHero(icon,title,sub){
+ function homeHero(icon,title,sub,tone){
+  const t = tone ? ` agent-hero--${tone}` : "";
   return `
-   <div class="agent-hero">
-
+   <div class="agent-hero${t}">
     <div class="agent-icon">
-     <span class="material-symbols-rounded">
-      ${icon}
-     </span>
+     <span class="material-symbols-rounded">${icon}</span>
     </div>
-
-    <div class="agent-title">
-     ${title}
-    </div>
-
-    <div class="agent-sub">
-     ${sub}
-    </div>
-
+    <div class="agent-title">${title}</div>
+    <div class="agent-sub">${sub}</div>
    </div>
   `;
  }
 
- function renderDefaultHome(){
-
-  clearHome();
-
-  const h=document.createElement("div");
-
-  h.className="agent-home";
-
-  h.innerHTML=
-   homeHero(
-    "auto_awesome",
-    "Fast Assistant",
-    "Выбери агента, чтобы открыть его специальный экран."
-   );
-
-  chat.appendChild(h);
-
-  state.home=true;
+ function screenActions(items){
+  return `<div class="agent-screen-actions">` + items.map(it => `
+    <button type="button" class="agent-screen-btn" data-act="${it.act||""}" data-q="${(it.q||"").replace(/"/g,"&quot;")}">
+     <span class="material-symbols-rounded">${it.icon}</span>
+     <span><b>${it.title}</b><small>${it.sub||""}</small></span>
+    </button>`).join("") + `</div>`;
  }
 
- function renderReaderHome(){
-
-  const h=document.createElement("div");
-
-  h.className="agent-home";
-
-  h.innerHTML=
-   homeHero(
-    "auto_stories",
-    "AI Reader",
-    "Выбери историю — в чат и во вкладку Reader. Можно править вручную или через ИИ."
-   )+
-
-   `<div class="section">
-     Истории, которые могут тебе понравиться
-    </div>
-
-    <div class="grid">
-
-     ${stories.map((s,i)=>`
-
-      <button class="card-btn story"
-              data-index="${i}">
-
-       <span class="material-symbols-rounded">
-        ${s[0]}
-       </span>
-
-       <div style="margin-top:12px;font-size:13px;font-weight:800">
-        ${s[1]}
-       </div>
-
-       <div style="margin-top:4px;color:var(--sub);font-size:10px">
-        ${s[2]}
-       </div>
-
-      </button>
-
-     `).join("")}
-
-    </div>
-
-    <div class="tip" style="margin-top:12px">
-     📖 Напиши «добавь в reader …» — агент сохранит текст во вкладку Reader (боковое меню).
-    </div>`;
-
-  chat.appendChild(h);
-
-  h.querySelectorAll(".story").forEach(b=>{
-
-   b.onclick=()=>{
-
-    const s=stories[Number(b.dataset.index)];
-
-    inputWrap.classList.remove("centered");
-
-    clearHome();
-
-    state.home=false;
-
-    try{
-     if(typeof insertStoryFromAIReader === "function"){
-      insertStoryFromAIReader(s[1], s[3]);
-     }
-    }catch(e){}
-
-    sendUserMessage(
-     "AI Reader: "+s[3]
-    );
-
-   };
-
-  });
-
- }
-
- function renderWorldpackHome(){
-
-  const h=document.createElement("div");
-
-  h.className="agent-home";
-
-  h.innerHTML=
-   homeHero(
-    "public",
-    "Worldpack AI",
-    "Выбери версию Kosmo Level."
-   )+
-
-   `<div class="section">
-     Версии Kosmo Level
-    </div>
-
-    <div class="list">
-
-     ${versions.map(v=>`
-
-      <button class="list-btn"
-              data-url="${v[0]}">
-
-       <span class="material-symbols-rounded">
-        package_2
-       </span>
-
-       <span style="flex:1">
-        <b>Kosmo Level ${v[0]}</b><br>
-        <small style="color:var(--sub)">
-         ${v[1]}
-        </small>
-       </span>
-
-       <span class="material-symbols-rounded">
-        arrow_forward_ios
-       </span>
-
-      </button>
-
-     `).join("")}
-
-    </div>`;
-
-  chat.appendChild(h);
-
-  h.querySelectorAll(".list-btn").forEach((b,i)=>{
-
-   b.onclick=()=>window.open(
-    versions[i][0]==="3.3"
-     ?"https://oracle-ai-pro.github.io/oracle/packs/Kosmo_Level_3.3.worldpack"
-     :CONFIG.coreUrl,
-    "_blank",
-    "noopener"
-   );
-
-  });
-
- }
-
- function renderBuilderHome(){
-
-  const h=document.createElement("div");
-
-  h.className="agent-home";
-
-  h.innerHTML=
-   homeHero(
-    "construction",
-    "BUILDER",
-    "Создавай что угодно по своему запросу."
-   )+
-
-   `<div class="section">
-     Тип результата
-    </div>
-
-    <div class="builder-types">
-
-     <button class="builder-type active"
-             data-type="Story">
-      История
-     </button>
-
-     <button class="builder-type"
-             data-type="Level">
-      Уровень
-     </button>
-
-     <button class="builder-type"
-             data-type="Idea">
-      Идея
-     </button>
-
-    </div>
-
-    <div class="tip">
-     💡 Выбери тип и напиши ниже, что хочешь создать.
-    </div>`;
-
-  chat.appendChild(h);
-
-  h.querySelectorAll(".builder-type").forEach(b=>{
-
-   b.onclick=()=>{
-
-    h.querySelectorAll(".builder-type")
-     .forEach(x=>x.classList.remove("active"));
-
-    b.classList.add("active");
-
-    state.builderType=b.dataset.type;
-
-    saveSettings();
-
-   };
-
-  });
-
- }
-
- function renderEventHome(){
-
-  const h=document.createElement("div");
-
-  h.className="agent-home";
-
-  h.innerHTML=
-   homeHero(
-    "event",
-    "Ask Event",
-    "Актуальные события прямо на главном экране."
-   )+
-
-   `<div class="section">
-     Актуальные события
-    </div>
-
-    <div class="event">
-
-     <div class="event-top">
-
-      <div class="event-icon">
-       <span class="material-symbols-rounded">
-        shopping_bag
-       </span>
-      </div>
-
-      <div>
-       <b style="font-size:13px">
-        ${event.name}
-       </b>
-      </div>
-
-      <div class="event-status">
-       ACTIVE
-      </div>
-
-     </div>
-
-     <div class="event-desc">
-      ${event.desc}
-     </div>
-
-     <button class="event-action"
-             id="event-btn">
-      Спросить об этом событии
-     </button>
-
-    </div>`;
-
-  chat.appendChild(h);
-
-  $("event-btn").onclick=()=>{
-   input.focus();
-  };
-
- }
-
- function renderCoreHome(){
-
-  const h=document.createElement("div");
-
-  h.className="agent-home";
-
-  h.innerHTML=
-   homeHero(
-    "hub",
-    "Core Node",
-    "Центральный узел Fast Assistant. Подключение запускается автоматически."
-   )+
-
-   `<div class="event" style="text-align:center">
-
-    <div class="event-icon"
-         style="margin:auto auto 10px">
-
-     <span class="material-symbols-rounded">
-      lan
-     </span>
-
-    </div>
-
-    <b>Core Node Bridge</b>
-
-    <div class="event-desc">
-     Состояние соединения видно слева сверху.
-    </div>
-
-   </div>`;
-
-  chat.appendChild(h);
-
- }
-
- function renderSearchPacksHome(){
-
-  const h=document.createElement("div");
-
-  h.className="agent-home";
-
-  h.innerHTML=
-   homeHero(
-    "search",
-    "AI Search Packs",
-    "Интеллектуальный поиск по базе Kosmo Level."
-   )+
-
-   `<div class="section">
-     База знаний • ${packsData.length} паков
-    </div>
-
-    <div class="tip"
-         style="margin-bottom:12px">
-
-     🔍 Напиши, например:
-     <br><br>
-     <code>Kosmo 3.4</code>
-     <code>сколько миров в 3.3</code>
-     <code>пасхалка</code>
-     <code>Halloween</code>
-
-    </div>
-
-    <div class="list">
-
-     ${packsData.slice().reverse().slice(0,5).map(pack=>`
-
-      <button class="pack-mini"
-              data-pack="${pack.id}">
-
-       <div class="pack-mini-top">
-
-        <div class="pack-mini-icon">
-         <span class="material-symbols-rounded">
-          package_2
-         </span>
-        </div>
-
-        <div style="flex:1;min-width:0">
-
-         <div class="pack-mini-name">
-          ${esc(pack.name)}
-         </div>
-
-         <div class="pack-mini-meta">
-          v${esc(pack.version)} • ${esc(pack.rooms)} • ${esc(pack.worlds)}
-         </div>
-
-        </div>
-
-        <span class="pack-badge">
-         ${esc(pack.status)}
-        </span>
-
-       </div>
-
-      </button>
-
-     `).join("")}
-
-    </div>`;
-
-  chat.appendChild(h);
-
-  h.querySelectorAll(".pack-mini").forEach(btn=>{
-
+ function wireScreenActions(root){
+  root.querySelectorAll(".agent-screen-btn").forEach(btn=>{
    btn.onclick=()=>{
-
-    const pack=packsData.find(
-     p=>p.id===btn.dataset.pack
-    );
-
-    if(!pack)return;
-
-    inputWrap.classList.remove("centered");
-
-    clearHome();
-
-    state.home=false;
-
-    sendUserMessage(
-     `Расскажи подробно про ${pack.name}`
-    );
-
+    const act=btn.dataset.act;
+    const q=btn.dataset.q;
+    if(act==="reader"){ try{ openReader(); }catch(e){} return; }
+    if(act==="wardrobe"){ try{ openWardrobe(); }catch(e){} return; }
+    if(act==="packs"){ try{ selectAgent("AI Search Packs","search"); }catch(e){} return; }
+    if(act==="core"){ try{ toggleCorePanel(); }catch(e){} return; }
+    if(act==="agent"){ try{ toggleAgentPopup(); }catch(e){} return; }
+    if(act==="focus"){ try{ input.focus(); }catch(e){} return; }
+    if(q){
+     inputWrap.classList.remove("centered");
+     clearHome();
+     state.home=false;
+     sendUserMessage(q);
+    }
    };
-
   });
-
  }
+
+ function mount(html, after){
+  const h=document.createElement("div");
+  h.className="agent-home";
+  h.innerHTML=html;
+  chat.appendChild(h);
+  state.home=true;
+  wireScreenActions(h);
+  if(after) after(h);
+ }
+
+ if(!a || a==="Fast Model 4.4" || a==="Fast Model"){
+  mount(
+   homeHero("auto_awesome","Fast Model 4.4","Базовая модель · умнее · больше сценариев без узкого агента.","model")+
+   screenActions([
+    {icon:"help",title:"Команды //",sub:"Справка по //help",q:"//help"},
+    {icon:"smart_toy",title:"Агенты",sub:"Reader, Packs…",act:"agent"},
+    {icon:"forum",title:"Пример запроса",sub:"Кто ты и что умеешь",q:"кто ты"},
+    {icon:"bolt",title:"Статус",sub:"Система и Core Node",q:"//status"}
+   ])+
+   `<div class="agent-screen-note">С <b>декабря 2026</b> узкие агенты — преимущественно Enterprise. Рекомендуется оставаться на Fast Model 4.4.</div>`
+  );
+  return;
+ }
+
+ if(a==="AI Reader"){
+  const h=document.createElement("div");
+  h.className="agent-home";
+  h.innerHTML=
+   homeHero("auto_stories","AI Reader","Истории в чат и во вкладку Reader · правка вручную или через ИИ.","reader")+
+   screenActions([
+    {icon:"menu_book",title:"Открыть Reader",sub:"Вкладка историй",act:"reader"},
+    {icon:"edit_note",title:"Добавить в Reader",sub:"Напиши «добавь в reader…»",act:"focus"}
+   ])+
+   `<div class="section">Истории, которые могут тебе понравиться</div>
+    <div class="grid">
+     ${(typeof stories!=="undefined"?stories:[]).map((s,i)=>`
+      <button class="card-btn story" data-index="${i}">
+       <span class="material-symbols-rounded">${s[0]}</span>
+       <div style="margin-top:12px;font-size:13px;font-weight:800">${s[1]}</div>
+       <div style="margin-top:4px;color:var(--sub);font-size:10px">${s[2]}</div>
+      </button>`).join("")}
+    </div>
+    <div class="tip" style="margin-top:12px">📖 Напиши «добавь в reader …» — текст уйдёт во вкладку Reader.</div>`;
+  chat.appendChild(h);
+  state.home=true;
+  wireScreenActions(h);
+  h.querySelectorAll(".story").forEach(b=>{
+   b.onclick=()=>{
+    const s=stories[Number(b.dataset.index)];
+    inputWrap.classList.remove("centered");
+    clearHome();
+    state.home=false;
+    try{ if(typeof insertStoryFromAIReader==="function") insertStoryFromAIReader(s[1], s[3]); }catch(e){}
+    sendUserMessage("AI Reader: "+s[3]);
+   };
+  });
+  return;
+ }
+
+ if(a==="AI Search Packs"){
+  const list=(typeof packsData!=="undefined"?packsData:[]).slice().reverse().slice(0,5);
+  const h=document.createElement("div");
+  h.className="agent-home";
+  h.innerHTML=
+   homeHero("search","AI Search Packs","Поиск по базе Kosmo Level · паки, миры, пасхалки.","packs")+
+   screenActions([
+    {icon:"package_2",title:"Kosmo 3.4",sub:"Быстрый поиск",q:"Kosmo 3.4"},
+    {icon:"travel_explore",title:"Сколько миров",sub:"В 3.3",q:"сколько миров в 3.3"},
+    {icon:"celebration",title:"Halloween",sub:"Пасхалки",q:"Halloween"}
+   ])+
+   `<div class="section">База знаний · ${(typeof packsData!=="undefined"?packsData.length:0)} паков</div>
+    <div class="list">
+     ${list.map(pack=>`
+      <button class="pack-mini" data-pack="${pack.id}">
+       <div class="pack-mini-top">
+        <div class="pack-mini-icon"><span class="material-symbols-rounded">package_2</span></div>
+        <div style="flex:1;min-width:0">
+         <div class="pack-mini-name">${esc(pack.name)}</div>
+         <div class="pack-mini-meta">v${esc(pack.version)} · ${esc(pack.rooms)} · ${esc(pack.worlds)}</div>
+        </div>
+        <span class="pack-badge">${esc(pack.status)}</span>
+       </div>
+      </button>`).join("")}
+    </div>`;
+  chat.appendChild(h);
+  state.home=true;
+  wireScreenActions(h);
+  h.querySelectorAll(".pack-mini").forEach(btn=>{
+   btn.onclick=()=>{
+    const pack=packsData.find(p=>p.id===btn.dataset.pack);
+    if(!pack)return;
+    inputWrap.classList.remove("centered");
+    clearHome();
+    state.home=false;
+    sendUserMessage(`Расскажи подробно про ${pack.name}`);
+   };
+  });
+  return;
+ }
+
+ if(a==="Builder" || a==="Конструктор Авторов"){
+  const types=[
+   ["Код","code","</>"],
+   ["Текст","article","Aa"],
+   ["Идея","lightbulb","✦"],
+   ["Схема","schema","▦"]
+  ];
+  const h=document.createElement("div");
+  h.className="agent-home";
+  h.innerHTML=
+   homeHero("construction","Builder","Генерация контента по запросу · до ~50% лимита.","builder")+
+   screenActions([
+    {icon:"code",title:"Напиши код",sub:"Пример",q:"Напиши простой HTML-блок с кнопкой"},
+    {icon:"edit",title:"Черновик текста",sub:"Пример",q:"Напиши короткий текст для intro Fast Assistant"}
+   ])+
+   `<div class="section">Тип генерации</div>
+    <div class="grid builder-types">
+     ${types.map(t=>`
+      <button class="card-btn builder-type${(state.builderType||"code")===t[1]?" active":""}" data-type="${t[1]}">
+       <span class="material-symbols-rounded">${t[1]==="code"?"code":t[1]==="article"?"article":t[1]==="lightbulb"?"lightbulb":"schema"}</span>
+       <div style="margin-top:10px;font-weight:800;font-size:13px">${t[0]}</div>
+       <div style="color:var(--sub);font-size:10px;margin-top:4px">${t[2]}</div>
+      </button>`).join("")}
+    </div>
+    <div class="tip" style="margin-top:12px">🏗️ Опиши, что создать — Builder соберёт черновик в чате.</div>`;
+  chat.appendChild(h);
+  state.home=true;
+  wireScreenActions(h);
+  h.querySelectorAll(".builder-type").forEach(b=>{
+   b.onclick=()=>{
+    h.querySelectorAll(".builder-type").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    state.builderType=b.dataset.type;
+    try{ saveSettings(); }catch(e){}
+    try{ showAlert("Тип: "+b.dataset.type); }catch(e){}
+   };
+  });
+  return;
+ }
+
+ if(a==="Creating Overlay"){
+  mount(
+   homeHero("layers","Creating Overlay","Оверлеи Жидкой Кошки · наряды, реакция, микс · до ~60% лимита.","overlay")+
+   screenActions([
+    {icon:"checkroom",title:"Гардеробная",sub:"Открыть превью",act:"wardrobe"},
+    {icon:"pets",title:"Котик в тыкве",sub:"Собрать оверлей",q:"Создай мне котика в тыкве"},
+    {icon:"ghost",title:"Призрак",sub:"Хеллоуин",q:"Создай мне котика-призрака"},
+    {icon:"auto_fix",title:"Свой запрос",sub:"«Создай мне котика…»",act:"focus"}
+   ])+
+   `<div class="agent-screen-note">Все наряды бесплатны — ограничивает только творчество. В Enterprise агент недоступен.</div>`
+  );
+  return;
+ }
+
+ if(a==="Worldpack AI"){
+  const h=document.createElement("div");
+  h.className="agent-home";
+  h.innerHTML=
+   homeHero("public","Worldpack AI","Версии Kosmo Level · на техническом восстановлении.","world")+
+   `<div class="section">Версии Kosmo Level</div>
+    <div class="list">
+     ${(typeof versions!=="undefined"?versions:[]).map(v=>`
+      <button class="list-btn" data-ver="${v[0]}">
+       <span class="material-symbols-rounded">package_2</span>
+       <span style="flex:1"><b>Kosmo Level ${v[0]}</b><br><small style="color:var(--sub)">${v[1]}</small></span>
+       <span class="material-symbols-rounded">lock</span>
+      </button>`).join("")}
+    </div>
+    <div class="tip" style="margin-top:12px">🌍 Агент временно ограничен. Для поиска паков — <b>AI Search Packs</b>.</div>`;
+  chat.appendChild(h);
+  state.home=true;
+  h.querySelectorAll(".list-btn").forEach(b=>{
+   b.onclick=()=>{ try{ showAlert("Worldpack AI на восстановлении · версия "+b.dataset.ver); }catch(e){} };
+  });
+  return;
+ }
+
+ if(a==="Ask Event"){
+  const ev = (typeof event!=="undefined" && event) ? event : {name:"Нет активного события",desc:"Ask Event недоступен на Fast Model 4.4 без live-события."};
+  const h=document.createElement("div");
+  h.className="agent-home";
+  h.innerHTML=
+   homeHero("event","Ask Event","События и live-вопросы · сейчас без активного event.","event")+
+   `<div class="section">Текущее событие</div>
+    <div class="event">
+     <div class="event-top">
+      <div class="event-icon"><span class="material-symbols-rounded">event_busy</span></div>
+      <div><b style="font-size:13px">${esc(ev.name||"Event")}</b></div>
+      <div class="event-status">LOCKED</div>
+     </div>
+     <div class="event-desc">${esc(ev.desc||"")}</div>
+     <button class="event-action" id="event-btn">Спросить об этом событии</button>
+    </div>
+    <div class="tip" style="margin-top:12px">📅 Агент заблокирован: модель слабая / нет активного события.</div>`;
+  chat.appendChild(h);
+  state.home=true;
+  const eb=h.querySelector("#event-btn");
+  if(eb) eb.onclick=()=>{ try{ showAlert("Ask Event недоступен"); }catch(e){} };
+  return;
+ }
+
+ if(a==="Core Node"){
+  mount(
+   homeHero("hub","Core Node","Центральный узел · Bridge postMessage · не агент FA.","core")+
+   screenActions([
+    {icon:"link",title:"Панель Bridge",sub:"Статус и подключение",act:"core"},
+    {icon:"sync",title:"Подключить",sub:"//coreconnect",q:"//coreconnect"},
+    {icon:"info",title:"Статус",sub:"//corestatus",q:"//corestatus"}
+   ])+
+   `<div class="agent-screen-note">Состояние соединения — в строке CORE NODE сверху. Чаты можно зеркалировать в Core Node.</div>`
+  );
+  return;
+ }
+
+ // fallback
+ mount(
+  homeHero("smart_toy", a||"Агент", "Специальный экран агента.", "model")+
+  screenActions([{icon:"chat",title:"Написать",sub:"В поле ввода",act:"focus"}])
+ );
 }
+
 
 /* =========================================================
    AGENTS
@@ -3868,6 +3905,8 @@ function updateAgentUI(){
    ?"Поиск по пакам..."
    :state.agent.name==="Creating Overlay"
    ?"Создай мне котика в наряде..."
+   :state.agent.name==="Fast Model 4.4"
+   ?"Спросить Fast Model 4.4..."
    :"Спросить...";
 }
 
@@ -3886,9 +3925,15 @@ function selectAgent(name,icon,persist=true){
   }
  }
 
+ // Fast Model 4.4 — базовая модель по умолчанию
+ if(name==="Fast Model 4.4"||name==="Fast Model"||name==="Model 4.4"){
+  name="Fast Model 4.4";
+  icon=icon||"auto_awesome";
+ }
+
  state.agent={
   name,
-  icon
+  icon: icon||"auto_awesome"
  };
 
  updateAgentUI();
@@ -3927,7 +3972,8 @@ function selectAgent(name,icon,persist=true){
 
 function clearAgent(){
 
- state.agent=null;
+ // сброс на Fast Model 4.4 (не «пустой» агент)
+ state.agent={ name:"Fast Model 4.4", icon:"auto_awesome" };
 
  updateAgentUI();
 
@@ -3935,7 +3981,7 @@ function clearAgent(){
 
   setInputCentered(true);
 
-  renderDefaultHome();
+  try{ renderHome(); }catch(e){ try{ renderDefaultHome(); }catch(err){} }
 
  }else{
 
@@ -4967,7 +5013,7 @@ function localAI(q){
    🤖 Agent:
    ${state.agent
     ?esc(state.agent.name)
-    :"none"}
+    :"Fast Model 4.4"}
   `;
 
  if(x==="//install")
@@ -4987,7 +5033,9 @@ function localAI(q){
   return `
    Привет! 👋
    <br><br>
-   Я <b>Fast Assistant 4.3</b>.
+   Я <b>Fast Model 4.4</b> — умнее и гибче: больше типов запросов без обязательного выбора узкого агента.
+   <br><br>
+   Агенты (Reader, Packs…) — по необходимости. С <b>декабря 2026</b> они останутся в основном в Enterprise.
   `;
 
  if(
@@ -4995,23 +5043,17 @@ function localAI(q){
   x.includes("что ты умеешь")
  )
   return `
-   Я <b>Fast Assistant 4.3</b> —
-   локальный командный центр.
+   Я <b>Fast Model 4.4</b> — базовая модель Fast Assistant.
    <br><br>
-
-   📖 AI Reader
+   Умею отвечать на общие запросы без агента, команды <code>//</code>, работу с чатами и лимитами.
+   <br><br>
+   <b>Агенты (по желанию):</b>
    <br>
-   🔍 AI Search Packs
+   📖 AI Reader · 🔍 AI Search Packs · 🏗️ Builder
    <br>
-   🌍 Worldpack AI
-   <br>
-   🏗️ BUILDER
-   <br>
-   📅 Ask Event
-   <br>
-   🔗 Core Node
-   <br>
-   ⌘ Commands //
+   🔗 Core Node — отдельное приложение
+   <br><br>
+   <small>С декабря 2026 узкие агенты — преимущественно Enterprise (с урезанием). Рекомендуется Fast Model 4.4.</small>
   `;
 
  if(
@@ -5031,10 +5073,11 @@ function localAI(q){
   `;
 
  return `
-  Интересный запрос 👀
+  <b>Fast Model 4.4</b> принял запрос.
   <br><br>
-  Попробуй <code>//help</code>
-  или выбери агента.
+  Могу разобрать тему, подсказать команды <code>//help</code> или открыть агента через <code>//agent</code>.
+  <br><br>
+  <small>Модель 4.4 рассчитана на больше сценариев без узкого агента.</small>
  `;
 }
 
@@ -5602,9 +5645,7 @@ function connectCore(){
 
    setCore("error");
 
-   addSystemMessage(
-    "⚠️ Core Node не ответил."
-   );
+   try{ showAlert("Core Node не ответил."); }catch(e){}
 
   }
 
@@ -5689,21 +5730,19 @@ function handleCore(e){
 
    clearTimeout(state.coreTimer);
 
+   const wasConnected = !!state.core;
    setCore("connected");
-
-   addSystemMessage(
-    "🔗 Core Node подключён."
-   );
+   // один toast, не 4 сообщения в чат
+   if(!wasConnected){
+    try{ showAlert("link Core Node подключён."); }catch(e){}
+   }
 
    break;
 
   case"core-disconnected":
 
    setCore("offline");
-
-   addSystemMessage(
-    "Core Node отключён."
-   );
+   try{ showAlert("Core Node отключён."); }catch(e){}
 
    break;
 
@@ -5883,14 +5922,19 @@ function loadSettings(){
   if(s.builderType)
    state.builderType=s.builderType;
 
-  if(s.agent){
-
+  if(s.agent && s.agent.name){
    state.agent=s.agent;
-
-   updateAgentUI();
+  }else{
+   state.agent={ name:"Fast Model 4.4", icon:"auto_awesome" };
   }
+  updateAgentUI();
 
- }catch{}
+ }catch{
+  try{
+   state.agent={ name:"Fast Model 4.4", icon:"auto_awesome" };
+   updateAgentUI();
+  }catch(e){}
+ }
 }
 
 function loadChat(){
@@ -6397,6 +6441,30 @@ function ensureCurrentChat(createIfEmpty){
  return id;
 }
 
+function agentIconForChat(c){
+  // Enterprise: иконка агента; иначе chat / pumpkin для нарядов
+  const ent = typeof isEnterprise==="function" && isEnterprise();
+  if(c && (c.label || c.source==="liquid-cat-wardrobe")){
+    return '<span class="mdi mdi-pumpkin agent-ico chat-ico" aria-hidden="true"></span>';
+  }
+  if(c && c.source==="note"){
+    return '<span class="material-symbols-rounded agent-ico">sticky_note_2</span>';
+  }
+  if(ent && c && c.agentIcon){
+    return '<span class="material-symbols-rounded agent-ico">'+String(c.agentIcon).replace(/[<>]/g,"")+'</span>';
+  }
+  if(ent && c && c.agentName){
+    const mapIco = {
+      "AI Reader":"menu_book",
+      "AI Search Packs":"search",
+      "Builder":"construction",
+      "Creating Overlay":"layers"
+    };
+    const ico = mapIco[c.agentName] || "smart_toy";
+    return '<span class="material-symbols-rounded agent-ico">'+ico+'</span>';
+  }
+  return '<span class="material-symbols-rounded agent-ico" style="color:var(--sub)">chat</span>';
+}
 function renderFaChatsList(){
  const list=$("fa-chats-list");
  if(!list) return;
@@ -6413,7 +6481,7 @@ function renderFaChatsList(){
   item.type="button";
   item.className="fa-chat-item"+(id===cur?" active":"");
   item.dataset.id=id;
-  item.innerHTML='<span class="material-symbols-rounded" style="font-size:18px;color:var(--sub)">chat</span><span class="title"></span>';
+  item.innerHTML=agentIconForChat(map[id])+'<span class="title"></span>';
   item.querySelector(".title").textContent=map[id].title||"Чат";
   item.onclick=()=>openFaChat(id);
   item.oncontextmenu=(e)=>{
@@ -6576,6 +6644,7 @@ window.addEventListener("load",()=>{
  $("sidebar-close-btn")?.addEventListener("click",closeSidebar);
  $("sidebar-overlay")?.addEventListener("click",closeSidebar);
  $("fa-new-chat-btn")?.addEventListener("click",newFaChat);
+ $("fa-new-note-btn")?.addEventListener("click",newFaNote);
  $("fa-open-settings")?.addEventListener("click",openSettings);
  $("settings-close-btn")?.addEventListener("click",closeSettings);
  $("settings-panel")?.addEventListener("click",(e)=>{
@@ -7761,6 +7830,10 @@ function renderWardrobeGrid(){
 }
 
 function openWardrobe(){
+  if(typeof isEnterprise==="function" && isEnterprise()){
+    try{ showAlert("Гардеробная недоступна в Enterprise"); }catch(e){}
+    return;
+  }
   try{ closeSidebar(); }catch(e){}
   try{ if(typeof closeSettings==="function") closeSettings(); }catch(e){}
   try{ if(typeof closePlusMenu==="function") closePlusMenu(); }catch(e){}
@@ -7939,9 +8012,17 @@ function isCreateCatQuery(q){
   if(!prev || window._faWardrobeAIPatched) return;
   window._faWardrobeAIPatched = true;
   window.localAI = function(q){
-    if(isLiquidOverlayQuery(q)) return liquidCatOverlayAnswer(q);
+    if(isLiquidOverlayQuery(q)){
+      if(typeof isEnterprise==="function" && isEnterprise()){
+        return "В <b>Enterprise</b> гардеробная и оверлеи Жидкой Кошки отключены для делового режима.";
+      }
+      return liquidCatOverlayAnswer(q);
+    }
     if(state.agent && state.agent.name === "Creating Overlay") return creatingOverlayAnswer(q);
     if(isCreateCatQuery(q)){
+      if(typeof isEnterprise==="function" && isEnterprise()){
+        return "В <b>Enterprise</b> создание оверлеев и гардеробная недоступны. Используйте обычный Fast Assistant без <code>?enterprise=true</code>.";
+      }
       try{ selectAgent("Creating Overlay", "layers"); }catch(e){}
       return creatingOverlayAnswer(q);
     }
@@ -8013,6 +8094,232 @@ window.addEventListener("load", () => {
   }catch(e){}
 });
 
+
+/* =========================================================
+   ENTERPRISE MODE (?enterprise=true)
+========================================================= */
+const FA_ENT_KEY = "fastAssistant.enterprise.session";
+const FA_ENT_MAX = 150;
+const FA_ENT_LOCKED_AGENTS = new Set([
+  "Builder","Worldpack AI","Ask Event","Core Node",
+  "Creating Overlay","Конструктор Авторов"
+]);
+
+function detectEnterprise(){
+  try{
+    const params = new URLSearchParams(location.search || "");
+    const hash = (location.hash || "").replace(/^#/, "").toLowerCase();
+    const q =
+      params.get("enterprise") ||
+      params.get("ent") ||
+      "";
+    const qn = String(q).toLowerCase().trim();
+    if(qn === "false" || qn === "0" || qn === "off" || qn === "no"){
+      try{ sessionStorage.removeItem(FA_ENT_KEY); }catch(e){}
+      return false;
+    }
+    if(
+      qn === "true" || qn === "1" || qn === "yes" || qn === "on" ||
+      hash === "enterprise" || hash === "ent"
+    ){
+      try{ sessionStorage.setItem(FA_ENT_KEY, "1"); }catch(e){}
+      return true;
+    }
+    try{ return sessionStorage.getItem(FA_ENT_KEY) === "1"; }catch(e){ return false; }
+  }catch(e){ return false; }
+}
+
+function isEnterprise(){
+  return document.body.classList.contains("enterprise-mode");
+}
+
+function updateEntCharCounter(){
+  if(!isEnterprise()) return;
+  const el = document.getElementById("ent-char-count");
+  if(!el || typeof input === "undefined" || !input) return;
+  const n = (input.value || "").length;
+  el.textContent = n + " / " + FA_ENT_MAX;
+  el.classList.toggle("warn", n >= FA_ENT_MAX - 20 && n <= FA_ENT_MAX);
+  el.classList.toggle("over", n > FA_ENT_MAX);
+  try{
+    if(typeof updateSend === "function") updateSend();
+  }catch(e){}
+}
+
+function applyEnterpriseMode(on){
+  document.body.classList.toggle("enterprise-mode", !!on);
+  if(on){
+    // снять хеллоуин-флаэр
+    try{ document.body.classList.remove("halloween-mode"); }catch(e){}
+    try{ localStorage.removeItem("fastAssistant.halloween"); }catch(e){}
+    // приоритет high → medium
+    try{
+      if(typeof getReplyPriority === "function" && getReplyPriority() === "high"){
+        if(typeof setReplyPriority === "function") setReplyPriority("medium");
+      }else{
+        const s = JSON.parse(localStorage.getItem("fastAssistant.settings")||"{}");
+        if(s.replyPriority === "high"){
+          s.replyPriority = "medium";
+          localStorage.setItem("fastAssistant.settings", JSON.stringify(s));
+        }
+        document.querySelectorAll(".priority-opt").forEach(b=>{
+          b.classList.toggle("active", b.dataset.prio === "medium");
+        });
+      }
+    }catch(e){}
+    // закрыть гардероб если открыт
+    try{ if(typeof closeWardrobe === "function") closeWardrobe(); }catch(e){}
+    updateEntCharCounter();
+  }
+}
+
+// early detect (before full UI)
+(function bootEnterprise(){
+  const on = detectEnterprise();
+  if(on) document.body.classList.add("enterprise-mode");
+})();
+
+// patch selectAgent
+(function patchSelectAgentEnterprise(){
+  const prev = typeof selectAgent === "function" ? selectAgent : null;
+  if(!prev || window._faEntAgentPatched) return;
+  window._faEntAgentPatched = true;
+  window.selectAgent = function(name, icon, persist){
+    if(isEnterprise() && FA_ENT_LOCKED_AGENTS.has(name)){
+      try{ showAlert("Недоступно в Enterprise"); }catch(e){}
+      return;
+    }
+    return prev.apply(this, arguments);
+  };
+})();
+
+// patch sendUserMessage for 150 char
+(function patchSendEnterprise(){
+  const prev = typeof sendUserMessage === "function" ? sendUserMessage : null;
+  if(!prev || window._faEntSendPatched) return;
+  window._faEntSendPatched = true;
+  window.sendUserMessage = function(text){
+    if(isEnterprise()){
+      const t = typeof text === "string" ? text : (input && input.value) || "";
+      if(t.length > FA_ENT_MAX){
+        try{ showAlert("Enterprise: максимум " + FA_ENT_MAX + " символов"); }catch(e){}
+        updateEntCharCounter();
+        return;
+      }
+    }
+    return prev.apply(this, arguments);
+  };
+})();
+
+// patch updateSend to disable when over limit
+(function patchUpdateSendEnterprise(){
+  const prev = typeof updateSend === "function" ? updateSend : null;
+  if(!prev || window._faEntUpdateSendPatched) return;
+  window._faEntUpdateSendPatched = true;
+  window.updateSend = function(){
+    prev.apply(this, arguments);
+    try{
+      if(isEnterprise() && input && (input.value||"").length > FA_ENT_MAX && !(state && state.sending)){
+        sendBtn.classList.remove("active","stop");
+        sendBtn.classList.add("limit-locked");
+        if(typeof sendIcon !== "undefined" && sendIcon) sendIcon.textContent = "block";
+      }
+    }catch(e){}
+  };
+})();
+
+document.addEventListener("DOMContentLoaded", () => {
+  applyEnterpriseMode(detectEnterprise());
+  try{
+    if(input){
+      input.addEventListener("input", updateEntCharCounter);
+      input.addEventListener("keyup", updateEntCharCounter);
+    }
+  }catch(e){}
+});
+window.addEventListener("load", () => {
+  applyEnterpriseMode(detectEnterprise());
+  updateEntCharCounter();
+  // re-patch after other patches
+  try{
+    if(typeof selectAgent === "function" && !window._faEntAgentPatched2){
+      window._faEntAgentPatched2 = true;
+      const prev = selectAgent;
+      selectAgent = function(name, icon, persist){
+        if(isEnterprise() && FA_ENT_LOCKED_AGENTS.has(name)){
+          try{ showAlert("Недоступно в Enterprise"); }catch(e){}
+          return;
+        }
+        return prev.apply(this, arguments);
+      };
+    }
+    if(typeof sendUserMessage === "function" && !window._faEntSendPatched2){
+      window._faEntSendPatched2 = true;
+      const prev = sendUserMessage;
+      sendUserMessage = function(text){
+        if(isEnterprise()){
+          const t = typeof text === "string" ? text : (input && input.value) || "";
+          if(t.length > FA_ENT_MAX){
+            try{ showAlert("Enterprise: максимум " + FA_ENT_MAX + " символов"); }catch(e){}
+            updateEntCharCounter();
+            return;
+          }
+        }
+        return prev.apply(this, arguments);
+      };
+    }
+  }catch(e){}
+});
+
+
+function newFaNote(){
+  if(typeof isEnterprise==="function" && !isEnterprise()){
+    try{ showAlert("Заметки только в Enterprise"); }catch(e){}
+    return;
+  }
+  try{
+    const cur=getCurrentChatId();
+    const map0=loadFaChats();
+    if(cur && map0[cur]) saveChat();
+  }catch(e){}
+  const id="fa_note_"+Date.now().toString(36);
+  const map=loadFaChats();
+  map[id]={
+    title:"Заметка",
+    html:'<div class="bubble system">Заметка · Enterprise</div>',
+    updated:Date.now(),
+    source:"note",
+    agentName:"Note",
+    agentIcon:"sticky_note_2"
+  };
+  saveFaChats(map);
+  setCurrentChatId(id);
+  chat.innerHTML=map[id].html;
+  try{ localStorage.setItem("fastAssistant.chat", chat.innerHTML); }catch(e){}
+  state.home=false;
+  state.agent=null;
+  try{updateAgentUI();}catch(e){}
+  setInputCentered(false);
+  if(input){ input.placeholder="Текст заметки..."; input.focus(); }
+  renderFaChatsList();
+  closeSidebar();
+  showAlert("Новая заметка");
+}
+
+function detectIframeMode(){
+  let iframe=false;
+  try{ iframe = window.self !== window.top; }catch(e){ iframe=true; }
+  document.documentElement.classList.toggle("is-iframe", iframe);
+  document.body.classList.toggle("is-iframe", iframe);
+  return iframe;
+}
+detectIframeMode();
+window.addEventListener("load",()=>{
+ if(!state.agent || !state.agent.name){
+  state.agent={ name:"Fast Model 4.4", icon:"auto_awesome" };
+  try{ updateAgentUI(); }catch(e){}
+ }
+});
 
 window.FastAssistant={
 
