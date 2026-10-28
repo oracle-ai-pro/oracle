@@ -7,6 +7,7 @@
 <title>Fast Assistant 4.4</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20,400,1,0" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" rel="stylesheet">
 
 <style>
 :root{
@@ -1170,8 +1171,7 @@ textarea{
 
 
 /* ===== Pack restriction notice (from 24 Oct 2026) ===== */
-.fa-pack-restrict-banner{display:none!important}
-.fa-pack-restrict-banner-legacy{
+.fa-pack-restrict-banner{
  position:absolute;
  top:48px;
  left:12px;
@@ -1242,10 +1242,269 @@ body.halloween-mode .pack-restrict-err{
  color:#ffb340;
 }
 body.halloween-mode .fa-pack-notice a{color:#ffb340}
-
+.card.card-normal{padding-top:148px}
 @media(max-width:520px){
  .fa-pack-restrict-banner{top:52px;left:8px;right:8px}
+ .card.card-normal{padding-top:168px}
+}
 
+
+
+/* Restriction banner removed — date passed (24 Oct 2026) */
+.fa-pack-restrict-banner,
+#fa-pack-restrict-banner,
+.fa-provider-reject{display:none!important}
+.card.card-normal{padding-top:60px!important}
+@media(max-width:520px){.card.card-normal{padding-top:60px!important}}
+
+/* ===== Liquid Cat Wardrobe (Halloween) ===== */
+
+/* Reaction faces */
+.lc-cat.react-kind .eye-l,.lc-cat.react-kind .eye-r{
+  border-radius:50% 50% 40% 40%; height:11px;
+  background:#0f172a;
+}
+.lc-cat.react-kind .mouth{
+  width:16px;height:8px;border-radius:0 0 12px 12px;
+  background:#fb7185;opacity:.85;
+}
+.lc-cat.react-neutral .eye-l,.lc-cat.react-neutral .eye-r{
+  height:10px;border-radius:50%;
+}
+.lc-cat.react-neutral .mouth{
+  width:12px;height:3px;border-radius:2px;background:#0f172a55;
+}
+.lc-cat.react-scary .eye-l,.lc-cat.react-scary .eye-r{
+  height:14px;width:8px;border-radius:40%;
+  background:#7f1d1d;
+  box-shadow:0 0 6px #ef444480,0 0 0 2px rgba(255,255,255,.2);
+}
+.lc-cat.react-scary .mouth{
+  width:18px;height:10px;border-radius:0 0 4px 4px;
+  background:#0f172a;clip-path:polygon(0 0,100% 0,85% 100%,15% 100%);
+}
+.wardrobe-mix-row,.wardrobe-react-row,.wardrobe-pet-row{
+  display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px;align-items:center;
+}
+.wardrobe-mix-row label,.wardrobe-react-row label,.wardrobe-pet-row label{
+  font-size:10px;font-weight:800;color:var(--sub);text-transform:uppercase;
+  letter-spacing:.4px;width:100%;margin-bottom:2px;
+}
+.mix-chip,.react-chip,.pet-chip{
+  padding:7px 10px;border-radius:999px;border:1px solid var(--border);
+  background:var(--ai);color:var(--text);font-size:11px;font-weight:700;
+  cursor:pointer;
+}
+.mix-chip.active,.react-chip.active,.pet-chip.active{
+  background:var(--text);color:var(--card);border-color:var(--text);
+}
+.react-chip[data-react="kind"].active{background:#34c759;border-color:#34c759;color:#fff}
+.react-chip[data-react="scary"].active{background:#ff3b30;border-color:#ff3b30;color:#fff}
+.lc-mini-pet{
+  position:absolute;right:14px;bottom:14px;z-index:2;
+  width:36px;height:28px;opacity:0;transform:scale(.6);transition:.3s;
+  pointer-events:none;
+}
+.lc-mini-pet.show{opacity:1;transform:scale(1)}
+.lc-mini-pet .mp-blob{
+  position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:28px;height:18px;border-radius:50%;
+  background:linear-gradient(160deg,#f9a8d4,#ec4899);
+  animation:lcBlob 2.8s ease-in-out infinite;
+}
+.lc-mini-pet .mp-ear-l,.lc-mini-pet .mp-ear-r{
+  position:absolute;top:0;width:0;height:0;
+  border-left:6px solid transparent;border-right:6px solid transparent;
+  border-bottom:10px solid #ec4899;
+}
+.lc-mini-pet .mp-ear-l{left:4px;transform:rotate(-15deg)}
+.lc-mini-pet .mp-ear-r{right:4px;transform:rotate(15deg)}
+.lc-mini-pet .mp-eye{
+  position:absolute;top:10px;width:4px;height:4px;border-radius:50%;background:#0f172a;
+}
+.lc-mini-pet .mp-eye.l{left:10px}.lc-mini-pet .mp-eye.r{right:10px}
+.lc-mini-pet.pet-ghost .mp-blob{background:linear-gradient(160deg,#f1f5f9,#cbd5e1)}
+.lc-mini-pet.pet-ghost .mp-ear-l,.lc-mini-pet.pet-ghost .mp-ear-r{border-bottom-color:#cbd5e1}
+.lc-mini-pet.pet-pumpkin .mp-blob{background:linear-gradient(160deg,#ffb347,#ff6b00)}
+.lc-mini-pet.pet-pumpkin .mp-ear-l,.lc-mini-pet.pet-pumpkin .mp-ear-r{border-bottom-color:#ff6b00}
+.fa-chat-item .mdi-pumpkin.chat-ico{
+  font-size:18px;color:#ff8c00;flex-shrink:0;
+}
+.wardrobe-section-title{
+  font-size:10px;font-weight:800;color:var(--sub);letter-spacing:.6px;
+  text-transform:uppercase;margin:8px 0 6px;width:100%;
+}
+.wardrobe-grid{overflow-y:auto;flex:1;min-height:0;padding-bottom:4px}
+
+#wardrobe-btn{
+ position:relative;
+ background:linear-gradient(145deg,#ff8c00,#e85d04);
+ color:#1a0800;
+ border:1px solid #ffb34080;
+ display:flex;align-items:center;justify-content:center;
+}
+#wardrobe-btn:hover{
+ transform:scale(1.08);
+ box-shadow:0 0 18px #ff8c0060;
+}
+#wardrobe-btn .wb-emoji{font-size:18px;line-height:1;display:none}
+#wardrobe-btn .mdi{
+ font-size:22px;line-height:1;
+ color:#1a0800;
+}
+#wardrobe-btn .mdi-pumpkin{
+ font-size:22px;
+ filter:drop-shadow(0 1px 0 rgba(255,255,255,.25));
+}
+#wardrobe-btn .wb-dot{
+ position:absolute;top:4px;right:4px;width:7px;height:7px;
+ border-radius:50%;background:#34c759;border:1.5px solid var(--card);
+ display:none;
+}
+#wardrobe-btn.has-outfit .wb-dot{display:block}
+
+#wardrobe-panel{
+ position:fixed;inset:0;z-index:4800;
+ display:none;align-items:stretch;justify-content:center;
+ background:rgba(0,0,0,.6);
+ -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+ padding:0;overflow:hidden;
+}
+#wardrobe-panel.open{display:flex}
+.wardrobe-inner{
+ width:100%;max-width:500px;height:100%;
+ background:var(--card);color:var(--text);
+ display:flex;flex-direction:column;
+ padding:14px 14px 18px;overflow:hidden;
+ box-shadow:0 0 50px rgba(0,0,0,.4);
+ background-image:
+  radial-gradient(ellipse at 20% 0%, rgba(255,140,0,.12), transparent 45%),
+  radial-gradient(ellipse at 90% 100%, rgba(160,80,255,.08), transparent 40%);
+}
+.wardrobe-head{
+ display:flex;align-items:center;justify-content:space-between;
+ margin-bottom:10px;flex-shrink:0;gap:8px;
+}
+.wardrobe-head h2{
+ font-size:16px;font-weight:900;margin:0;
+ display:flex;align-items:center;gap:8px;
+}
+.wardrobe-head .mdi-pumpkin{
+ font-size:26px;color:#ff8c00;
+ filter:drop-shadow(0 2px 6px rgba(255,140,0,.35));
+}
+.wardrobe-share-hint{
+ margin:0 0 8px;font-size:10px;color:var(--sub);text-align:center;line-height:1.4;
+}
+.wardrobe-head h2 .sub{
+ display:block;font-size:10px;font-weight:600;color:var(--sub);
+ letter-spacing:.3px;margin-top:2px;
+}
+.wardrobe-stage{
+ flex-shrink:0;margin:4px 0 12px;padding:16px 12px 12px;
+ border-radius:18px;border:1px solid var(--border);
+ background:var(--ai);
+ display:flex;flex-direction:column;align-items:center;gap:10px;
+ position:relative;overflow:hidden;
+ min-height:160px;
+}
+.wardrobe-stage::before{
+ content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;
+ background:
+  radial-gradient(circle at 30% 80%, rgba(255,140,0,.15), transparent 40%),
+  radial-gradient(circle at 70% 20%, rgba(180,100,255,.1), transparent 35%);
+}
+.lc-cat{
+ width:110px;height:90px;position:relative;z-index:1;
+ filter:drop-shadow(0 8px 16px rgba(0,0,0,.25));
+ transition:filter .3s, transform .3s;
+}
+.lc-cat .blob{
+ position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+ width:78px;height:52px;border-radius:48% 48% 42% 42%;
+ background:linear-gradient(160deg,#7dd3fc,#38bdf8 45%,#0ea5e9);
+ animation:lcBlob 3.2s ease-in-out infinite;
+}
+.lc-cat .ear-l,.lc-cat .ear-r{
+ position:absolute;top:6px;width:0;height:0;
+ border-left:11px solid transparent;border-right:11px solid transparent;
+ border-bottom:20px solid #38bdf8;
+}
+.lc-cat .ear-l{left:18px;transform:rotate(-18deg)}
+.lc-cat .ear-r{right:18px;transform:rotate(18deg)}
+.lc-cat .eye-l,.lc-cat .eye-r{
+ position:absolute;top:36px;width:10px;height:12px;border-radius:50%;
+ background:#0f172a;z-index:2;
+ box-shadow:0 0 0 2px rgba(255,255,255,.35);
+}
+.lc-cat .eye-l{left:34px}
+.lc-cat .eye-r{right:34px}
+.lc-cat .mouth{
+ position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+ width:14px;height:6px;border-radius:0 0 10px 10px;
+ background:#0f172a40;z-index:2;
+}
+.lc-cat .acc{
+ position:absolute;inset:0;z-index:3;pointer-events:none;
+ display:flex;align-items:flex-start;justify-content:center;
+ font-size:28px;line-height:1;padding-top:0;
+}
+.lc-cat .acc-extra{
+ position:absolute;z-index:3;pointer-events:none;font-size:18px;
+}
+@keyframes lcBlob{
+ 0%,100%{border-radius:48% 48% 42% 42%;transform:translateX(-50%) scale(1,1)}
+ 50%{border-radius:44% 52% 46% 40%;transform:translateX(-50%) scale(1.04,.96)}
+}
+.lc-outfit-name{
+ z-index:1;font-size:13px;font-weight:800;text-align:center;
+}
+.lc-outfit-name small{display:block;font-weight:600;color:var(--sub);font-size:10px;margin-top:2px}
+.wardrobe-label-free{
+ display:inline-flex;align-items:center;gap:4px;
+ padding:3px 8px;border-radius:999px;font-size:9px;font-weight:900;
+ background:#34c75920;color:var(--success);letter-spacing:.3px;
+}
+.wardrobe-grid{
+ flex:1;min-height:0;overflow-y:auto;
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px;padding-bottom:8px;
+}
+.wardrobe-card{
+ border:1px solid var(--border);border-radius:14px;padding:11px;
+ background:var(--ai);cursor:pointer;text-align:left;color:var(--text);
+ transition:.18s;display:flex;flex-direction:column;gap:6px;min-height:88px;
+}
+.wardrobe-card:hover{border-color:var(--text);background:var(--card);transform:translateY(-1px)}
+.wardrobe-card.active{
+ border-color:#ff8c00;background:color-mix(in srgb,#ff8c00 12%,var(--card));
+ box-shadow:0 0 0 1px #ff8c0040;
+}
+.wardrobe-card .wc-emoji{font-size:26px;line-height:1}
+.wardrobe-card b{font-size:12px;font-weight:800;line-height:1.25}
+.wardrobe-card small{font-size:10px;color:var(--sub);line-height:1.35}
+.wardrobe-actions{
+ display:flex;gap:8px;flex-shrink:0;margin-top:10px;
+}
+.wardrobe-actions button{
+ flex:1;padding:11px;border-radius:12px;border:1px solid var(--border);
+ font-weight:800;font-size:12px;cursor:pointer;
+}
+.wardrobe-actions .save{
+ background:linear-gradient(135deg,#ff8c00,#e85d04);color:#1a0800;border-color:#ff8c00;
+}
+.wardrobe-actions .reset{background:var(--ai);color:var(--text)}
+.wardrobe-actions .close-w{background:var(--ai);color:var(--text)}
+.fa-chat-item .outfit-tag{
+ margin-left:auto;flex-shrink:0;
+ padding:2px 6px;border-radius:999px;font-size:9px;font-weight:900;
+ background:#ff950020;color:#ff9500;white-space:nowrap;
+}
+body.halloween-mode #wardrobe-btn{
+ background:linear-gradient(145deg,#ff9500,#ff6b00);
+}
+@media(max-width:420px){
+ .wardrobe-grid{grid-template-columns:1fr}
 }
 
 /* ===== FA 4.4 Sidebar + Settings + Modals ===== */
@@ -1844,39 +2103,12 @@ body.halloween-mode .limit-badge-beta{background:#ff950030;color:#ffb340}
  vertical-align:middle;
 }
 
-
-/* ===== Enterprise mode ===== */
-body.enterprise-mode .fa-enterprise-banner{
-  position:absolute; top:48px; left:12px; right:12px; z-index:85;
-  padding:8px 12px; border-radius:12px; border:1px solid #007aff40;
-  background:#007aff18; color:var(--text); font-size:11px; font-weight:700;
-  line-height:1.4; display:flex; gap:8px; align-items:flex-start;
-  box-shadow:0 6px 18px var(--shadow);
-}
-body.enterprise-mode .fa-enterprise-banner .material-symbols-rounded{color:#007aff;flex-shrink:0}
-body.enterprise-mode .fa-enterprise-banner small{display:block;font-weight:600;color:var(--sub);margin-top:2px}
-body.enterprise-mode .agent-row[data-agent="Builder"],
-body.enterprise-mode .agent-row[data-agent="Worldpack AI"],
-body.enterprise-mode .agent-row[data-agent="Ask Event"],
-body.enterprise-mode .agent-row[data-agent="Core Node"]{opacity:.45;pointer-events:none}
-body.enterprise-mode #plus-priority{display:none!important}
-body.enterprise-mode .pack-mini[data-pack-risk="high"]{display:none!important}
-body.enterprise-mode .char-counter{
-  position:absolute; right:54px; bottom:52px; font-size:10px; font-weight:800;
-  color:var(--sub); z-index:20; pointer-events:none;
-}
-body.enterprise-mode .char-counter.over{color:var(--danger)}
-body.enterprise-mode .send-btn.enterprise-block{
-  opacity:1!important; pointer-events:auto!important;
-  background:var(--warning)!important; color:#111!important;
-}
-
 </style>
 </head>
 
 <body data-theme="light">
 
-<div class="card " id="main-card">
+<div class="card card-normal" id="main-card">
 
 <button class="icon-btn menu-btn-left" id="sidebar-open-btn" title="Чаты">
  <span class="material-symbols-rounded">menu</span>
@@ -2018,6 +2250,73 @@ body.enterprise-mode .send-btn.enterprise-block{
  </div>
 </div>
 
+
+<!-- Liquid Cat Wardrobe -->
+<div id="wardrobe-panel">
+ <div class="wardrobe-inner">
+  <div class="wardrobe-head">
+   <h2>
+    <span class="mdi mdi-pumpkin" aria-hidden="true"></span>
+    <span>
+     Гардеробная
+     <span class="sub">Жидкая Кошка · Cats Are Liquid</span>
+    </span>
+   </h2>
+   <span class="wardrobe-label-free">FREE · ∞ творчество</span>
+   <button type="button" class="icon-btn" id="wardrobe-close-btn" title="Закрыть">
+    <span class="material-symbols-rounded">close</span>
+   </button>
+  </div>
+  <div class="wardrobe-stage">
+   <div class="lc-cat react-neutral" id="lc-cat-preview" aria-hidden="true">
+    <div class="ear-l"></div>
+    <div class="ear-r"></div>
+    <div class="blob" id="lc-blob"></div>
+    <div class="eye-l"></div>
+    <div class="eye-r"></div>
+    <div class="mouth"></div>
+    <div class="acc" id="lc-acc"></div>
+    <div class="acc-extra" id="lc-acc-extra"></div>
+   </div>
+   <div class="lc-mini-pet" id="lc-mini-pet" aria-hidden="true">
+    <div class="mp-ear-l"></div><div class="mp-ear-r"></div>
+    <div class="mp-blob"></div>
+    <div class="mp-eye l"></div><div class="mp-eye r"></div>
+   </div>
+   <div class="lc-outfit-name" id="lc-outfit-label">
+    Классическая жидкость
+    <small>Без наряда · чистый CAL-вайб</small>
+   </div>
+  </div>
+  <div class="wardrobe-react-row" id="wardrobe-react-row">
+   <label>Реакция</label>
+   <button type="button" class="react-chip" data-react="kind">Добрая</button>
+   <button type="button" class="react-chip active" data-react="neutral">Нейтральная</button>
+   <button type="button" class="react-chip" data-react="scary">Стремная</button>
+  </div>
+  <div class="wardrobe-mix-row" id="wardrobe-mix-row">
+   <label>Микс · голова / тело отдельно</label>
+   <button type="button" class="mix-chip active" data-mix="full">Целый наряд</button>
+   <button type="button" class="mix-chip" data-mix="head">Только голова</button>
+   <button type="button" class="mix-chip" data-mix="body">Только тело</button>
+  </div>
+  <div class="wardrobe-pet-row" id="wardrobe-pet-row">
+   <label>Мини-питомец на фоне</label>
+   <button type="button" class="pet-chip active" data-pet="off">Нет</button>
+   <button type="button" class="pet-chip" data-pet="pink">Розовый</button>
+   <button type="button" class="pet-chip" data-pet="ghost">Призрак</button>
+   <button type="button" class="pet-chip" data-pet="pumpkin">Тыква</button>
+  </div>
+  <div class="wardrobe-grid" id="wardrobe-grid"></div>
+  <p class="wardrobe-share-hint">Хочешь сфоткать — нажми «Скрин» · наряды бесплатны, ограничивает только творчество</p>
+  <div class="wardrobe-actions">
+   <button type="button" class="reset" id="wardrobe-reset">Снять наряд</button>
+   <button type="button" class="save" id="wardrobe-shot" title="Снимок превью">📸 Скрин</button>
+   <button type="button" class="save" id="wardrobe-save">Сохранить в чаты</button>
+  </div>
+ </div>
+</div>
+
 <div id="settings-panel">
  <div class="settings-inner">
  <div class="settings-head">
@@ -2082,7 +2381,22 @@ body.enterprise-mode .send-btn.enterprise-block{
 
 <div id="ai-head">FAST MODEL 4.4 · LOCAL <span class="material-symbols-rounded model-lock" style="font-size:14px">lock</span></div>
 
-<div class="controls">
+<div class="fa-pack-restrict-banner" id="fa-pack-restrict-banner" role="status">
+ <div class="fa-pack-notice">
+  <span class="material-symbols-rounded">warning</span>
+  С 24 Октября 2026 года наши Помощники не смогут или будут затруднение с скачиваниями неподерживаемых паков через Помощников.
+  <a href="https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000009" target="_blank" rel="noopener">Подробнее...</a>
+  <br>
+  <span style="font-weight:600;opacity:.95">AI Search не сможет давать паки 1.0, 2.0, 2.2, 2.5, 2.8, 2.8.1, 2.9, 3.0, 3.1 на данный момент.</span>
+ </div>
+</div>
+
+
+<div class="controls" style="display:flex;gap:8px;align-items:center">
+ <button class="icon-btn" id="wardrobe-btn" title="Гардеробная Жидкой Кошки · Halloween">
+  <span class="mdi mdi-pumpkin" aria-hidden="true"></span>
+  <span class="wb-dot"></span>
+ </button>
  <button class="icon-btn" id="menu-btn">
   <span class="material-symbols-rounded">more_vert</span>
  </button>
@@ -2407,6 +2721,18 @@ body.enterprise-mode .send-btn.enterprise-block{
 
   </div>
 
+  <div class="agent-row"
+       data-agent="Creating Overlay"
+       data-icon="layers"
+       data-cost="60"
+       data-cost-label="до 60% оверлей кошки">
+
+   <span class="material-symbols-rounded">layers</span>
+   Creating Overlay
+   <span class="agent-cost">до 60%</span>
+
+  </div>
+
   <div class="agent-row locked"
        data-agent="Ask Event"
        data-icon="event"
@@ -2569,7 +2895,7 @@ function isRestrictedPackVersion(v){
   return FA_RESTRICTED_PACK_VERSIONS.has(String(v).trim());
 }
 function isRestrictedPack(pack){
-  return !!(pack && isRestrictedPackVersion(pack.version));
+  return false; // ограничения с 24.10.2026 сняты / дата прошла
 }
 function packRestrictErrorHtml(){
   return `<div class="pack-restrict-err">Ошибка в выдаче Информации о паке, Подробнее: Ограничения с 24 Октября</div>`;
@@ -2603,6 +2929,7 @@ function refundLastLimitUsage(){
 }
 /** Показать результат, через миллисекунды — красная ошибка; лимит не списываем */
 function scheduleRestrictedPackReveal(bubble){
+  return false; // restrictions lifted after 24 Oct 2026
   if(!bubble) return false;
   const cards = bubble.querySelectorAll(".pack-result[data-restricted='1']");
   if(!cards.length) return false;
@@ -2981,17 +3308,23 @@ function saveChat(){
  }catch{}
  try{
   if(typeof loadFaChats==="function"){
-   const id=ensureCurrentChat();
+   // не создаём новый чат при каждом save — только пишем в текущий, если он есть
+   let id=typeof getCurrentChatId==="function" ? getCurrentChatId() : null;
    const map=loadFaChats();
+   if(!id || !map[id]){
+     // тихий ensure без лишнего «Новый чат» если уже есть сессии
+     id=ensureCurrentChat(false);
+   }
+   if(!id) return;
    if(!map[id]) map[id]={title:"Новый чат",html:"",updated:Date.now()};
+   // не затираем сохранённый наряд / спец. чаты пустым html случайно? всегда пишем DOM
    map[id].html=chat.innerHTML;
    map[id].updated=Date.now();
    if(!map[id].title||map[id].title==="Новый чат"){
-    const u=chat.querySelector(".bubble.user .text-content");
+    const u=chat.querySelector(".bubble.user .text-content, .bubble.user");
     if(u&&u.textContent.trim()) map[id].title=u.textContent.trim().slice(0,48);
    }
    saveFaChats(map);
-   // Общий ключ с Core Node
    try{ syncChatToCoreNodeStorage(id, map[id].title, map[id].html); }catch(err){}
    if(typeof renderFaChatsList==="function") renderFaChatsList();
   }
@@ -3533,6 +3866,8 @@ function updateAgentUI(){
    ?"Что создаём?"
    :state.agent.name==="AI Search Packs"
    ?"Поиск по пакам..."
+   :state.agent.name==="Creating Overlay"
+   ?"Создай мне котика в наряде..."
    :"Спросить...";
 }
 
@@ -5559,24 +5894,44 @@ function loadSettings(){
 }
 
 function loadChat(){
-
  try{
-
-  const saved=
-   localStorage.getItem(
-    "fastAssistant.chat"
-   );
-
-  if(saved){
-
-   chat.innerHTML=saved;
-
-   state.home=false;
-
-   setInputCentered(false);
+  // 1) multi-chat: восстановить текущий из списка
+  if(typeof loadFaChats==="function" && typeof getCurrentChatId==="function"){
+   let map=loadFaChats();
+   // разовая миграция legacy single chat → map
+   if(!Object.keys(map).length){
+    const legacy=localStorage.getItem("fastAssistant.chat");
+    if(legacy && legacy.trim()){
+     const mid="fa_migrated";
+     map[mid]={title:"Основной чат",html:legacy,updated:Date.now()};
+     saveFaChats(map);
+     setCurrentChatId(mid);
+    }
+   }
+   let id=getCurrentChatId();
+   // если текущий удалён — берём самый свежий
+   if(!id || !map[id]){
+    const ids=Object.keys(map||{}).sort((a,b)=>(map[b].updated||0)-(map[a].updated||0));
+    id=ids[0]||null;
+    if(id) setCurrentChatId(id);
+   }
+   if(id && map[id]){
+    chat.innerHTML=map[id].html||"";
+    state.home=!chat.querySelector(".bubble");
+    setInputCentered(!!state.home && !state.agent);
+    // синхронизируем legacy-ключ
+    try{ localStorage.setItem("fastAssistant.chat", chat.innerHTML); }catch(e){}
+    return;
+   }
   }
-
- }catch{}
+  // 2) fallback legacy single chat
+  const saved=localStorage.getItem("fastAssistant.chat");
+  if(saved){
+   chat.innerHTML=saved;
+   state.home=!chat.querySelector(".bubble");
+   setInputCentered(!!state.home && !state.agent);
+  }
+ }catch(e){}
 }
 
 /* =========================================================
@@ -6022,10 +6377,19 @@ function setCurrentChatId(id){
  else localStorage.removeItem(FA_CURRENT_KEY);
 }
 
-function ensureCurrentChat(){
+function ensureCurrentChat(createIfEmpty){
+ // createIfEmpty === false → не плодить «Новый чат» на save
+ if(createIfEmpty===undefined) createIfEmpty=true;
  let id=getCurrentChatId();
  const map=loadFaChats();
- if(id&&map[id]) return id;
+ if(id && map[id]) return id;
+ // есть другие чаты — переключаемся на самый свежий, не создаём новый
+ const ids=Object.keys(map||{}).sort((a,b)=>(map[b].updated||0)-(map[a].updated||0));
+ if(ids.length){
+  setCurrentChatId(ids[0]);
+  return ids[0];
+ }
+ if(!createIfEmpty) return null;
  id="fa_"+Date.now().toString(36);
  map[id]={title:"Новый чат",html:"",updated:Date.now()};
  saveFaChats(map);
@@ -6060,13 +6424,20 @@ function renderFaChatsList(){
  });
 }
 
-function openFaChat(id){
+function openFaChat(id, opts){
+ opts=opts||{};
  const map=loadFaChats();
  if(!map[id]) return;
- // save current first
- try{saveChat();}catch(e){}
+ // сохраняем текущий ТОЛЬКО если он ещё существует (не после delete)
+ if(!opts.skipSave){
+  try{
+   const cur=getCurrentChatId();
+   if(cur && cur!==id && map[cur]) saveChat();
+  }catch(e){}
+ }
  setCurrentChatId(id);
  chat.innerHTML=map[id].html||"";
+ try{ localStorage.setItem("fastAssistant.chat", chat.innerHTML); }catch(e){}
  state.home=!chat.querySelector(".bubble");
  if(state.home){
   try{renderHome();}catch(e){}
@@ -6076,17 +6447,23 @@ function openFaChat(id){
  }
  closeSidebar();
  renderFaChatsList();
- showAlert("Чат: "+(map[id].title||""));
+ if(!opts.silent) showAlert("Чат: "+(map[id].title||""));
 }
 
 function newFaChat(){
- try{saveChat();}catch(e){}
+ // сохранить текущий, если он жив
+ try{
+  const cur=getCurrentChatId();
+  const map0=loadFaChats();
+  if(cur && map0[cur]) saveChat();
+ }catch(e){}
  const id="fa_"+Date.now().toString(36);
  const map=loadFaChats();
  map[id]={title:"Новый чат",html:"",updated:Date.now()};
  saveFaChats(map);
  setCurrentChatId(id);
  chat.innerHTML="";
+ try{ localStorage.setItem("fastAssistant.chat",""); }catch(e){}
  state.home=true;
  state.agent=null;
  try{updateAgentUI();}catch(e){}
@@ -6159,13 +6536,39 @@ window.addEventListener("load",()=>{
     setCurrentChatId(id);
    }
   }
-  ensureCurrentChat();
   try{ pullCoreNodeChatsIntoFa(); }catch(e){}
+  // восстановить текущий чат (не создавать лишний «Новый»)
+  ensureCurrentChat(false);
+  const mapBoot=loadFaChats();
+  let bootId=getCurrentChatId();
+  if(!bootId || !mapBoot[bootId]){
+   const ids=Object.keys(mapBoot).sort((a,b)=>(mapBoot[b].updated||0)-(mapBoot[a].updated||0));
+   bootId=ids[0]||null;
+   if(bootId) setCurrentChatId(bootId);
+  }
+  if(bootId && mapBoot[bootId]){
+   chat.innerHTML=mapBoot[bootId].html||"";
+   state.home=!chat.querySelector(".bubble");
+   if(state.home){
+     try{renderHome();}catch(e){}
+     setInputCentered(!state.agent);
+   }else{
+     setInputCentered(false);
+   }
+   try{ localStorage.setItem("fastAssistant.chat", chat.innerHTML); }catch(e){}
+  }else{
+   // совсем пусто — один новый чат
+   ensureCurrentChat(true);
+   chat.innerHTML="";
+   state.home=true;
+   try{renderHome();}catch(e){}
+   setInputCentered(true);
+  }
   renderFaChatsList();
   const hash=location.hash||"";
   if(hash.startsWith("#fa-chat=")){
    const id=decodeURIComponent(hash.slice(9));
-   if(loadFaChats()[id]) openFaChat(id);
+   if(loadFaChats()[id]) openFaChat(id, {skipSave:true});
   }
  }catch(e){}
 
@@ -6222,15 +6625,42 @@ window.addEventListener("load",()=>{
  $("fa-delete-cancel")?.addEventListener("click",()=>$("fa-modal-delete").classList.remove("open"));
  $("fa-delete-ok")?.addEventListener("click",()=>{
   const id=$("fa-modal-delete").dataset.id;
+  if(!id) return;
   const map=loadFaChats();
+  const wasCurrent = getCurrentChatId()===id;
   delete map[id];
   saveFaChats(map);
+  // убрать из Core Node mirror если есть
+  try{
+   const oracle=typeof readOracleSessions==="function" ? readOracleSessions() : {};
+   const keys=[id, "fa_"+id, id.startsWith("fa_")?id.slice(3):null].filter(Boolean);
+   let ch=false;
+   keys.forEach(k=>{ if(oracle[k]){ delete oracle[k]; ch=true; } });
+   if(ch && typeof writeOracleSessions==="function") writeOracleSessions(oracle);
+  }catch(e){}
   $("fa-modal-delete").classList.remove("open");
-  if(getCurrentChatId()===id){
-   const ids=Object.keys(map);
-   if(ids.length) openFaChat(ids.sort((a,b)=>(map[b].updated||0)-(map[a].updated||0))[0]);
-   else newFaChat();
-  }else renderFaChatsList();
+  if(wasCurrent){
+   setCurrentChatId(null); // важно: чтобы save/ensure не воскресили удалённый
+   const ids=Object.keys(map).sort((a,b)=>(map[b].updated||0)-(map[a].updated||0));
+   if(ids.length) openFaChat(ids[0], {skipSave:true});
+   else {
+     // действительно пусто — один новый
+     const nid="fa_"+Date.now().toString(36);
+     map[nid]={title:"Новый чат",html:"",updated:Date.now()};
+     saveFaChats(map);
+     setCurrentChatId(nid);
+     chat.innerHTML="";
+     try{ localStorage.setItem("fastAssistant.chat",""); }catch(e){}
+     state.home=true;
+     state.agent=null;
+     try{updateAgentUI();}catch(e){}
+     setInputCentered(true);
+     try{renderHome();}catch(e){}
+     renderFaChatsList();
+   }
+  }else{
+   renderFaChatsList();
+  }
   showAlert("Чат удалён");
  });
 
@@ -7123,6 +7553,467 @@ window.addEventListener("load", ()=>{
   };
 })();
 
+
+/* =========================================================
+   LIQUID CAT WARDROBE (Halloween · Cats Are Liquid)
+========================================================= */
+const FA_WARDROBE_KEY = "fastAssistant.liquidCatOutfit";
+const FA_WARDROBE_SAVED = "fastAssistant.liquidCatSaved";
+const FA_WARDROBE_REACT = "fastAssistant.liquidCatReact";
+const FA_WARDROBE_MIX = "fastAssistant.liquidCatMix";
+const FA_WARDROBE_PET = "fastAssistant.liquidCatPet";
+const FA_WARDROBE_HEAD = "fastAssistant.liquidCatHead";
+const FA_WARDROBE_BODY = "fastAssistant.liquidCatBody";
+
+const LIQUID_CAT_OUTFITS = [
+  { id:"classic", name:"Классическая жидкость", desc:"Чистый CAL · без наряда", emoji:"💧", kind:"normal",
+    blob:"linear-gradient(160deg,#7dd3fc,#38bdf8 45%,#0ea5e9)", ear:"#38bdf8", acc:"", extra:"", extraStyle:"" },
+  { id:"scarf", name:"Шарфик", desc:"Уютный повседневный образ", emoji:"🧣", kind:"normal",
+    blob:"linear-gradient(160deg,#7dd3fc,#38bdf8 45%,#0ea5e9)", ear:"#38bdf8", acc:"🧣", extra:"", extraStyle:"top:42px;font-size:22px" },
+  { id:"bow", name:"Бантик", desc:"Милый акцент на голове", emoji:"🎀", kind:"normal",
+    blob:"linear-gradient(160deg,#fda4af,#fb7185 50%,#e11d48)", ear:"#fb7185", acc:"🎀", extra:"", extraStyle:"top:-8px;font-size:28px" },
+  { id:"hoodie", name:"Худи", desc:"Уличный стиль", emoji:"🧥", kind:"normal",
+    blob:"linear-gradient(160deg,#93c5fd,#3b82f6 50%,#1d4ed8)", ear:"#3b82f6", acc:"🧥", extra:"", extraStyle:"top:36px;font-size:24px" },
+  { id:"star", name:"Звёздочка", desc:"Сияющий повседневный", emoji:"⭐", kind:"normal",
+    blob:"linear-gradient(160deg,#fde68a,#fbbf24 50%,#f59e0b)", ear:"#fbbf24", acc:"⭐", extra:"✨", extraStyle:"top:-4px;font-size:26px" },
+  { id:"pumpkin", name:"Jack-o'-Lantern", desc:"Хеллоуинская тыква на кошке", emoji:"🎃", kind:"halloween",
+    blob:"linear-gradient(160deg,#ff9f1a,#ff6b00 50%,#c2410c)", ear:"#ff6b00", acc:"🎃", extra:"", extraStyle:"top:-6px;font-size:34px" },
+  { id:"ghost", name:"Привидение", desc:"Простыня и «буу»", emoji:"👻", kind:"halloween",
+    blob:"linear-gradient(160deg,#f8fafc,#e2e8f0 55%,#cbd5e1)", ear:"#e2e8f0", acc:"👻", extra:"", extraStyle:"top:-4px;font-size:32px" },
+  { id:"witch", name:"Ведьма", desc:"Шляпа и магия", emoji:"🧙", kind:"halloween",
+    blob:"linear-gradient(160deg,#a78bfa,#7c3aed 50%,#4c1d95)", ear:"#7c3aed", acc:"🧙‍♀️", extra:"✨", extraStyle:"right:8px;top:20px;font-size:18px" },
+  { id:"vampire", name:"Вампир", desc:"Плащ и клыки", emoji:"🧛", kind:"halloween",
+    blob:"linear-gradient(160deg,#1e1b4b,#312e81 40%,#7f1d1d)", ear:"#312e81", acc:"🧛", extra:"🩸", extraStyle:"left:10px;bottom:6px;font-size:14px" },
+  { id:"skeleton", name:"Скелетик", desc:"Косточки на жидком теле", emoji:"💀", kind:"halloween",
+    blob:"linear-gradient(160deg,#f1f5f9,#94a3b8 50%,#475569)", ear:"#94a3b8", acc:"💀", extra:"", extraStyle:"top:-2px;font-size:30px" },
+  { id:"bat", name:"Летучая мышь", desc:"Крылья ночи", emoji:"🦇", kind:"halloween",
+    blob:"linear-gradient(160deg,#334155,#1e293b 50%,#0f172a)", ear:"#1e293b", acc:"🦇", extra:"🌙", extraStyle:"right:6px;top:8px;font-size:16px" },
+  { id:"candy", name:"Candy Corn", desc:"Сладкий хеллоуин", emoji:"🍬", kind:"halloween",
+    blob:"linear-gradient(180deg,#fff7ed,#fdba74 40%,#f97316 70%,#fef08a)", ear:"#fdba74", acc:"🍬", extra:"🍭", extraStyle:"left:6px;top:12px;font-size:16px" },
+  { id:"mummy", name:"Мумия", desc:"Бинты и загадка", emoji:"🩹", kind:"halloween",
+    blob:"linear-gradient(160deg,#fef3c7,#e7e5e4 50%,#a8a29e)", ear:"#d6d3d1", acc:"🩹", extra:"👀", extraStyle:"top:28px;font-size:12px" },
+  { id:"blackcat", name:"Чёрная кошка", desc:"Классика суеверий", emoji:"🐈‍⬛", kind:"halloween",
+    blob:"linear-gradient(160deg,#3f3f46,#18181b 50%,#09090b)", ear:"#27272a", acc:"🐈‍⬛", extra:"", extraStyle:"top:-2px;font-size:28px" },
+  { id:"werewolf", name:"Оборотень", desc:"Полная луна", emoji:"🐺", kind:"halloween",
+    blob:"linear-gradient(160deg,#a8a29e,#78716c 45%,#44403c)", ear:"#78716c", acc:"🐺", extra:"🌕", extraStyle:"right:4px;top:4px;font-size:16px" },
+  { id:"frank", name:"Франкенштейн", desc:"Швы и искра", emoji:"⚡", kind:"halloween",
+    blob:"linear-gradient(160deg,#86efac,#22c55e 40%,#14532d)", ear:"#22c55e", acc:"🧟", extra:"⚡", extraStyle:"right:8px;top:12px;font-size:16px" },
+  { id:"spider", name:"Паутинка", desc:"Новый хеллоуин · сеть", emoji:"🕷️", kind:"halloween",
+    blob:"linear-gradient(160deg,#57534e,#292524 50%,#0c0a09)", ear:"#44403c", acc:"🕷️", extra:"🕸️", extraStyle:"top:-2px;font-size:26px" },
+  { id:"pumpkin2", name:"Тыква-лампа", desc:"Новый хеллоуин · свечение", emoji:"🏮", kind:"halloween",
+    blob:"linear-gradient(160deg,#fb923c,#ea580c 45%,#9a3412)", ear:"#ea580c", acc:"🏮", extra:"🔥", extraStyle:"top:-4px;font-size:28px" }
+];
+
+function getLiquidOutfitId(){
+  try{ return localStorage.getItem(FA_WARDROBE_KEY) || "classic"; }catch(e){ return "classic"; }
+}
+function setLiquidOutfitId(id){
+  try{ localStorage.setItem(FA_WARDROBE_KEY, id); }catch(e){}
+}
+function getLiquidReact(){
+  try{ return localStorage.getItem(FA_WARDROBE_REACT) || "neutral"; }catch(e){ return "neutral"; }
+}
+function setLiquidReact(r){
+  try{ localStorage.setItem(FA_WARDROBE_REACT, r); }catch(e){}
+}
+function getLiquidMix(){
+  try{ return localStorage.getItem(FA_WARDROBE_MIX) || "full"; }catch(e){ return "full"; }
+}
+function setLiquidMix(m){
+  try{ localStorage.setItem(FA_WARDROBE_MIX, m); }catch(e){}
+}
+function getLiquidPet(){
+  try{ return localStorage.getItem(FA_WARDROBE_PET) || "off"; }catch(e){ return "off"; }
+}
+function setLiquidPet(p){
+  try{ localStorage.setItem(FA_WARDROBE_PET, p); }catch(e){}
+}
+function getLiquidHeadId(){
+  try{ return localStorage.getItem(FA_WARDROBE_HEAD) || getLiquidOutfitId(); }catch(e){ return "classic"; }
+}
+function setLiquidHeadId(id){
+  try{ localStorage.setItem(FA_WARDROBE_HEAD, id); }catch(e){}
+}
+function getLiquidBodyId(){
+  try{ return localStorage.getItem(FA_WARDROBE_BODY) || getLiquidOutfitId(); }catch(e){ return "classic"; }
+}
+function setLiquidBodyId(id){
+  try{ localStorage.setItem(FA_WARDROBE_BODY, id); }catch(e){}
+}
+function findOutfit(id){
+  return LIQUID_CAT_OUTFITS.find(o => o.id === id) || LIQUID_CAT_OUTFITS[0];
+}
+
+function applyLiquidReaction(react){
+  const cat = document.getElementById("lc-cat-preview");
+  if(!cat) return;
+  cat.classList.remove("react-kind","react-neutral","react-scary");
+  const map = { kind:"react-kind", neutral:"react-neutral", scary:"react-scary" };
+  cat.classList.add(map[react] || "react-neutral");
+  document.querySelectorAll(".react-chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.react === react);
+  });
+}
+
+function applyLiquidPet(pet){
+  const el = document.getElementById("lc-mini-pet");
+  if(!el) return;
+  el.classList.remove("show","pet-ghost","pet-pumpkin");
+  if(pet && pet !== "off"){
+    el.classList.add("show");
+    if(pet === "ghost") el.classList.add("pet-ghost");
+    if(pet === "pumpkin") el.classList.add("pet-pumpkin");
+  }
+  document.querySelectorAll(".pet-chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.pet === pet);
+  });
+}
+
+function applyLiquidCatVisual(id){
+  const mix = getLiquidMix();
+  const full = findOutfit(id || getLiquidOutfitId());
+  const headO = findOutfit(mix === "body" ? getLiquidHeadId() : (mix === "head" ? id || getLiquidOutfitId() : full.id));
+  const bodyO = findOutfit(mix === "head" ? getLiquidBodyId() : (mix === "body" ? id || getLiquidOutfitId() : full.id));
+  // when full mode, both from same
+  const useHead = mix === "full" ? full : headO;
+  const useBody = mix === "full" ? full : bodyO;
+
+  const blob = document.getElementById("lc-blob");
+  const acc = document.getElementById("lc-acc");
+  const extra = document.getElementById("lc-acc-extra");
+  const label = document.getElementById("lc-outfit-label");
+  const cat = document.getElementById("lc-cat-preview");
+
+  if(blob) blob.style.background = useBody.blob;
+  if(cat){
+    cat.querySelectorAll(".ear-l,.ear-r").forEach(el => {
+      el.style.borderBottomColor = useHead.ear;
+    });
+  }
+  if(acc){
+    // head accessory from head outfit
+    acc.textContent = useHead.acc || "";
+    acc.style.cssText = useHead.acc ? (useHead.extraStyle || "top:-4px;font-size:30px") : "";
+  }
+  if(extra){
+    // body-ish extra can come from body outfit if different
+    const ex = (mix !== "full" && useBody.extra && useBody.id !== useHead.id) ? useBody.extra : (useHead.extra || "");
+    const st = (mix !== "full" && useBody.extra && useBody.id !== useHead.id) ? (useBody.extraStyle || "") : (useHead.extraStyle || "");
+    extra.textContent = ex;
+    if(!ex){ extra.style.display = "none"; }
+    else { extra.style.display = ""; extra.style.cssText = st || "top:-4px;font-size:20px"; }
+  }
+  if(label){
+    let name = full.name;
+    let desc = full.desc;
+    if(mix === "head"){ name = "Голова: " + useHead.name; desc = "Тело остаётся · " + useBody.name; }
+    if(mix === "body"){ name = "Тело: " + useBody.name; desc = "Голова остаётся · " + useHead.name; }
+    if(mix !== "full" && useHead.id !== useBody.id){
+      name = useHead.name + " + " + useBody.name;
+      desc = "Микс · голова / тело";
+    }
+    label.innerHTML = esc(name) + "<small>" + esc(desc) + "</small>";
+  }
+
+  applyLiquidReaction(getLiquidReact());
+  applyLiquidPet(getLiquidPet());
+
+  const btn = document.getElementById("wardrobe-btn");
+  if(btn){
+    const active = (id || getLiquidOutfitId()) !== "classic" || mix !== "full" || getLiquidPet() !== "off";
+    btn.classList.toggle("has-outfit", active);
+  }
+  document.querySelectorAll(".wardrobe-card").forEach(c => {
+    c.classList.toggle("active", c.dataset.id === (id || getLiquidOutfitId()));
+  });
+  document.querySelectorAll(".mix-chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.mix === mix);
+  });
+}
+
+function renderWardrobeGrid(){
+  const grid = document.getElementById("wardrobe-grid");
+  if(!grid) return;
+  const cur = getLiquidOutfitId();
+  const normals = LIQUID_CAT_OUTFITS.filter(o => o.kind === "normal");
+  const halls = LIQUID_CAT_OUTFITS.filter(o => o.kind === "halloween");
+  const block = (title, list) => `
+    <div style="grid-column:1/-1;font-size:10px;font-weight:800;color:var(--sub);letter-spacing:.6px;text-transform:uppercase;margin:4px 0 2px">${title}</div>
+    ${list.map(o => `
+    <button type="button" class="wardrobe-card${o.id===cur?" active":""}" data-id="${esc(o.id)}">
+      <span class="wc-emoji">${o.emoji}</span>
+      <b>${esc(o.name)}</b>
+      <small>${esc(o.desc)}</small>
+    </button>`).join("")}`;
+  grid.innerHTML = block("Обычные", normals) + block("Хеллоуин", halls);
+  grid.querySelectorAll(".wardrobe-card").forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+      const mix = getLiquidMix();
+      setLiquidOutfitId(id);
+      if(mix === "head") setLiquidHeadId(id);
+      else if(mix === "body") setLiquidBodyId(id);
+      else { setLiquidHeadId(id); setLiquidBodyId(id); }
+      applyLiquidCatVisual(id);
+      try{ showAlert("Наряд: " + findOutfit(id).name); }catch(e){}
+    };
+  });
+}
+
+function openWardrobe(){
+  try{ closeSidebar(); }catch(e){}
+  try{ if(typeof closeSettings==="function") closeSettings(); }catch(e){}
+  try{ if(typeof closePlusMenu==="function") closePlusMenu(); }catch(e){}
+  renderWardrobeGrid();
+  applyLiquidCatVisual(getLiquidOutfitId());
+  document.getElementById("wardrobe-panel")?.classList.add("open");
+  try{ scheduleAutoOk(); }catch(e){}
+}
+function closeWardrobe(){
+  document.getElementById("wardrobe-panel")?.classList.remove("open");
+}
+
+function saveOutfitToChats(){
+  const o = findOutfit(getLiquidOutfitId());
+  const react = getLiquidReact();
+  const pet = getLiquidPet();
+  const mix = getLiquidMix();
+  const id = "fa_outfit_" + o.id + "_" + Date.now().toString(36).slice(-4);
+  const map = typeof loadFaChats === "function" ? loadFaChats() : {};
+  const title = "🎃 " + o.name;
+  const reactLabel = {kind:"Добрая",neutral:"Нейтральная",scary:"Стремная"}[react]||react;
+  const html = `
+    <div class="bubble system">Сохранённый наряд · Гардеробная Жидкой Кошки</div>
+    <div class="bubble ai">
+      <div style="text-align:center;padding:8px 0 4px;font-size:42px">${o.emoji}</div>
+      <b>${esc(o.name)}</b><br>
+      <small style="color:var(--sub)">${esc(o.desc)}</small>
+      <br><br>
+      Реакция: <b>${esc(reactLabel)}</b>
+      ${mix!=="full" ? "<br>Микс: <b>"+esc(mix)+"</b>" : ""}
+      ${pet!=="off" ? "<br>Мини-питомец: <b>"+esc(pet)+"</b>" : ""}
+      <br><br>
+      Из <b>Cats Are Liquid — A Better Place</b> · хеллоуинская гардеробная.<br>
+      Все наряды <b>бесплатны</b> — ограничивает только творчество.
+      <div class="pack-tags" style="margin-top:10px">
+        <span class="pack-tag">наряд</span>
+        <span class="pack-tag">хеллоуин</span>
+        <span class="pack-tag">liquid cat</span>
+        <span class="pack-tag">free</span>
+      </div>
+    </div>`;
+  map[id] = {
+    title,
+    html,
+    updated: Date.now(),
+    source: "liquid-cat-wardrobe",
+    outfitId: o.id,
+    label: "🎃 Наряд"
+  };
+  if(typeof saveFaChats === "function") saveFaChats(map);
+  else try{ localStorage.setItem("fastAssistant.chats.v1", JSON.stringify(map)); }catch(e){}
+  try{ localStorage.setItem(FA_WARDROBE_SAVED, id); }catch(e){}
+  try{ renderFaChatsList(); }catch(e){}
+  try{ showAlert("Сохранено в чаты · " + title); }catch(e){}
+  try{ openSidebar(); }catch(e){}
+}
+
+function captureWardrobeShot(){
+  try{
+    const o = findOutfit(getLiquidOutfitId());
+    const textShare = `Гардеробная Жидкой Кошки · ${o.name}\n${o.desc}\nРеакция: ${getLiquidReact()}\nCats Are Liquid — A Better Place · Halloween (Fast Assistant)`;
+    if(navigator.share){
+      navigator.share({ title: o.name, text: textShare }).catch(()=>{});
+    }
+    const flash = document.createElement("div");
+    flash.style.cssText = "position:fixed;inset:0;background:#fff;z-index:9999;pointer-events:none;opacity:.7;transition:opacity .35s";
+    document.body.appendChild(flash);
+    requestAnimationFrame(()=>{ flash.style.opacity = "0"; });
+    setTimeout(()=> flash.remove(), 400);
+    try{
+      navigator.clipboard?.writeText(textShare);
+      showAlert("Хочешь сфоткать — нажми «Скрин» · описание скопировано");
+    }catch(e){ showAlert("Готово к скрину экрана"); }
+  }catch(e){ try{ showAlert("Не удалось"); }catch(err){} }
+}
+
+function patchChatListPumpkinIcons(){
+  try{
+    const map = typeof loadFaChats === "function" ? loadFaChats() : {};
+    document.querySelectorAll("#fa-chats-list .fa-chat-item").forEach(item => {
+      const c = map[item.dataset.id];
+      if(c && (c.label || c.source === "liquid-cat-wardrobe")){
+        const ico = item.querySelector(".material-symbols-rounded");
+        if(ico){
+          ico.className = "mdi mdi-pumpkin chat-ico";
+          ico.textContent = "";
+          ico.style.fontSize = "20px";
+          ico.style.color = "#ff8c00";
+        }
+        if(!item.querySelector(".outfit-tag")){
+          const tag = document.createElement("span");
+          tag.className = "outfit-tag";
+          tag.textContent = c.label || "🎃 Наряд";
+          item.appendChild(tag);
+        }
+      }
+    });
+  }catch(e){}
+}
+
+(function patchFaChatsListOutfit(){
+  const prev = typeof renderFaChatsList === "function" ? renderFaChatsList : null;
+  if(!prev || window._faWardrobeListPatched) return;
+  window._faWardrobeListPatched = true;
+  window.renderFaChatsList = function(){
+    prev.apply(this, arguments);
+    patchChatListPumpkinIcons();
+  };
+})();
+
+/** AI lore: overlay / wardrobe questions + Creating Overlay agent */
+function liquidCatOverlayAnswer(q){
+  const think = (1.2 + Math.random() * 1.4).toFixed(1);
+  return `
+🐱 <b>Да</b> — оверлей Жидкой Кошке создать можно.<br><br>
+Идея пришла из <b>Cats Are Liquid — A Better Place</b>: жидкая кошка как персонаж, а гардеробная — лёгкий слой поверх (наряд, реакция, мини-питомец). В Fast Assistant это сделали как хеллоуинскую фичу: тыква в шапке → превью → сохранение в чаты с меткой.<br><br>
+<b>Останется ли после Хеллоуина?</b><br>
+Да. Гардеробная <b>останется</b>, но будет <b>ограничена</b>: часть сезонных нарядов уйдёт в архив, базовые и микс голова/тело — останутся. Creating Overlay (агент) поможет собрать свой оверлей по запросу вроде «Создай мне котика…» (расход до ~60% лимита).<br><br>
+Открой 🎃 в верхней панели или агента <b>Creating Overlay</b>.
+<div class="ai-meta-foot">
+  Модель думала <b>${think} с</b> на размышление<br>
+  Источник: <a class="src-link" href="https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000011" target="_blank" rel="noopener">blogs-kosmo-level · post 0000011</a>
+</div>`;
+}
+
+function creatingOverlayAnswer(q){
+  const x = String(q||"").toLowerCase();
+  const think = (1.4 + Math.random() * 2.2).toFixed(1);
+  // rough outfit pick from keywords
+  let pick = "classic";
+  if(/тыкв|pumpkin|jack/.test(x)) pick = "pumpkin";
+  else if(/призрак|ghost|буу/.test(x)) pick = "ghost";
+  else if(/ведьм|witch/.test(x)) pick = "witch";
+  else if(/вампир|vampire/.test(x)) pick = "vampire";
+  else if(/скелет|skull/.test(x)) pick = "skeleton";
+  else if(/паук|spider/.test(x)) pick = "spider";
+  else if(/муми/.test(x)) pick = "mummy";
+  else if(/шарф/.test(x)) pick = "scarf";
+  else if(/бант/.test(x)) pick = "bow";
+  else if(/худи|hoodie/.test(x)) pick = "hoodie";
+  else if(/хеллоуин|halloween/.test(x)) pick = "pumpkin2";
+  if(/добр/.test(x)) setLiquidReact("kind");
+  if(/стрем|страш|scary|creep/.test(x)) setLiquidReact("scary");
+  if(/нейтр/.test(x)) setLiquidReact("neutral");
+  setLiquidOutfitId(pick);
+  setLiquidHeadId(pick);
+  setLiquidBodyId(pick);
+  try{ applyLiquidCatVisual(pick); }catch(e){}
+  const o = findOutfit(pick);
+  return `
+✨ <b>Creating Overlay</b> · оверлей для Жидкой Кошки<br><br>
+Собрал вариант: <b>${esc(o.name)}</b> ${o.emoji}<br>
+<small>${esc(o.desc)}</small><br><br>
+Можешь открыть гардеробную (🎃) и донастроить: реакция, микс голова/тело, мини-питомец.<br>
+Лимит агента: до <b>~60%</b> за сложную генерацию оверлея.<br><br>
+<button type="button" class="pack-action" onclick="openWardrobe()" style="margin-top:6px">Открыть гардеробную</button>
+<div class="ai-meta-foot">
+  Модель думала <b>${think} с</b> на размышление<br>
+  Источник: <a class="src-link" href="https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000011" target="_blank" rel="noopener">blogs-kosmo-level · post 0000011</a>
+</div>`;
+}
+
+function isLiquidOverlayQuery(q){
+  const x = String(q||"").toLowerCase().replace(/ё/g,"е");
+  return /оверлей\s*кошк|создать\s*оверлей|гардеробн|наряд.*кошк|можно\s*создать\s*оверлей|правда.*оверлей|liquid\s*cat.*overlay|overlay.*cat/i.test(x)
+    || /а правда что можно создать оверлей/i.test(x);
+}
+function isCreateCatQuery(q){
+  const x = String(q||"").toLowerCase();
+  return /создай\s+мне\s+кот|создай\s+котик|сделай\s+котик|оверлей\s+кот|creating\s+overlay/i.test(x);
+}
+
+// Patch localAI for overlay lore + Creating Overlay
+(function patchLocalAIWardrobe(){
+  const prev = typeof localAI === "function" ? localAI : null;
+  if(!prev || window._faWardrobeAIPatched) return;
+  window._faWardrobeAIPatched = true;
+  window.localAI = function(q){
+    if(isLiquidOverlayQuery(q)) return liquidCatOverlayAnswer(q);
+    if(state.agent && state.agent.name === "Creating Overlay") return creatingOverlayAnswer(q);
+    if(isCreateCatQuery(q)){
+      try{ selectAgent("Creating Overlay", "layers"); }catch(e){}
+      return creatingOverlayAnswer(q);
+    }
+    return prev.apply(this, arguments);
+  };
+})();
+
+// Cost for Creating Overlay
+if(typeof FA_COST_DB === "object" && FA_COST_DB.agents){
+  FA_COST_DB.agents["Creating Overlay"] = { cost: 60, detail: "до 60% оверлей кошки" };
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("wardrobe-btn")?.addEventListener("click", openWardrobe);
+  document.getElementById("wardrobe-close-btn")?.addEventListener("click", closeWardrobe);
+  document.getElementById("wardrobe-shot")?.addEventListener("click", captureWardrobeShot);
+  document.getElementById("wardrobe-panel")?.addEventListener("click", (e) => {
+    if(e.target && e.target.id === "wardrobe-panel") closeWardrobe();
+  });
+  document.getElementById("wardrobe-reset")?.addEventListener("click", () => {
+    setLiquidOutfitId("classic");
+    setLiquidHeadId("classic");
+    setLiquidBodyId("classic");
+    setLiquidMix("full");
+    setLiquidPet("off");
+    setLiquidReact("neutral");
+    applyLiquidCatVisual("classic");
+    try{ showAlert("Наряд снят"); }catch(e){}
+  });
+  document.getElementById("wardrobe-save")?.addEventListener("click", saveOutfitToChats);
+
+  document.querySelectorAll(".react-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setLiquidReact(btn.dataset.react);
+      applyLiquidReaction(btn.dataset.react);
+    });
+  });
+  document.querySelectorAll(".mix-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setLiquidMix(btn.dataset.mix);
+      applyLiquidCatVisual(getLiquidOutfitId());
+      try{ showAlert("Микс: " + ({full:"целый наряд",head:"только голова",body:"только тело"}[btn.dataset.mix]||"")); }catch(e){}
+    });
+  });
+  document.querySelectorAll(".pet-chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      setLiquidPet(btn.dataset.pet);
+      applyLiquidPet(btn.dataset.pet);
+      const b = document.getElementById("wardrobe-btn");
+      if(b) b.classList.toggle("has-outfit", getLiquidOutfitId()!=="classic" || btn.dataset.pet!=="off");
+    });
+  });
+});
+
+window.addEventListener("load", () => {
+  try{
+    applyLiquidCatVisual(getLiquidOutfitId());
+    const btn = document.getElementById("wardrobe-btn");
+    if(btn && (getLiquidOutfitId() !== "classic" || getLiquidPet() !== "off")) btn.classList.add("has-outfit");
+  }catch(e){}
+  try{
+    if(typeof renderFaChatsList === "function"){
+      const prev = renderFaChatsList;
+      window.renderFaChatsList = function(){
+        prev.apply(this, arguments);
+        patchChatListPumpkinIcons();
+      };
+    }
+  }catch(e){}
+});
+
+
 window.FastAssistant={
 
  status:()=>({
@@ -7161,171 +8052,6 @@ window.FastAssistant={
 
 };
 
-</script>
-
-
-<script>
-/* =========================================================
-   ENTERPRISE MODE — ?enterprise=true | ?enterprise=1
-   Корпоративный ограниченный режим (как FA 3.4 limits)
-========================================================= */
-(function enterpriseMode(){
-  const ENT_KEY = "fastAssistant.enterprise.session";
-  const MAX_CHARS = 150;
-
-  function detectEnterprise(){
-    try{
-      const p = new URLSearchParams(location.search);
-      const v = (p.get("enterprise") || p.get("ent") || "").toLowerCase();
-      if (v === "true" || v === "1" || v === "yes" || v === "on") {
-        sessionStorage.setItem(ENT_KEY, "1");
-        return true;
-      }
-      if (v === "false" || v === "0" || v === "off") {
-        sessionStorage.removeItem(ENT_KEY);
-        return false;
-      }
-      // hash support: #enterprise
-      if (/[#&?]enterprise(=true|=1)?\b/i.test(location.hash)) {
-        sessionStorage.setItem(ENT_KEY, "1");
-        return true;
-      }
-      return sessionStorage.getItem(ENT_KEY) === "1";
-    }catch(e){ return false; }
-  }
-
-  window.isEnterpriseMode = function(){
-    return document.body.classList.contains("enterprise-mode");
-  };
-
-  function ensureCounter(){
-    let c = document.getElementById("fa-ent-counter");
-    if (c) return c;
-    const wrap = document.querySelector(".input-wrapper") || document.querySelector(".input-area")?.parentElement;
-    c = document.createElement("div");
-    c.id = "fa-ent-counter";
-    c.className = "char-counter";
-    c.textContent = "0 / " + MAX_CHARS;
-    if (wrap) wrap.appendChild(c);
-    else document.body.appendChild(c);
-    return c;
-  }
-
-  function applyEnterpriseUI(){
-    document.body.classList.add("enterprise-mode");
-    document.title = (document.title || "Fast Assistant") + " · Enterprise";
-    const ban = document.getElementById("fa-enterprise-banner");
-    if (ban) ban.hidden = false;
-    // lock agents
-    document.querySelectorAll(".agent-row").forEach(row=>{
-      const name = row.dataset.agent || row.textContent || "";
-      if (/Builder|Worldpack|Ask Event|Core Node/i.test(name)) {
-        row.classList.add("locked");
-        row.dataset.locked = "1";
-        row.dataset.lockReason = "Недоступно в Enterprise";
-      }
-    });
-    // priority force medium/low
-    try{
-      const s = JSON.parse(localStorage.getItem("fastAssistant.settings")||"{}");
-      if (s.replyPriority === "high") {
-        s.replyPriority = "medium";
-        localStorage.setItem("fastAssistant.settings", JSON.stringify(s));
-      }
-    }catch(e){}
-    ensureCounter();
-    try{
-      if (typeof showAlert === "function") {
-        // quiet boot toast once
-        if (sessionStorage.getItem(ENT_KEY+"_toast") !== "1") {
-          sessionStorage.setItem(ENT_KEY+"_toast","1");
-          setTimeout(()=>showAlert("Enterprise: лимит 150 символов на сообщение"), 900);
-        }
-      }
-    }catch(e){}
-  }
-
-  function enforceInput(){
-    const input = document.getElementById("ai-q") || document.querySelector("textarea");
-    const sendBtn = document.querySelector(".send-btn");
-    if (!input) return;
-    const counter = ensureCounter();
-    const val = input.value || "";
-    const n = val.length;
-    counter.textContent = n + " / " + MAX_CHARS;
-    counter.classList.toggle("over", n > MAX_CHARS);
-    if (n > MAX_CHARS) {
-      if (sendBtn) {
-        sendBtn.classList.add("enterprise-block","active");
-        sendBtn.title = "Слишком длинно для Enterprise (макс. "+MAX_CHARS+")";
-        const icon = sendBtn.querySelector(".material-symbols-rounded");
-        if (icon) icon.textContent = "workspace_premium";
-      }
-    } else {
-      if (sendBtn) {
-        sendBtn.classList.remove("enterprise-block");
-        sendBtn.title = "";
-      }
-    }
-  }
-
-  function blockLongSend(text){
-    if (!window.isEnterpriseMode()) return false;
-    if ((text||"").length > MAX_CHARS) {
-      try{
-        if (typeof showAlert === "function")
-          showAlert("Enterprise: максимум "+MAX_CHARS+" символов. Укоротите запрос.");
-        else alert("Enterprise: максимум "+MAX_CHARS+" символов");
-      }catch(e){}
-      return true;
-    }
-    return false;
-  }
-
-  // patch send paths
-  function patchSends(){
-    if (typeof window.sendUserMessage === "function" && !window._entSendPatched) {
-      window._entSendPatched = true;
-      const prev = window.sendUserMessage;
-      window.sendUserMessage = function(text){
-        const t = typeof text === "string" ? text : (document.querySelector("textarea")?.value||"");
-        if (blockLongSend(t)) return;
-        return prev.apply(this, arguments);
-      };
-    }
-    // intercept send button
-    const sendBtn = document.querySelector(".send-btn");
-    if (sendBtn && !sendBtn.dataset.entHook) {
-      sendBtn.dataset.entHook = "1";
-      sendBtn.addEventListener("click", function(e){
-        if (!window.isEnterpriseMode()) return;
-        const input = document.querySelector("textarea");
-        const t = (input && input.value) || "";
-        if (t.length > MAX_CHARS) {
-          e.preventDefault();
-          e.stopPropagation();
-          blockLongSend(t);
-        }
-      }, true);
-    }
-  }
-
-  function boot(){
-    if (!detectEnterprise()) return;
-    applyEnterpriseUI();
-    const input = document.querySelector("textarea");
-    input?.addEventListener("input", enforceInput);
-    input?.addEventListener("keyup", enforceInput);
-    enforceInput();
-    patchSends();
-    setTimeout(patchSends, 800);
-    setTimeout(patchSends, 2000);
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
-  else boot();
-  window.addEventListener("load", ()=>{ if (window.isEnterpriseMode()) { patchSends(); enforceInput(); } });
-})();
 </script>
 
 </body>
