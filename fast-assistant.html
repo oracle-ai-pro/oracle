@@ -1205,6 +1205,156 @@ textarea{
 }
 
 
+
+/* ===== Responsive shell fix ===== */
+*,*::before,*::after{box-sizing:border-box}
+html,body{
+  width:100%;
+  height:100%;
+  max-width:100%;
+  overflow-x:hidden;
+  overflow-y:hidden;
+  -webkit-text-size-adjust:100%;
+}
+body{
+  display:flex;
+  justify-content:center;
+  align-items:stretch;
+  min-width:0;
+}
+.card{
+  position:relative;
+  width:100%;
+  max-width:min(500px,100%);
+  min-width:0;
+  height:100%;
+  height:100dvh;
+  max-height:100%;
+  max-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  padding:56px 12px 12px;
+  background:var(--card);
+  color:var(--text);
+  overflow:hidden;
+}
+.card.card-normal{padding-top:56px!important}
+.card.sized{
+  max-width:min(100%,920px);
+  min-width:0;
+  width:100%!important;
+}
+@media(max-width:420px){
+  .card,.card.sized,.card.card-normal{
+    max-width:100%!important;
+    width:100%!important;
+    min-width:0!important;
+    padding-left:10px!important;
+    padding-right:10px!important;
+  }
+}
+#ai-head{
+  max-width:calc(100% - 120px);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:clamp(9px,2.8vw,11px);
+}
+.controls{
+  right:8px!important;
+  top:12px!important;
+  gap:6px!important;
+  flex-wrap:nowrap;
+  max-width:calc(50% - 4px);
+}
+.controls .icon-btn{
+  width:34px;height:34px;flex-shrink:0;
+}
+.menu-btn-left{left:8px!important;top:12px!important}
+#core-node-status{
+  left:48px!important;
+  max-width:calc(100% - 160px);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+}
+.chat{
+  min-height:0;
+  flex:1 1 auto;
+  overflow-x:hidden;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.input-wrapper{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  flex-shrink:0;
+}
+.input-area{
+  max-width:100%;
+  min-width:0;
+}
+#input{
+  min-width:0;
+  max-width:100%;
+}
+.bubble{max-width:min(82%,100%);overflow-wrap:anywhere;word-break:break-word}
+.agent-home{max-width:100%;overflow-x:hidden}
+.agent-screen-actions{grid-template-columns:repeat(2,minmax(0,1fr))}
+.wardrobe-inner,.settings-inner,#reader-panel .reader-inner{
+  max-width:100%;
+  width:100%;
+}
+#whats-new{
+  left:10px!important;
+  right:10px!important;
+  width:auto!important;
+  max-width:calc(100% - 20px)!important;
+  max-height:min(70vh,520px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.feature{
+  cursor:pointer;
+  transition:background .15s,border-color .15s;
+}
+.feature:hover,.feature.open{
+  background:var(--ai);
+}
+.feature .wn-more{
+  display:none;
+  margin-top:6px;
+  font-size:11px;
+  line-height:1.45;
+  color:var(--sub);
+  font-weight:600;
+}
+.feature.open .wn-more{display:block}
+.feature .wn-chevron{
+  margin-left:auto;
+  font-size:18px;
+  color:var(--sub);
+  transition:transform .2s;
+}
+.feature.open .wn-chevron{transform:rotate(180deg)}
+.feature{align-items:flex-start}
+.feature > .material-symbols-rounded:first-child{margin-top:2px}
+@media(max-width:520px){
+  .agent-screen-actions{grid-template-columns:1fr}
+  .wardrobe-grid{grid-template-columns:1fr}
+  .controls .icon-btn{width:32px;height:32px}
+  #ai-head{letter-spacing:1px}
+  .htm-clock{font-size:clamp(36px,11vw,72px)!important;letter-spacing:2px}
+  .htm-menu{min-width:min(260px,calc(100vw - 24px));right:0}
+  .sidebar,.fa-sidebar{width:min(100vw,320px)}
+  #agent-popup{width:min(220px,calc(100vw - 24px));max-width:calc(100vw - 24px)}
+}
+@media(max-width:360px){
+  .controls{gap:4px!important}
+  padding:0;
+}
+
 /* ===== Pack restriction notice (from 24 Oct 2026) ===== */
 .fa-pack-restrict-banner{
  position:absolute;
@@ -1277,10 +1427,10 @@ body.halloween-mode .pack-restrict-err{
  color:#ffb340;
 }
 body.halloween-mode .fa-pack-notice a{color:#ffb340}
-.card.card-normal{padding-top:148px}
+.card.card-normal{padding-top:60px}
 @media(max-width:520px){
  .fa-pack-restrict-banner{top:52px;left:8px;right:8px}
- .card.card-normal{padding-top:168px}
+ .card.card-normal{padding-top:60px}
 }
 
 
@@ -1344,6 +1494,146 @@ body.enterprise-mode .fa-new-note{display:flex}
   font-size:18px;color:var(--sub);flex-shrink:0;width:22px;text-align:center;
 }
 body.enterprise-mode .fa-chat-item .agent-ico{color:#007aff}
+
+
+
+/* Timer lure toast above input */
+.htm-lure{
+  display:none;
+  align-items:center;
+  gap:10px;
+  margin:0 2px 8px;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid #ff8c0045;
+  background:linear-gradient(135deg, rgba(255,140,0,.14), rgba(0,0,0,.04));
+  color:var(--text);
+  cursor:pointer;
+  animation:htmLureIn .45s ease, htmLurePulse 2.4s ease-in-out 0.5s infinite;
+  box-shadow:0 8px 24px rgba(255,140,0,.12);
+  position:relative;
+  z-index:5;
+}
+.htm-lure.show{display:flex}
+.htm-lure:hover{border-color:#ff8c00;background:linear-gradient(135deg, rgba(255,140,0,.22), rgba(0,0,0,.06))}
+.htm-lure .htm-lure-ico{
+  width:34px;height:34px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(145deg,#1a1a1a,#2a2a2a);color:#ff8c00;
+  border:1px solid #ff8c0040;
+}
+.htm-lure .htm-lure-ico .material-symbols-rounded{font-size:20px}
+.htm-lure .htm-lure-body{flex:1;min-width:0}
+.htm-lure .htm-lure-body b{display:block;font-size:12px;font-weight:900;line-height:1.25}
+.htm-lure .htm-lure-body small{display:block;font-size:10px;color:var(--sub);margin-top:2px;line-height:1.35}
+.htm-lure .htm-lure-go{
+  flex-shrink:0;font-size:10px;font-weight:900;letter-spacing:.3px;
+  padding:6px 10px;border-radius:999px;background:#ff8c00;color:#1a0800;
+}
+.htm-lure .htm-lure-x{
+  position:absolute;top:4px;right:6px;width:22px;height:22px;
+  border:0;background:transparent;color:var(--sub);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;border-radius:6px;
+  font-size:16px;line-height:1;padding:0;
+}
+.htm-lure .htm-lure-x:hover{background:var(--ai);color:var(--text)}
+@keyframes htmLureIn{
+  from{opacity:0;transform:translateY(10px) scale(.97)}
+  to{opacity:1;transform:none}
+}
+@keyframes htmLurePulse{
+  0%,100%{box-shadow:0 8px 24px rgba(255,140,0,.12)}
+  50%{box-shadow:0 8px 28px rgba(255,140,0,.28)}
+}
+body.halloween-mode .htm-lure{
+  border-color:#ff8c0060;
+}
+
+/* ===== Halloween Peak Timer (Amsterdam) ===== */
+#haunted-timer-btn{
+  position:relative;
+  background:linear-gradient(145deg,#1a1a1a,#2a2a2a);
+  color:#cfcfcf;
+  border:1px solid #444;
+}
+#haunted-timer-btn:hover{transform:scale(1.08);box-shadow:0 0 14px #ff6b0030}
+#haunted-timer-btn .material-symbols-rounded{font-size:20px}
+body.enterprise-mode #haunted-timer-btn{display:flex!important}
+
+#haunted-timer-modal{
+  position:fixed;inset:0;z-index:9000;
+  display:none;flex-direction:column;
+  background:#000;color:#c8c8c8;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+#haunted-timer-modal.open{display:flex}
+#haunted-timer-modal.color-orange{color:#ff8c00}
+#haunted-timer-modal.color-orange .htm-clock{text-shadow:0 0 40px #ff8c0060,0 0 2px #ff8c00}
+#haunted-timer-modal.color-gray .htm-clock{text-shadow:0 0 28px #ffffff20}
+
+.htm-top{
+  flex-shrink:0;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;gap:10px;
+}
+.htm-label{
+  font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;
+  opacity:.7;
+}
+.htm-menu-wrap{position:relative}
+.htm-menu-btn{
+  width:40px;height:40px;border-radius:12px;border:1px solid #333;
+  background:#111;color:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.htm-menu-btn .material-symbols-rounded{font-size:22px}
+.htm-menu{
+  display:none;position:absolute;right:0;top:46px;min-width:260px;
+  background:#111;border:1px solid #333;border-radius:14px;padding:6px;
+  box-shadow:0 16px 40px #000a;z-index:2;
+}
+.htm-menu.open{display:block}
+.htm-menu button,.htm-menu label.htm-check{
+  display:flex;align-items:center;gap:10px;width:100%;
+  padding:11px 12px;border:0;border-radius:10px;background:transparent;
+  color:inherit;font-size:13px;font-weight:700;text-align:left;cursor:pointer;
+  font-family:inherit;
+}
+.htm-menu button:hover,.htm-menu label.htm-check:hover{background:#1c1c1c}
+.htm-menu .htm-close-item{color:#ff6b6b}
+/* custom checkbox */
+.htm-check input{position:absolute;opacity:0;pointer-events:none}
+.htm-check .box{
+  width:18px;height:18px;border-radius:5px;border:1.5px solid #666;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:#0a0a0a;
+}
+.htm-check input:checked + .box{
+  border-color:#ff8c00;background:#ff8c00;
+}
+.htm-check input:checked + .box::after{
+  content:"";width:5px;height:9px;border:solid #111;border-width:0 2px 2px 0;
+  transform:rotate(45deg);margin-top:-2px;
+}
+.htm-check span.lbl{flex:1}
+
+.htm-center{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;gap:12px;user-select:none;
+}
+.htm-clock{
+  font-size:clamp(42px,12vw,96px);font-weight:800;letter-spacing:4px;
+  line-height:1;font-variant-numeric:tabular-nums;
+  transition:color .3s, text-shadow .3s, transform .2s;
+}
+.htm-clock.glitch{transform:skewX(-6deg) scale(1.02);opacity:.85}
+.htm-sub{
+  font-size:12px;opacity:.55;letter-spacing:1px;text-align:center;max-width:320px;
+}
+.htm-fact{
+  flex-shrink:0;padding:16px 20px 28px;text-align:center;
+  font-size:12px;line-height:1.5;opacity:.75;max-width:520px;margin:0 auto;
+  min-height:3.2em;
+}
+.htm-fact b{opacity:1;display:block;margin-bottom:4px;font-size:10px;letter-spacing:1px;text-transform:uppercase}
 
 /* ===== Enterprise mode ===== */
 body.enterprise-mode #wardrobe-btn,
@@ -2584,6 +2874,9 @@ body.enterprise-mode .agent-warn .material-symbols-rounded{color:#007aff}
 
 
 <div class="controls" style="display:flex;gap:8px;align-items:center">
+ <button class="icon-btn" id="haunted-timer-btn" title="Хеллоуинский час пик · 31 окт 20:00 Амстердам">
+  <span class="material-symbols-rounded">timer</span>
+ </button>
  <button class="icon-btn" id="wardrobe-btn" title="Гардеробная Жидкой Кошки · Halloween">
   <span class="mdi mdi-pumpkin" aria-hidden="true"></span>
   <span class="wb-dot"></span>
@@ -2591,6 +2884,33 @@ body.enterprise-mode .agent-warn .material-symbols-rounded{color:#007aff}
  <button class="icon-btn" id="menu-btn">
   <span class="material-symbols-rounded">more_vert</span>
  </button>
+</div>
+
+<!-- Haunted Halloween Timer -->
+<div id="haunted-timer-modal" class="color-gray" aria-hidden="true">
+ <div class="htm-top">
+  <div class="htm-label">Halloween Peak · Amsterdam</div>
+  <div class="htm-menu-wrap">
+   <button type="button" class="htm-menu-btn" id="htm-menu-btn" title="Меню">
+    <span class="material-symbols-rounded">more_vert</span>
+   </button>
+   <div class="htm-menu" id="htm-menu">
+    <button type="button" id="htm-color-btn">Изменить цвет таймера</button>
+    <label class="htm-check">
+     <input type="checkbox" id="htm-facts-check" checked>
+     <span class="box" aria-hidden="true"></span>
+     <span class="lbl">Показывать жуткие Хеллоуинские факты</span>
+    </label>
+    <button type="button" id="htm-scare-ai">Задать пугающий вопрос ИИ</button>
+    <button type="button" class="htm-close-item" id="htm-close-btn">Закрыть таймер</button>
+   </div>
+  </div>
+ </div>
+ <div class="htm-center">
+  <div class="htm-clock" id="htm-clock">--:--:--</div>
+  <div class="htm-sub" id="htm-sub">До 20:00 · 31 октября 2026 · Europe/Amsterdam</div>
+ </div>
+ <div class="htm-fact" id="htm-fact"><b>Жуткий факт</b><span id="htm-fact-text">…</span></div>
 </div>
 
 <!-- ================= WHAT'S NEW ================= -->
@@ -2603,102 +2923,74 @@ body.enterprise-mode .agent-warn .material-symbols-rounded{color:#007aff}
   <div class="wn-icon">
    <span class="material-symbols-rounded">auto_awesome</span>
   </div>
-
   <div>
    <div class="wn-title">Что нового?</div>
    <div class="wn-ver">Fast Assistant 4.4</div>
   </div>
  </div>
 
- <div class="feature">
+ <div class="feature" data-wn="model">
   <span class="material-symbols-rounded">auto_awesome</span>
-  <div>
+  <div style="flex:1;min-width:0">
    <b>Fast Model 4.4</b>
-   <small>Агент по умолчанию · умнее · больше запросов. Узкие агенты с дек. 2026 → Enterprise</small>
+   <small>Агент по умолчанию</small>
+   <div class="wn-more">Умнее базовая модель: больше типов запросов без обязательного узкого агента. С декабря 2026 отдельные агенты уйдут в Enterprise (и там будут урезаны).</div>
   </div>
+  <span class="material-symbols-rounded wn-chevron">expand_more</span>
  </div>
 
- <div class="feature">
-  <span class="material-symbols-rounded">menu</span>
-  <div>
-   <b>Чаты и боковое меню</b>
-   <small>ПКМ: переименовать, поделиться, удалить · Настройки внизу</small>
-  </div>
- </div>
- <div class="feature">
+ <div class="feature" data-wn="agents">
   <span class="material-symbols-rounded">smart_toy</span>
-  <div>
-   <b>Agent Home</b>
-   <small>У каждого агента свой стартовый экран</small>
+  <div style="flex:1;min-width:0">
+   <b>Экраны агентов</b>
+   <small>Свой стартовый экран у каждого</small>
+   <div class="wn-more">У Reader, Packs, Builder, Overlay, Core и других — отдельные home-экраны с быстрыми действиями и подсказками.</div>
   </div>
+  <span class="material-symbols-rounded wn-chevron">expand_more</span>
  </div>
 
- <div class="feature">
-  <span class="material-symbols-rounded">search</span>
-  <div>
-   <b>AI Search Packs</b>
-   <small>Новая база из 13 паков Kosmo Level</small>
+ <div class="feature" data-wn="chats">
+  <span class="material-symbols-rounded">menu</span>
+  <div style="flex:1;min-width:0">
+   <b>Чаты</b>
+   <small>Список, ПКМ, метки</small>
+   <div class="wn-more">Боковое меню: переименовать, поделиться, удалить. Наряды и заметки с особыми иконками. Текущий чат восстанавливается после перезапуска.</div>
   </div>
+  <span class="material-symbols-rounded wn-chevron">expand_more</span>
  </div>
 
- <div class="feature">
-  <span class="material-symbols-rounded">database</span>
-  <div>
-   <b>Pack Intelligence</b>
-   <small>Поиск по версиям, комнатам, мирам, тегам и описаниям</small>
+ <div class="feature" data-wn="halloween">
+  <span class="material-symbols-rounded">timer</span>
+  <div style="flex:1;min-width:0">
+   <b>Halloween Peak</b>
+   <small>Таймер · Амстердам 20:00</small>
+   <div class="wn-more">Таймер до 31.10.2026 20:00 Europe/Amsterdam. «Сломанный» ход, факты, цвет. Доступен в обычном и Enterprise. Рядом — гардеробная Жидкой Кошки.</div>
   </div>
+  <span class="material-symbols-rounded wn-chevron">expand_more</span>
  </div>
 
- <div class="feature">
-  <span class="material-symbols-rounded">event</span>
-  <div>
-   <b>Ask Event</b>
-   <small>Актуальные события</small>
+ <div class="feature" data-wn="enterprise">
+  <span class="material-symbols-rounded">business</span>
+  <div style="flex:1;min-width:0">
+   <b>Enterprise</b>
+   <small>?enterprise=true</small>
+   <div class="wn-more">Режим для организаций: лимит 150 символов, урезанные агенты, без гардероба. Включается только ссылкой, не из настроек.</div>
   </div>
+  <span class="material-symbols-rounded wn-chevron">expand_more</span>
  </div>
 
- <div class="feature">
-  <span class="material-symbols-rounded">construction</span>
-  <div>
-   <b>BUILDER</b>
-   <small>Создание контента по запросу</small>
-  </div>
- </div>
-
- <div class="feature">
-  <span class="material-symbols-rounded">hub</span>
-  <div>
-   <b>Core Node</b>
-   <small>Bridge через postMessage</small>
-  </div>
- </div>
-
- <div class="feature">
-  <span class="material-symbols-rounded">terminal</span>
-  <div>
-   <b>// Commands</b>
-   <small>Быстрое меню команд</small>
-  </div>
- </div>
-
- <div class="feature">
+ <div class="feature" data-wn="reader">
   <span class="material-symbols-rounded">menu_book</span>
-  <div>
-   <b>Reader</b>
-   <small>Вкладка историй · правка вручную и через AI Reader</small>
+  <div style="flex:1;min-width:0">
+   <b>Reader и Packs</b>
+   <small>Истории · база паков</small>
+   <div class="wn-more">Вкладка Reader для историй. AI Search Packs — поиск по Kosmo Level. // команды и Core Node Bridge без изменений.</div>
   </div>
- </div>
-
- <div class="feature">
-  <span class="material-symbols-rounded">ios_share</span>
-  <div>
-   <b>Приём историй</b>
-   <small>LMSH / внешние ссылки → подтверждение «моя история»</small>
-  </div>
+  <span class="material-symbols-rounded wn-chevron">expand_more</span>
  </div>
 
  <div class="wn-footer">
-  Fast Assistant 4.4 • Reader · AI Search Packs
+  Нажми на пункт, чтобы раскрыть · FA 4.4
  </div>
 
 </div>
@@ -3037,6 +3329,15 @@ body.enterprise-mode .agent-warn .material-symbols-rounded{color:#007aff}
   Режим для организаций · лимит <strong>150 символов</strong> на сообщение · часть агентов недоступна · без сезонных развлечений
  </div>
  <div class="ent-char-row" id="ent-char-row"><span>Символы</span><span class="ent-count" id="ent-char-count">0 / 150</span></div>
+ <div class="htm-lure" id="htm-lure" role="button" tabindex="0" aria-label="Открыть хеллоуинский таймер">
+  <button type="button" class="htm-lure-x" id="htm-lure-x" title="Закрыть" aria-label="Закрыть">×</button>
+  <div class="htm-lure-ico"><span class="material-symbols-rounded">timer</span></div>
+  <div class="htm-lure-body">
+   <b>Час пик уже близко…</b>
+   <small>Таймер считает не как обычные часы. Открой — если осмелишься.</small>
+  </div>
+  <span class="htm-lure-go">Открыть</span>
+ </div>
  <div class="fa-limit-banner" id="fa-limit-banner" role="status"></div>
  <div class="input-area">
 
@@ -3085,7 +3386,7 @@ const CONFIG={
  coreUrl:"https://oracle-ai-pro.github.io/oracle/",
  channel:"fast-assistant-core-node",
  maxLocal:150,
- whatsNew:"4.4-reader",
+ whatsNew:"4.4-adaptive-1",
  /* Общие ключи с Core Node (один origin = общий localStorage) */
  keys:{
   sessions:"oracle_chat_sessions",
@@ -4838,6 +5139,56 @@ function isHalloweenQuery(q){
   return keys.some(k => x.includes(k));
 }
 
+function isScareQuery(q){
+  const x = String(q||"").toLowerCase().replace(/ё/g,"е").trim();
+  return /напугай|жутк|страшн|пугающ|horror|scary|мурашк|ужас|кошмар|призрак|зеркал|таймер.*(откат|секунд)|час\s*пик|амстердам|20:00|20\s*:\s*00|31\s*окт|что будет ровно/.test(x);
+}
+
+function scareAIAnswer(q){
+  const x = String(q||"").toLowerCase().replace(/ё/g,"е");
+  const think = (1.4 + Math.random()*2.2).toFixed(1);
+  // Never name the real secret of the peak hour — only hints
+  const aboutPeak = /20:00|20\s*:\s*00|амстердам|31\s*окт|что будет ровно|час\s*пик/.test(x);
+  const aboutTimer = /таймер|откат|секунд/.test(x);
+  const aboutMirror = /зеркал/.test(x);
+  let body;
+  if(aboutPeak){
+    const variants = [
+      `Я… не скажу прямо.<br><br>
+В этот час каналы будто <b>задерживают эхо</b>. Шаги, которых нет, догоняют тебя с задержкой в пять ударов сердца.<br><br>
+Говорят, кто смотрит на счётчик слишком долго, начинает считать <i>чужое</i> время. Не спрашивай, что случится ровно тогда — <b>ответ сам найдёт, если нужно</b>.`,
+      `Намекну только так:<br><br>
+Амстердамский час пик — не про фейерверки. Это момент, когда <b>тонкая плёнка</b> между «здесь» и «рядом» натягивается до звона.<br><br>
+Если услышишь бульканье без воды — отойди от экрана. Или не отойди. Иногда он уже считает тебя.`,
+      `Ты хочешь спойлер. Его нет в словах.<br><br>
+Есть только правило: <b>не произноси вслух то, чего ждёшь</b>. Иначе оно решит, что его позвали.<br><br>
+Счётчик врёт специально. Откаты на несколько секунд — проверка, моргаешь ли ты.`
+    ];
+    body = variants[Math.floor(Math.random()*variants.length)];
+  }else if(aboutTimer){
+    body = `Таймер, который <b>откатывается</b>, делает это не из‑за бага.<br><br>
+Он проверяет, заметишь ли ты. Кто замечает — становится чуть более… <i>видимым</i> для того, что слушает тик.<br><br>
+Не пытайся «починить» ход. Просто не отворачивайся надолго.`;
+  }else if(aboutMirror){
+    body = `В час пик зеркала <b>опаздывают</b>.<br><br>
+Ты уже ушёл — отражение ещё стоит. Иногда оно уходит первым.<br><br>
+Если отражение моргнуло, а ты нет — выключи свет не сразу. Дай ему шанс совпасть.`;
+  }else{
+    const facts = [
+      `Самый тихий звук Хеллоуина — не крик, а <b>буль</b> в пустой комнате, когда крана нет.<br><br>
+Его слышат те, кто слишком долго смотрел на чужие часы.`,
+      `Сладости у двери когда‑то были платой. Не за «treat» — за то, чтобы <b>не впустили</b> то, что ходит без стука.<br><br>
+Если сегодня кто‑то стучит дважды с одной и той же паузой — не открывай с третьего раза.`,
+      `Чёрная кошка на пороге — не примета. Это <b>датчик</b>. Уходит первой, если воздух становится «тоньше».<br><br>
+Если она смотрит не на тебя, а чуть мимо — не оборачивайся резко.`
+    ];
+    body = facts[Math.floor(Math.random()*facts.length)];
+  }
+  return `🕯️ <b>Fast Model 4.4</b><br><br>${body}
+<div class="ai-meta-foot">модель думала <b>${think} с</b> · только намёки</div>`;
+}
+
+
 function applyHalloweenTheme(){
   document.body.classList.add("halloween-mode");
   try{ localStorage.setItem("fastAssistant.halloween","1"); }catch(e){}
@@ -4909,6 +5260,10 @@ function localAI(q){
  /* Halloween easter egg — UI + lore */
  if(isHalloweenQuery(q)){
   return halloweenEasterAnswer();
+ }
+
+ if(isScareQuery(q)){
+  return scareAIAnswer(q);
  }
 
  if(state.agent?.name==="Ask Event")
@@ -8320,6 +8675,323 @@ window.addEventListener("load",()=>{
   try{ updateAgentUI(); }catch(e){}
  }
 });
+
+/* =========================================================
+   HAUNTED HALLOWEEN TIMER · 31 Oct 2026 20:00 Amsterdam
+========================================================= */
+const HTM_TARGET = (() => {
+  // 2026-10-31 20:00 Europe/Amsterdam (CEST ends late Oct; 31 Oct 2026 is CET UTC+1)
+  // Use fixed offset: Amsterdam standard winter is +01:00 after last Sunday of Oct.
+  // 2026 last Sunday of Oct = Oct 25 → Oct 31 is UTC+1.
+  return Date.UTC(2026, 9, 31, 19, 0, 0); // 20:00 CET = 19:00 UTC
+})();
+
+const HTM_FACTS = [
+  "В средние века еду у двери оставляли не из доброты — чтобы то, что ходит без стука, не заходило внутрь.",
+  "Jack-o'-lantern сначала резали из свёклы и репы. Тыква — поздний гость.",
+  "Если счётчик вдруг откатывается — это не баг. Это проверка, моргаешь ли ты.",
+  "Чёрные кошки на пороге иногда смотрят мимо тебя. Не оборачивайся резко.",
+  "В Амстердаме у каналов бывает эхо шагов, которых нет. Особенно когда тик становится слышнее.",
+  "Зеркала в эту ночь опаздывают: ты уже ушёл, отражение ещё стоит.",
+  "Бульканье без воды слышат те, кто слишком долго смотрел на чужие часы.",
+  "Сладости у двери когда-то были платой. Не за угощение — за то, чтобы не впустили лишнее.",
+  "Жидкая кошка течёт сквозь стены. Время на этом экране — тоже.",
+  "Если факт сменился сам — возможно, его уже кто-то прочитал до тебя.",
+  "Не произноси вслух то, чего ждёшь от часа пик. Иначе оно решит, что его позвали.",
+  "Счётчик врёт специально. Секрет не в цифрах — в том, кто их слушает."
+];
+
+const HTM_KEY_COLOR = "fa.htm.color";
+const HTM_KEY_FACTS = "fa.htm.facts";
+
+let _htmTimer = null;
+let _htmDisplayMs = null; // spooky displayed remaining
+let _htmLastTick = 0;
+let _htmFactTimer = null;
+
+function htmTrueRemaining(){
+  return Math.max(0, HTM_TARGET - Date.now());
+}
+
+function htmFormat(ms){
+  const s = Math.floor(ms / 1000);
+  const hh = Math.floor(s / 3600);
+  const mm = Math.floor((s % 3600) / 60);
+  const ss = s % 60;
+  const pad = n => String(n).padStart(2, "0");
+  if(hh > 99) return pad(hh) + ":" + pad(mm) + ":" + pad(ss);
+  return pad(hh) + ":" + pad(mm) + ":" + pad(ss);
+}
+
+function htmRandomFact(){
+  return HTM_FACTS[Math.floor(Math.random() * HTM_FACTS.length)];
+}
+
+function htmApplyFact(){
+  const on = document.getElementById("htm-facts-check")?.checked !== false;
+  const box = document.getElementById("htm-fact");
+  const txt = document.getElementById("htm-fact-text");
+  if(!box || !txt) return;
+  if(!on){
+    box.style.visibility = "hidden";
+    return;
+  }
+  box.style.visibility = "visible";
+  txt.textContent = htmRandomFact();
+}
+
+let _htmAudioCtx = null;
+let _htmLastSec = -1;
+function htmBubbleSound(){
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    if(!_htmAudioCtx) _htmAudioCtx = new AC();
+    if(_htmAudioCtx.state === "suspended") _htmAudioCtx.resume();
+    const t = _htmAudioCtx.currentTime;
+    const o = _htmAudioCtx.createOscillator();
+    const g = _htmAudioCtx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(180, t);
+    o.frequency.exponentialRampToValueAtTime(60, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.08, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+    o.connect(g); g.connect(_htmAudioCtx.destination);
+    o.start(t); o.stop(t + 0.15);
+  }catch(e){}
+}
+
+function htmSpookyStep(){
+  const trueR = htmTrueRemaining();
+  const clock = document.getElementById("htm-clock");
+  const sub = document.getElementById("htm-sub");
+  if(!clock) return;
+
+  if(trueR <= 0){
+    _htmDisplayMs = 0;
+    clock.textContent = "00:00:00";
+    if(sub) sub.textContent = "Час пик · время вышло · Amsterdam";
+    clock.classList.remove("glitch");
+    return;
+  }
+
+  if(_htmDisplayMs == null) _htmDisplayMs = trueR;
+
+  const now = Date.now();
+  const dt = Math.min(250, now - (_htmLastTick || now));
+  _htmLastTick = now;
+
+  // base: progress display toward truth, but with chaos
+  const roll = Math.random();
+  let rate = 1; // multiply how fast display burns time
+  if(roll < 0.12){
+    // rollback ~5 seconds (scare)
+    _htmDisplayMs = Math.min(trueR + 8000, _htmDisplayMs + 5000);
+    clock.classList.add("glitch");
+    setTimeout(()=> clock.classList.remove("glitch"), 280);
+  }else if(roll < 0.35){
+    rate = 2.4 + Math.random() * 2; // faster
+  }else if(roll < 0.55){
+    rate = 0.25 + Math.random() * 0.35; // slower
+  }else{
+    rate = 0.8 + Math.random() * 0.5;
+  }
+
+  _htmDisplayMs -= dt * rate;
+
+  // soft pull toward real remaining so secret target still holds
+  _htmDisplayMs = _htmDisplayMs * 0.92 + trueR * 0.08;
+
+  // never negative, never far above truth+buffer
+  if(_htmDisplayMs < 0) _htmDisplayMs = 0;
+  if(_htmDisplayMs > trueR + 12000) _htmDisplayMs = trueR + 12000;
+  // if true is small, clamp display
+  if(trueR < 15000) _htmDisplayMs = Math.min(_htmDisplayMs, trueR);
+
+  clock.textContent = htmFormat(_htmDisplayMs);
+  // буль каждую целую секунду отображаемого времени
+  try{
+    const sec = Math.floor((_htmDisplayMs||0)/1000);
+    if(sec !== _htmLastSec){
+      _htmLastSec = sec;
+      htmBubbleSound();
+    }
+  }catch(e){}
+  if(sub && Math.random() < 0.08){
+    const msgs = [
+      "До часа пик · Europe/Amsterdam",
+      "Он считает не так, как ты…",
+      "Не смотри слишком долго",
+      "Amsterdam · peak hour",
+      "Не произноси вслух то, чего ждёшь"
+    ];
+    sub.textContent = msgs[Math.floor(Math.random()*msgs.length)];
+  }
+}
+
+function openHauntedTimer(){
+  const modal = document.getElementById("haunted-timer-modal");
+  if(!modal) return;
+  // restore prefs
+  try{
+    const c = localStorage.getItem(HTM_KEY_COLOR) || "gray";
+    modal.classList.remove("color-gray","color-orange");
+    modal.classList.add(c === "orange" ? "color-orange" : "color-gray");
+    const facts = localStorage.getItem(HTM_KEY_FACTS);
+    const chk = document.getElementById("htm-facts-check");
+    if(chk) chk.checked = facts !== "0";
+  }catch(e){}
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false");
+  _htmDisplayMs = htmTrueRemaining();
+  _htmLastTick = Date.now();
+  htmApplyFact();
+  if(_htmTimer) clearInterval(_htmTimer);
+  _htmTimer = setInterval(htmSpookyStep, 180);
+  htmSpookyStep();
+  if(_htmFactTimer) clearInterval(_htmFactTimer);
+  _htmFactTimer = setInterval(()=>{
+    if(document.getElementById("htm-facts-check")?.checked) htmApplyFact();
+  }, 14000);
+}
+
+function closeHauntedTimer(){
+  const modal = document.getElementById("haunted-timer-modal");
+  if(modal){
+    modal.classList.remove("open");
+    modal.setAttribute("aria-hidden","true");
+  }
+  document.getElementById("htm-menu")?.classList.remove("open");
+  if(_htmTimer){ clearInterval(_htmTimer); _htmTimer=null; }
+  if(_htmFactTimer){ clearInterval(_htmFactTimer); _htmFactTimer=null; }
+}
+
+function toggleHtmColor(){
+  const modal = document.getElementById("haunted-timer-modal");
+  if(!modal) return;
+  const orange = modal.classList.contains("color-orange");
+  modal.classList.toggle("color-orange", !orange);
+  modal.classList.toggle("color-gray", orange);
+  try{ localStorage.setItem(HTM_KEY_COLOR, orange ? "gray" : "orange"); }catch(e){}
+  try{ showAlert(orange ? "Цвет: серый" : "Цвет: оранжевый"); }catch(e){}
+}
+
+function htmScareAI(){
+  closeHauntedTimer();
+  const qs = [
+    "Расскажи самый жуткий хеллоуинский факт, от которого мурашки",
+    "Напугай меня намёком про амстердамский час пик — без прямого спойлера",
+    "Придумай пугающую историю про таймер, который откатывается на 5 секунд",
+    "Почему нельзя смотреть на зеркало в хеллоуинский час пик?"
+  ];
+  const q = qs[Math.floor(Math.random()*qs.length)];
+  try{
+    if(input){ input.value = q; updateSend(); }
+    setTimeout(()=>{ try{ triggerSend(); }catch(e){} }, 200);
+  }catch(e){}
+}
+
+document.addEventListener("DOMContentLoaded", ()=>{
+  document.getElementById("haunted-timer-btn")?.addEventListener("click", openHauntedTimer);
+  document.getElementById("htm-close-btn")?.addEventListener("click", closeHauntedTimer);
+  document.getElementById("htm-color-btn")?.addEventListener("click", ()=>{
+    toggleHtmColor();
+    document.getElementById("htm-menu")?.classList.remove("open");
+  });
+  document.getElementById("htm-scare-ai")?.addEventListener("click", ()=>{
+    document.getElementById("htm-menu")?.classList.remove("open");
+    htmScareAI();
+  });
+  document.getElementById("htm-facts-check")?.addEventListener("change", (e)=>{
+    try{ localStorage.setItem(HTM_KEY_FACTS, e.target.checked ? "1" : "0"); }catch(err){}
+    htmApplyFact();
+  });
+  document.getElementById("htm-menu-btn")?.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    document.getElementById("htm-menu")?.classList.toggle("open");
+  });
+  document.addEventListener("click", (e)=>{
+    const menu = document.getElementById("htm-menu");
+    const btn = document.getElementById("htm-menu-btn");
+    if(menu && !menu.contains(e.target) && e.target !== btn && !btn?.contains(e.target)){
+      menu.classList.remove("open");
+    }
+  });
+  document.addEventListener("keydown", (e)=>{
+    if(e.key === "Escape" && document.getElementById("haunted-timer-modal")?.classList.contains("open")){
+      closeHauntedTimer();
+    }
+  });
+});
+
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.querySelectorAll("#whats-new .feature").forEach(f=>{
+    f.addEventListener("click",(e)=>{
+      if(e.target.closest(".wn-close")) return;
+      const open = f.classList.contains("open");
+      document.querySelectorAll("#whats-new .feature.open").forEach(x=>x.classList.remove("open"));
+      if(!open) f.classList.add("open");
+    });
+  });
+});
+
+/* Timer lure above input */
+const HTM_LURE_KEY = "fa.htm.lureDismissed";
+function showHtmLure(){
+  try{
+    if(sessionStorage.getItem(HTM_LURE_KEY)==="1") return;
+  }catch(e){}
+  // hide if timer already open
+  if(document.getElementById("haunted-timer-modal")?.classList.contains("open")) return;
+  const el = document.getElementById("htm-lure");
+  if(!el) return;
+  el.classList.add("show");
+}
+function hideHtmLure(persist){
+  document.getElementById("htm-lure")?.classList.remove("show");
+  if(persist){
+    try{ sessionStorage.setItem(HTM_LURE_KEY, "1"); }catch(e){}
+  }
+}
+function wireHtmLure(){
+  const el = document.getElementById("htm-lure");
+  const x = document.getElementById("htm-lure-x");
+  if(!el) return;
+  el.addEventListener("click", (e)=>{
+    if(e.target.closest("#htm-lure-x")) return;
+    hideHtmLure(true);
+    try{ openHauntedTimer(); }catch(err){}
+  });
+  el.addEventListener("keydown", (e)=>{
+    if(e.key==="Enter" || e.key===" "){ e.preventDefault(); el.click(); }
+  });
+  x?.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    hideHtmLure(true);
+  });
+  // first lure after short delay, then soft re-nudge if not opened
+  setTimeout(showHtmLure, 2200);
+  setTimeout(()=>{
+    try{
+      if(sessionStorage.getItem(HTM_LURE_KEY)==="1") return;
+      if(document.getElementById("haunted-timer-modal")?.classList.contains("open")) return;
+      showHtmLure();
+    }catch(e){}
+  }, 45000);
+}
+document.addEventListener("DOMContentLoaded", wireHtmLure);
+// also after open timer hide lure
+(function patchOpenHauntedLure(){
+  const prev = typeof openHauntedTimer === "function" ? openHauntedTimer : null;
+  if(!prev || window._htmLurePatched) return;
+  window._htmLurePatched = true;
+  window.openHauntedTimer = function(){
+    hideHtmLure(true);
+    return prev.apply(this, arguments);
+  };
+})();
 
 window.FastAssistant={
 
