@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Конструктор Authors · Builder AI v4.1</title>
+<title>Создать · Builder AI 4.5</title>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
 <meta name="theme-color" content="#0a0a0a">
 <style>
@@ -153,36 +153,65 @@ textarea#ai-q{flex:1;border:0;background:transparent;color:var(--text);padding:1
 }
 .ba-pack-notice a{color:inherit;text-decoration:underline;font-weight:900}
 
+
+.create-section{margin:8px 0 12px}
+.create-label{
+  font-size:11px;font-weight:900;letter-spacing:1px;text-transform:uppercase;
+  color:var(--sub);margin:0 0 8px 2px;
+}
+.quick-chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  padding:8px 12px;border-radius:999px;border:1px solid var(--border);
+  background:var(--ai-bg);color:var(--text);font-size:12px;font-weight:700;cursor:pointer;
+}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip-accent{
+  background:var(--accent);color:#000;border-color:transparent;font-weight:900;
+}
+.chip-accent:hover{filter:brightness(1.05);color:#000}
+#ai-head b{font-weight:800}
+
 </style>
 </head>
 <body data-theme="dark">
 <div class="card" id="main-card">
-  <div id="ai-head">Builder AI <span class="dev-badge">v4.1</span></div>
+  <div id="ai-head">Создать · <b style="color:var(--text);font-weight:800">Builder AI</b> <span class="dev-badge">4.5</span></div>
   <div class="controls">
     <button class="icon-btn" id="theme-toggle-btn" title="Тема"><span class="material-symbols-rounded" id="theme-icon">sunny</span></button>
     <button class="icon-btn" id="menu-toggle-btn" title="Меню"><span class="material-symbols-rounded">more_vert</span></button>
   </div>
   <div id="popup-menu" class="popup-menu">
     <div class="menu-item" data-action="editor"><span class="material-symbols-rounded">code</span> Открыть редактор</div>
-    <div class="menu-item" data-action="export"><span class="material-symbols-rounded">download</span> Экспорт карты JSON</div>
+    <div class="menu-item" data-action="save-device"><span class="material-symbols-rounded">download</span> Сохранить на устройство</div>
+    <div class="menu-item" data-action="export"><span class="material-symbols-rounded">data_object</span> Экспорт карты JSON</div>
     <div class="menu-item" data-action="import"><span class="material-symbols-rounded">upload</span> Импорт карты</div>
     <div class="menu-item" data-action="limits"><span class="material-symbols-rounded">analytics</span> Лимиты <span class="limit-badge">BETA</span></div>
     <div class="menu-item" data-action="diagnostics"><span class="material-symbols-rounded">bug_report</span> Диагностика уровня</div>
     <div class="menu-item" data-action="clear"><span class="material-symbols-rounded">delete</span> Очистить терминал</div>
   </div>
   <div id="chat">
-    <div class="ba-pack-notice" role="status">
-      <span class="material-symbols-rounded" style="font-size:16px;vertical-align:middle">warning</span>
-      С 24 Октября 2026 года наши Помощники не смогут или будут затруднение с скачиваниями неподерживаемых паков через Помощников.
-      <a href="https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000009" target="_blank" rel="noopener">Подробнее...</a>
-    </div>
-    <h1 id="greeting-title" class="derzky-title">Kosmo Builder AI</h1>
-    <p class="hero-sub" id="hero-sub">Правки кода · 2D карта · приоритет · вложения · v4.1</p>
-    <div class="quick-chips" id="quick-chips">
-      <button type="button" class="chip" data-q="Исправь скрипт прыжка">Правка прыжка</button>
-      <button type="button" class="chip" data-q="Добавь платформу с шипами">Платформа + шипы</button>
-      <button type="button" class="chip" data-q="Диагностика уровня">Диагностика</button>
-      <button type="button" class="chip" data-q="Открой 2D редактор">2D редактор</button>
+    <h1 id="greeting-title" class="derzky-title">Создать</h1>
+    <p class="hero-sub" id="hero-sub">Builder AI 4.5 · больше шаблонов уровней · код · 2D карта · сохранить на устройство</p>
+    <div class="create-section">
+      <div class="create-label">Создать</div>
+      <div class="quick-chips" id="quick-chips">
+        <button type="button" class="chip" data-q="Создай базовый уровень с платформами и полом">Базовый</button>
+        <button type="button" class="chip" data-q="Создай уровень с шипами и монетами">Шипы + монеты</button>
+        <button type="button" class="chip" data-q="Создай паркур-уровень с узкими платформами">Паркур</button>
+        <button type="button" class="chip" data-q="Создай уровень с чекпоинтами и финишем">Чекпоинты</button>
+        <button type="button" class="chip" data-q="Создай уровень-лабиринт из блоков">Лабиринт</button>
+        <button type="button" class="chip" data-q="Создай босс-арену с шипами по краям">Босс-арена</button>
+        <button type="button" class="chip" data-q="Создай вертикальный уровень на подъём">Вертикальный</button>
+        <button type="button" class="chip" data-q="Создай уровень с порталами туда-обратно">Порталы</button>
+        <button type="button" class="chip" data-q="Создай speedrun-уровень на время">Speedrun</button>
+        <button type="button" class="chip" data-q="Создай tutorial-уровень для новичков">Tutorial</button>
+        <button type="button" class="chip" data-q="Исправь скрипт прыжка">Правка прыжка</button>
+        <button type="button" class="chip" data-q="Добавь скрипт сбора монет">Скрипт монет</button>
+        <button type="button" class="chip" data-q="Диагностика уровня">Диагностика</button>
+        <button type="button" class="chip" data-q="Открой 2D редактор">2D редактор</button>
+        <button type="button" class="chip chip-accent" data-action="save-device">Сохранить на устройство</button>
+      
+      </div>
     </div>
   </div>
 
@@ -212,7 +241,7 @@ textarea#ai-q{flex:1;border:0;background:transparent;color:var(--text);padding:1
         <button type="button" class="plus-item" id="plus-priority"><span class="material-symbols-rounded">speed</span> Приоритет ответов</button>
       </div>
       <button class="bind-btn" id="plus-btn" title="Ещё"><span class="material-symbols-rounded">add</span></button>
-      <textarea id="ai-q" rows="1" placeholder="Спроси Builder AI или опиши правку кода..."></textarea>
+      <textarea id="ai-q" rows="1" placeholder="Опиши уровень или правку · Builder AI 4.5"></textarea>
       <button class="send-btn" id="send-btn"><span class="material-symbols-rounded">arrow_upward</span></button>
     </div>
   </div>
@@ -289,7 +318,7 @@ textarea#ai-q{flex:1;border:0;background:transparent;color:var(--text);padding:1
 </div>
 <div id="limits-modal">
   <div class="modal-card limits-modal-card">
-    <h3>Лимиты · Builder AI <span class="limit-badge">BETA</span></h3>
+    <h3>Лимиты · Создать / Builder AI 4.5 <span class="limit-badge">BETA</span></h3>
     <p style="text-align:center">Общий пул с Fast Assistant. Сброс только по таймеру.</p>
     <div class="limit-row-meta"><span>Окно 3–24 ч</span><b id="lim-short-pct">0%</b></div>
     <div class="limit-wave-track"><div class="limit-wave-fill" id="lim-short-fill"></div></div>
@@ -327,7 +356,7 @@ function openLimitsModal(){blRefreshUI();document.getElementById('limits-modal')
 function closeLimitsModal(){document.getElementById('limits-modal').style.display='none';}
 
 const App={
-  engineVersion:'4.1', gridSize:30, cols:24, rows:16, currentTool:'block', isDrawing:false, mapData:{},
+  engineVersion:'4.5', gridSize:30, cols:24, rows:16, currentTool:'block', isDrawing:false, mapData:{},
   isPlaying:false, player:{x:0,y:0,vx:0,vy:0,grounded:false}, animationFrameId:null, loopToken:0, keys:{}, coins:0,
   spawnX:0, spawnY:0, levelWon:false,
   pendingAttach:null,
@@ -383,7 +412,10 @@ const App={
       if(!this.plusMenu.contains(e.target)&&!e.target.closest('#plus-btn')) this.closePlus();
     });
     document.getElementById('quick-chips')?.addEventListener('click',e=>{
-      const c=e.target.closest('.chip'); if(!c) return; this.input.value=c.dataset.q||''; this.handleInputResize(); this.ask();
+      const c=e.target.closest('.chip'); if(!c) return;
+      if(c.dataset.action==='save-device'){ this.saveToDevice(); return; }
+      if(!c.dataset.q) return;
+      this.input.value=c.dataset.q||''; this.handleInputResize(); this.ask();
     });
     this.codeArea.addEventListener('input',()=>localStorage.setItem(CODE_KEY,this.codeArea.value));
     this.chat.addEventListener('click',e=>{
@@ -435,10 +467,79 @@ const App={
     if(b) b.textContent=s.blocks+' блок'; if(sp) sp.textContent=s.spikes+' шип'; if(c) c.textContent=s.coins+' монет';
     if(cp) cp.textContent=s.checkpoints+' чекп'; if(po) po.textContent=s.portals+' выход';
   },
-  exportMap(){
-    const pack={app:'kosmo-builder-ai',version:this.engineVersion,cols:this.cols,rows:this.rows,map:this.mapData,exportedAt:Date.now()};
+    exportMap(){
+    const pack={app:'sozdat-builder-ai',product:'Создать',engine:'Builder AI',version:this.engineVersion,cols:this.cols,rows:this.rows,map:this.mapData,exportedAt:Date.now()};
     const blob=new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='kosmo_level_map.json'; a.click(); URL.revokeObjectURL(a.href);
+  },
+  
+  levelTemplateReply(name, hint, stats){
+    setTimeout(()=>{try{this.openEditor('canvas');this.drawCanvas();this.updateMapStats();}catch(e){}},300);
+    return `<b>Создать</b> · шаблон «${name}»<br><small>${hint}</small><br><br>Карта обновлена в <b>MAP Studio</b>. Доработай блоками или опиши правку.<br>Готово — <b>Сохранить на устройство</b> (карта + код).<br><br><span style="color:var(--sub);font-size:11px">Builder AI ${this.engineVersion}</span>`;
+  },
+  seedMapTemplate(kind){
+    const W=this.cols, H=this.rows;
+    const data={};
+    const put=(x,y,t)=>{ if(x>=0&&y>=0&&x<W&&y<H) data[x+','+y]=t; };
+    for(let x=0;x<W;x++) put(x,H-1,'block');
+    put(2,H-2,'player');
+    if(kind==='basic'){
+      for(let x=5;x<=8;x++) put(x,H-3,'block');
+      for(let x=12;x<=15;x++) put(x,H-5,'block');
+      put(W-3,H-2,'coin'); put(W-2,H-2,'portal');
+    } else if(kind==='spikes'){
+      for(let x=6;x<=9;x++) put(x,H-2,'spike');
+      for(let x=10;x<=14;x++) put(x,H-4,'block');
+      put(11,H-5,'coin'); put(13,H-5,'coin'); put(W-2,H-2,'portal');
+    } else if(kind==='parkour'){
+      put(5,H-3,'block'); put(8,H-5,'block'); put(11,H-4,'block'); put(14,H-6,'block'); put(17,H-5,'block');
+      put(18,H-6,'coin'); put(W-2,H-2,'portal');
+    } else if(kind==='maze'){
+      for(let y=2;y<H-1;y++) for(let x=4;x<W-2;x++) if((x+y)%3===0) put(x,y,'block');
+      put(W-3,H-2,'portal'); put(5,H-3,'coin');
+    } else if(kind==='arena'){
+      for(let x=1;x<W-1;x++){ put(x,2,'spike'); put(x,H-2,'block'); }
+      for(let y=2;y<H-1;y++){ put(1,y,'spike'); put(W-2,y,'spike'); }
+      put(Math.floor(W/2),H-3,'coin'); put(W-3,H-3,'portal');
+    } else if(kind==='vertical'){
+      for(let i=0;i<8;i++) put(3+(i%3)*2, H-2-i*2,'block');
+      put(W-3,2,'portal'); put(4,H-4,'coin');
+    } else if(kind==='portals'){
+      put(4,H-3,'block'); put(5,H-3,'portal');
+      put(W-5,H-5,'block'); put(W-4,H-5,'portal');
+      put(10,H-3,'coin');
+    } else if(kind==='speedrun'){
+      for(let x=3;x<W-3;x++) if(x%2===0) put(x,H-3,'block');
+      put(W-2,H-2,'portal'); put(6,H-4,'coin'); put(12,H-4,'coin');
+    } else if(kind==='tutorial'){
+      for(let x=3;x<=6;x++) put(x,H-3,'block');
+      put(5,H-4,'coin'); put(10,H-2,'spike'); put(W-3,H-2,'portal');
+    }
+    this.mapData=data;
+    try{this.saveMap();}catch(e){}
+  },
+saveToDevice(){
+    // полный пакет уровня: карта + код модуля
+    let code='';
+    try{ code=this.codeArea?this.codeArea.value:(localStorage.getItem(CODE_KEY)||''); }catch(e){}
+    const pack={
+      app:'sozdat-builder-ai',
+      product:'Создать',
+      engine:'Builder AI',
+      version:this.engineVersion,
+      cols:this.cols, rows:this.rows,
+      map:this.mapData,
+      code:code,
+      exportedAt:Date.now()
+    };
+    const blob=new Blob([JSON.stringify(pack,null,2)],{type:'application/json'});
+    const name='kosmo_level_'+Date.now().toString(36)+'.json';
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1500);
+    this.showModal('Сохранено на устройство', 'Файл: '+name+'\nКарта + код модуля · Builder AI '+this.engineVersion);
   },
   importMapFile(e){
     const file=e.target.files&&e.target.files[0]; if(!file) return;
@@ -658,6 +759,47 @@ const App={
     const stats=this.mapStats();
     const cur=this.codeArea.value||'';
 
+    // шаблоны уровней
+    if(/базов|platform|платформ/.test(x) && /уровн|level|созда/.test(x)){
+      this.seedMapTemplate('basic');
+      return this.levelTemplateReply('Базовый', 'пол + платформы + спавн', stats);
+    }
+    if(/шип|spike|монет/.test(x) && /уровн|созда|level/.test(x)){
+      this.seedMapTemplate('spikes');
+      return this.levelTemplateReply('Шипы + монеты', 'опасные зоны и сбор', stats);
+    }
+    if(/паркур|parkour/.test(x)){
+      this.seedMapTemplate('parkour');
+      return this.levelTemplateReply('Паркур', 'узкие платформы', stats);
+    }
+    if(/лабиринт|maze/.test(x)){
+      this.seedMapTemplate('maze');
+      return this.levelTemplateReply('Лабиринт', 'стены из блоков', stats);
+    }
+    if(/босс|arena|арена/.test(x)){
+      this.seedMapTemplate('arena');
+      return this.levelTemplateReply('Босс-арена', 'открытое поле, шипы по краю', stats);
+    }
+    if(/вертикал|climb|подъём|подъем/.test(x)){
+      this.seedMapTemplate('vertical');
+      return this.levelTemplateReply('Вертикальный', 'рост вверх', stats);
+    }
+    if(/портал|portal/.test(x) && /уровн|созда/.test(x)){
+      this.seedMapTemplate('portals');
+      return this.levelTemplateReply('Порталы', 'вход/выход', stats);
+    }
+    if(/speedrun|спидран|на время/.test(x)){
+      this.seedMapTemplate('speedrun');
+      return this.levelTemplateReply('Speedrun', 'короткая трасса', stats);
+    }
+    if(/tutorial|туториал|новичок/.test(x)){
+      this.seedMapTemplate('tutorial');
+      return this.levelTemplateReply('Tutorial', 'обучение прыжку и монетам', stats);
+    }
+    if(/монет/.test(x) && /скрипт|код|сбор/.test(x)){
+      const patch=`// Builder AI · coin pickup\\nfunction onTouchCoin(player, coin) {\\n  coin.collect();\\n  player.score = (player.score || 0) + 1;\\n  log("coins: " + player.score);\\n}`;
+      return this.buildPatchCard('Сбор монет', patch);
+    }
     if(/диагност|diagnostic/.test(x)) return this.diagnosticsHtml(stats);
     if(/2d|редактор|карту|canvas|открой 2d/.test(x)){
       setTimeout(()=>{this.openEditor('canvas');},350);
@@ -683,8 +825,12 @@ const App={
     if(/монет|coin/.test(x)) return `Монеты — жёлтые на карте. В тесте подбираются. Сейчас: <b>${stats.coins}</b>.`;
     if(/файл|прикреп|attach/.test(x)) return `Через <b>+</b> → Прикрепить файл (5% лимита). Текст/код могу учесть в правке.`;
     if(/приоритет/.test(x)) return `+ → Приоритет ответов: низкий ≤2%, средний ≤20%, высокий ≤70%.`;
-    if(/привет|hello|hi/.test(x)) return `Builder AI v${this.engineVersion}. Могу вставлять <b>правки кода</b>, открывать MAP Studio и считать лимиты.`;
-    return `Принято · v${this.engineVersion}. Карта: ${stats.blocks}/${stats.spikes}/${stats.coins}, спавн: ${stats.player?'да':'нет'}.<br>Напиши «исправь прыжок» — дам карточку правки с кнопкой вставки.`;
+    if(/привет|hello|hi/.test(x)) return `<b>Создать</b> · Builder AI v${this.engineVersion}.<br>Могу собирать <b>уровни</b>, править код, открывать 2D-карту и <b>сохранять пакет на устройство</b>.`;
+    if(/создай|собери|сгенерируй/.test(x) && /уровен|паркур|лабиринт|платформ/.test(x)){
+      try{ this.openEditor('canvas'); }catch(e){}
+      return `<b>Создать</b> · режим уровня<br>Открыл <b>2D карту</b>. Набросай блоки слева или опиши детальнее — Builder AI ${this.engineVersion} предложит правки кода.<br><br>Карта сейчас: ${stats.blocks} блоков · ${stats.spikes} шипов · ${stats.coins} монет · спавн: ${stats.player?'да':'нет'}.<br>Когда готово — <b>Сохранить на устройство</b>.`;
+    }
+    return `Принято · Builder AI ${this.engineVersion}. Карта: ${stats.blocks}/${stats.spikes}/${stats.coins}, спавн: ${stats.player?'да':'нет'}.<br>Напиши «создай уровень» или «исправь прыжок» — продолжим.`;
   },
   mapStats(){ const s={blocks:0,spikes:0,coins:0,checkpoints:0,portals:0,player:false}; Object.values(this.mapData).forEach(t=>{if(t==='block')s.blocks++;else if(t==='spike')s.spikes++;else if(t==='coin')s.coins++;else if(t==='checkpoint')s.checkpoints++;else if(t==='portal')s.portals++;else if(t==='player')s.player=true;}); return s; },
   diagnosticsHtml(stats){
@@ -714,7 +860,8 @@ const App={
     if(type==='clear') this.chat.innerHTML=`<div class="bubble ai system-msg">> Terminal cleared · v${this.engineVersion}</div>`;
     else if(type==='diagnostics'){ this.appendMessage('//run_diagnostics','cmd'); setTimeout(()=>this.appendMessage(this.diagnosticsHtml(this.mapStats()),'ai'),350); try{blApply('diag','diag');}catch(e){} }
     else if(type==='editor') this.openEditor('code');
-    else if(type==='export'){ this.exportMap(); this.appendMessage('Карта экспортирована.','ai'); }
+    else if(type==='export'){ this.exportMap(); this.appendMessage('Карта экспортирована (JSON).','ai'); }
+    else if(type==='save-device'){ this.saveToDevice(); this.appendMessage('Пакет уровня сохранён на устройство.','ai'); }
     else if(type==='import') document.getElementById('import-map-input').click();
   },
   switchTab(name){
@@ -733,7 +880,18 @@ const App={
   },
   escapeHtml(t){ return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
 };
-document.addEventListener('DOMContentLoaded',()=>App.init());
+document.addEventListener('DOMContentLoaded',()=>{window.builderApp=App;App.init();});
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('#quick-chips .chip[data-action]').forEach(ch=>{
+    ch.addEventListener('click',()=>{
+      if(ch.dataset.action==='save-device' && window.builderApp){
+        window.builderApp.saveToDevice();
+      }
+    });
+  });
+});
+
 </script>
 </body>
 </html>
