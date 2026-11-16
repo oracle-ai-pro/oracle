@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Core Node 2.6 PRO | Обзор и нововведения</title>
+    <title>Core Node 2.6.1 | Обзор и нововведения</title>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet">
     <meta name="theme-color" content="#000000">
     <style>
@@ -558,6 +558,134 @@
             .theme-bar { top: 10px; right: 10px; }
             .floating-try-btn { right: 16px; bottom: 16px; padding: 12px 18px; font-size: 13px; }
         }
+    
+        /* ===== 2.6.1 wave banner ===== */
+        .hero-banner-v261 {
+            position: relative;
+            width: 100%;
+            min-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 96px 20px 72px;
+            box-sizing: border-box;
+            background: radial-gradient(circle at 50% 42%, #12131c 0%, var(--bg) 72%);
+            overflow: hidden;
+        }
+        body.light-theme .hero-banner-v261 {
+            background: radial-gradient(circle at 50% 42%, #eef1ff 0%, var(--bg) 75%);
+        }
+        body.true-black-theme .hero-banner-v261 {
+            background: radial-gradient(circle at 50% 40%, #0a0a12 0%, #000 75%);
+        }
+        .wave-stage {
+            position: relative;
+            width: min(280px, 70vw);
+            height: min(280px, 70vw);
+            display: grid;
+            place-items: center;
+            z-index: 2;
+            margin-bottom: 28px;
+        }
+        .wave-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .wave-ring {
+            fill: none;
+            stroke: url(#waveGrad);
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-dasharray: 8 14;
+            opacity: 0.85;
+            transform-origin: 50% 50%;
+            animation: waveSpin 7s linear infinite, wavePulse 2.8s ease-in-out infinite;
+        }
+        .wave-ring.r2 {
+            stroke-dasharray: 5 11;
+            animation-duration: 11s, 3.4s;
+            animation-direction: reverse, alternate;
+            opacity: 0.55;
+        }
+        .wave-ring.r3 {
+            stroke-dasharray: 3 9;
+            animation-duration: 15s, 4s;
+            opacity: 0.35;
+        }
+        @keyframes waveSpin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes wavePulse {
+            0%, 100% { stroke-width: 1.6; }
+            50% { stroke-width: 2.8; }
+        }
+        .wave-core {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            opacity: 0;
+            transform: scale(0.92);
+            animation: coreReveal 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1.8s forwards;
+        }
+        @keyframes coreReveal {
+            to { opacity: 1; transform: scale(1); }
+        }
+        .wave-core .lbl-top {
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            color: var(--on-surface-variant);
+        }
+        .wave-core .lbl-ver {
+            font-size: clamp(42px, 10vw, 64px);
+            font-weight: 900;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            background: var(--grad);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        body.true-black-theme .wave-core .lbl-ver {
+            background: none;
+            -webkit-text-fill-color: #fff;
+            color: #fff;
+        }
+        .wave-core .lbl-date {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--on-surface-variant);
+            margin-top: 4px;
+        }
+        .hero-actions-v261 {
+            z-index: 2;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(12px);
+            animation: coreReveal 0.7s ease 2.4s forwards;
+        }
+        .hero-blur-soft {
+            position: absolute;
+            width: 480px; height: 480px;
+            background: var(--grad);
+            filter: blur(160px);
+            opacity: 0.12;
+            border-radius: 50%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
     </style>
 </head>
 <body class="true-black-theme">
@@ -574,36 +702,101 @@
         <button type="button" data-theme="dark" onclick="setAboutTheme('dark')">Тёмная</button>
         <button type="button" data-theme="trueblack" class="active" onclick="setAboutTheme('trueblack')">True Black</button>
     </div>
-    <a href="index.html" class="floating-try-btn" id="floatingTryBtn">Открыть Core Node 2.6 PRO ➔</a>
-    <section class="hero-banner">
-        <div class="hero-blur"></div>
-        <div class="blob-container">
-            <div class="blob cyan-blob"></div>
-            <div class="blob purple-blob"></div>
+    <a href="index.html" class="floating-try-btn" id="floatingTryBtn">Попробовать 2.6.1 ➔</a>
+    
+    <header class="hero-banner-v261" id="hero">
+        <div class="hero-blur-soft" aria-hidden="true"></div>
+        <div class="wave-stage">
+            <svg class="wave-svg" viewBox="0 0 200 200" aria-hidden="true">
+                <defs>
+                    <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#7dd3fc"/>
+                        <stop offset="50%" stop-color="#a78bfa"/>
+                        <stop offset="100%" stop-color="#e8bbf1"/>
+                    </linearGradient>
+                </defs>
+                <circle class="wave-ring r3" cx="100" cy="100" r="88"/>
+                <circle class="wave-ring r2" cx="100" cy="100" r="72"/>
+                <circle class="wave-ring" cx="100" cy="100" r="56"/>
+            </svg>
+            <div class="wave-core">
+                <div class="lbl-top">Core Node</div>
+                <div class="lbl-ver">2.6.1</div>
+                <div class="lbl-date">20 ноября 2026</div>
+            </div>
         </div>
-        <div class="release-pill"><span class="dot"></span> Релиз 20 сентября 2026</div>
-        <h1 class="hero-title">Core Node 2.6 PRO</h1>
-        <p class="hero-subtitle">
-            Prestige HQ: Markdown и окна кода, сторонние API (включая Gemini <b>AQ.</b>),
-            публичные ссылки, Split View, Notepad-проекты и матовый True Black.
-        </p>
-        <div class="hero-actions">
-            <a href="index.html" class="action-btn" id="mainActionBtn">
+        <div class="hero-actions hero-actions-v261">
+            <a class="action-btn" id="mainActionBtn" href="./index.html">
                 <span class="material-symbols-rounded">rocket_launch</span>
-                Открыть Core Node 2.6 PRO
+                Попробовать Core Node 2.6.1
             </a>
-            <a href="https://oracle-ai-pro.github.io/oracle-notepad" class="action-btn ghost" target="_blank" rel="noopener">
-                <span class="material-symbols-rounded">terminal</span>
-                Воспользоваться Oracle Notepad
+            <a class="action-btn ghost" href="https://oracle-ai-pro.github.io/oracle-notepad" target="_blank" rel="noopener">
+                <span class="material-symbols-rounded">code</span>
+                Попробовать Oracle Notepad
             </a>
-            <a href="#whats-new" class="action-btn ghost">Что нового</a>
+            <a class="action-btn ghost" href="#whats-new-261">
+                <span class="material-symbols-rounded">auto_awesome</span>
+                Что нового в 2.6.1
+            </a>
         </div>
-    </section>
+    </header>
+
     <main class="main-container">
-        <div class="features-headline" id="whats-new">
+        <div class="features-headline" id="whats-new-261">
+            <div class="section-label" style="justify-content:center;width:100%;">
+                <span class="material-symbols-rounded" style="font-size:16px;">new_releases</span>
+                Релиз 2.6.1 · 20 ноября 2026
+            </div>
+            <h2>Что нового в 2.6.1</h2>
+            <p>Оболочка PWA, локальные ответы, пустой чат, меню ⋮ и чистка слоёв.</p>
+        </div>
+        <div class="features-grid">
+            <div class="card new">
+                <div class="card-top-row"><div class="card-icon"><span class="material-symbols-rounded">hourglass_top</span></div></div>
+                <div class="card-heading">Loading Performance</div>
+                <div class="card-text">Сплэш с иконкой Core Node и текстом Loading Performance на 2–5 с, затем интерфейс.</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row"><div class="card-icon"><span class="material-symbols-rounded">chat</span></div></div>
+                <div class="card-heading">Новый пустой чат</div>
+                <div class="card-text">Поле по центру; chrome: Новый чат · Скачать · Ultra · Временный. После сообщения — название и ⋮.</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row"><div class="card-icon"><span class="material-symbols-rounded">more_vert</span></div></div>
+                <div class="card-heading">Меню чата ⋮</div>
+                <div class="card-text">Поделиться (ссылка), Закрепить, Переименовать, Переместить в проект ▸, Защитить чат (BETA).</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row"><div class="card-icon"><span class="material-symbols-rounded">palette</span></div></div>
+                <div class="card-heading">Темы</div>
+                <div class="card-text">Системная / Светлая / Тёмная. Оттенки тёмной: #0f0f0f, #050505, #000000.</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row"><div class="card-icon"><span class="material-symbols-rounded">analytics</span></div></div>
+                <div class="card-heading">Лимиты BETA</div>
+                <div class="card-text">Окно 3–24 ч и неделя. Сброс только по таймеру. Правила по длине, поиску и коду.</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row"><div class="card-icon"><span class="material-symbols-rounded">install_desktop</span></div></div>
+                <div class="card-heading">PWA 2.6.3</div>
+                <div class="card-text">manifest + SW для GitHub Pages. В standalone плавнее анимации, без кнопки «Скачать».</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row"><div class="card-icon"><span class="material-symbols-rounded">offline_bolt</span></div></div>
+                <div class="card-heading">Локальная модель chat.json</div>
+                <div class="card-text">FAQ по приложению, учёбе и коду без API — особенно полезно офлайн.</div>
+            </div>
+            <div class="card new">
+                <div class="card-top-row"><div class="card-icon"><span class="material-symbols-rounded">cleaning_services</span></div></div>
+                <div class="card-heading">Чистка слоёв</div>
+                <div class="card-text">Без entry-toast и дублей меню. Единый showSection. Верхнее меню на 4 вкладки — отменено.</div>
+            </div>
+        </div>
+
+        <div class="features-headline" id="whats-new-26">
             <div class="section-label">
                 <span class="material-symbols-rounded" style="font-size:16px;">auto_awesome</span>
-                Нововведения 2.6 PRO
+                База 2.6 PRO
             </div>
             <h2>Как это выглядит</h2>
             <p>Карточки с мини-превью интерфейса — в стиле ядра</p>
@@ -838,33 +1031,7 @@
                     </div>
                 </div>
             </div>
-            <div class="card soon">
-                <div class="card-top-row">
-                    <div class="card-icon"><span class="material-symbols-rounded">tab</span></div>
-                </div>
-                <div class="card-heading">До 4 вкладок навигации</div>
-                <div class="card-text">
-                    Верхнее меню расширяется: по умолчанию 3 вкладки, в настройках «+» —
-                    можно держать <b>от 3 до 4</b> слотов (Чат остаётся, остальные на выбор).
-                </div>
-                <div class="preview-nav-tabs">
-                    <div class="tn on">
-                        <span class="material-symbols-rounded">chat_bubble</span>
-                        Chat
-                    </div>
-                    <div class="tn">
-                        <span class="material-symbols-rounded">auto_stories</span>
-                        Reader
-                    </div>
-                    <div class="tn">
-                        <span class="material-symbols-rounded">edit_note</span>
-                        Сценарий
-                    </div>
-                    <div class="tn add">
-                        <span class="material-symbols-rounded">add</span>
-                        +4
-                    </div>
-                </div>
+            <!-- cancelled: 4-tab top nav — верхнее меню снято -->
             </div>
             <div class="card soon">
                 <div class="card-top-row">
@@ -1091,7 +1258,7 @@
                 </div>
             </div>
             <div class="log-terminal">
-                &gt;_ CORE_NODE: v2.6 PRO · RELEASE 2026-09-20<br>
+                &gt;_ CORE_NODE: v2.6.1 · RELEASE 2026-11-20<br>
                 &gt;_ MARKDOWN_ENGINE: ACTIVE · CODE_WINDOWS · IMAGE_VIEWER<br>
                 &gt;_ EXTERNAL_API: GEMINI AQ. | OPENAI | CLAUDE | GROK<br>
                 &gt;_ LIMITS: WAVE_BARS · 3H · WEEK · ATTACH · TIER_COSTS<br>
@@ -1100,13 +1267,16 @@
                 &gt;_ LOCAL_STORAGE_SYNC: oracle_* KEYS SHARED<br>
                 &gt;_ OOBE · SETTINGS_SEARCH · SIDEBAR_TUNE · PIN_RECOVERY<br>
                 &gt;_ MAPS: LEAFLET+OSM · ARCHIVE_ALL · TEMP_CHAT<br>
-                &gt;_ ROADMAP: SCENARIO · NAV×4 · NOTEPAD_AGENT · FOCUS_30M<br>
+                &gt;_ ROADMAP: SCENARIO · NOTEPAD_AGENT · FOCUS_30M · LOCAL_CHAT_JSON<br>
                 &gt;_ STATUS: ALL SYSTEMS OPERATIONAL
             </div>
         </div>
         <div class="promo-block" style="margin-bottom:0;">
-            <div class="badge">Changelog 2.6 PRO</div>
+            <div class="badge">Changelog 2.6.1 / 2.6 PRO</div>
             <div class="changelog">
+                <div class="changelog-item"><span class="tag">2.6.1</span> Splash Loading Performance · empty-chat chrome · меню ⋮ чата</div>
+                <div class="changelog-item"><span class="tag">2.6.1</span> Темы System/Light/Dark + оттенки #0f/#05/#000 · лимиты BETA</div>
+                <div class="changelog-item"><span class="tag">2.6.1</span> PWA SW v2.6.3 · chat.json локальные FAQ · без entry-toast</div>
                 <div class="changelog-item"><span class="tag">UI</span> Матовые бабблы, glass-навигация, плавающий бар на телефонах</div>
                 <div class="changelog-item"><span class="tag">AI</span> Markdown, окна кода, просмотр фото, анимация думания</div>
                 <div class="changelog-item"><span class="tag">API</span> Сторонние ключи, Gemini AQ., ошибка + Повторить, чип статуса</div>
@@ -1124,7 +1294,7 @@
         </div>
     </main>
     <footer>
-        © 2026 Core Node · Oracle Intelligence · Prestige HQ. Релиз 2.6 PRO — 20 сентября 2026.
+        © 2026 Core Node · Oracle Intelligence · Prestige HQ. Релиз 2.6.1 — 20 ноября 2026.
     </footer>
     <script>
         function setAboutTheme(mode) {
