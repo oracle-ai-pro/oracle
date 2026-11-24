@@ -1,6 +1,57 @@
-    // Состояние приложения
+/* emergency: never hang on splash */
+(function(){
+  function killSplash(){
+    var el = document.getElementById('boot-splash');
+    if(!el) return;
+    el.classList.add('boot-done');
+    el.style.opacity = '0';
+    el.style.visibility = 'hidden';
+    el.style.pointerEvents = 'none';
+    try { el.remove(); } catch(e) { el.style.display = 'none'; }
+  }
+  setTimeout(killSplash, 2500);
+  setTimeout(killSplash, 5000);
+  window.addEventListener('load', function(){ setTimeout(killSplash, 400); });
+  if(document.readyState === 'complete') setTimeout(killSplash, 400);
+})();
+
+/* ===== script block ===== */
+
+/* PWA register — Core Node */
+(function registerCoreNodePWA() {
+  if (!('serviceWorker' in navigator)) return;
+  const register = () => {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then((reg) => {
+        // soft update check
+        try { reg.update(); } catch (e) {}
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+        reg.addEventListener('updatefound', () => {
+          const w = reg.installing;
+          if (!w) return;
+          w.addEventListener('statechange', () => {
+            if (w.state === 'installed' && navigator.serviceWorker.controller) {
+              // new version ready — optional toast if app exposes showToast
+              try {
+                if (typeof showToast === 'function') {
+                  showToast('Доступно обновление Core Node (PWA). Перезагрузите страницу.', 'info', 5000);
+                }
+              } catch (e) {}
+            }
+          });
+        });
+      })
+      .catch(() => {});
+  };
+  if (document.readyState === 'complete') register();
+  else window.addEventListener('load', register);
+})();
+
+// Состояние приложения
     const CoreState = {
-    activeAgent: 'Oracle Main',
+    activeAgent: 'Intify 2.5.4',
     chatMode: 'normal',
     isScreensaverActive: false,
     screensaverTimer: null,
@@ -19,7 +70,6 @@ genTimer: null,
     _liveRec: null
 };
 
-
 // ===== CORE STATE & SESSIONS =====
 let chatSessions = {};
 try {
@@ -35,47 +85,65 @@ let currentSessionId = localStorage.getItem('oracle_current_session') || null;
 let currentStoryId = localStorage.getItem('oracle_current_story') || null;
 
 function showSection(sectionId) {
-    document.querySelectorAll('.setting-section').forEach(el => {
-        el.style.display = 'none';
-    });
-    const target = document.getElementById('section-' + sectionId);
-    if (target) target.style.display = 'block';
+    sectionId = String(sectionId || 'general').trim().replace(/^section-/, '');
+    var map = {
+      personalization: 'general', appearance: 'general', theme: 'general',
+      'o-vas': 'user', you: 'user', profile: 'user',
+      safety: 'security', protect: 'security',
+      apikeys: 'api-keys', api: 'api-keys',
+      links: 'public-links', public: 'public-links',
+      sidebar: 'sidebar-menu', menu: 'sidebar-menu',
+      dev: 'developer', lang: 'language'
+    };
+    if (map[sectionId]) sectionId = map[sectionId];
 
-    document.querySelectorAll('.sidebar-menu .nav-item').forEach(btn => {
-        btn.classList.remove('active');
+    document.querySelectorAll('#settings-content .setting-section, .setting-section').forEach(function(el) {
+      el.classList.remove('section-visible');
+      el.style.setProperty('display', 'none', 'important');
+      el.removeAttribute('hidden');
     });
-    const activeBtn = document.getElementById('btn-sec-' + sectionId);
+
+    var target = document.getElementById('section-' + sectionId);
+    if (!target) {
+      target = document.getElementById('section-general');
+      sectionId = 'general';
+    }
+    if (target) {
+      target.style.setProperty('display', 'block', 'important');
+      target.classList.add('section-visible');
+      try { target.scrollTop = 0; } catch (e) {}
+    }
+
+    document.querySelectorAll('.settings-tabs .nav-item, #settings-tabs .nav-item, [id^="btn-sec-"], .settings-side-nav .nav-item').forEach(function(btn) {
+      btn.classList.remove('active');
+    });
+    var activeBtn = document.getElementById('btn-sec-' + sectionId);
     if (activeBtn) activeBtn.classList.add('active');
+    // also mark by data-section
+    document.querySelectorAll('[data-section]').forEach(function(btn) {
+      btn.classList.toggle('active', btn.getAttribute('data-section') === sectionId);
+    });
 
-    // Later Generate card только во вкладке Сторонние API
-    const laterCard = document.getElementById('later-gen-settings-card');
-    if (laterCard) {
-        laterCard.style.display = (sectionId === 'api-keys') ? 'block' : 'none';
-    }
-    if (sectionId === 'sidebar-menu' && typeof renderSidebarBtnChecklist === 'function') {
-        try { renderSidebarBtnChecklist(); } catch(e) {}
-    }
+    try {
+      if (location.hash.indexOf('#settings') === 0 || document.getElementById('screen-settings')?.classList.contains('active-screen')) {
+        history.replaceState(null, '', '#settings_' + sectionId);
+      }
+    } catch (e) {}
 
-    // Mobile: drill into section
-    if (window.matchMedia('(max-width: 767px)').matches) {
-        const titles = {
-            general: 'Персонализация',
-            user: 'О вас',
-            limits: 'Лимиты',
-            system: 'Сонный Режим',
-            security: 'Безопасность',
-            notifications: 'Уведомления',
-            'public-links': 'Публичные ссылки',
-            'api-keys': 'Сторонние API',
-            'sidebar-menu': 'Настройка бокового меню',
-            about: 'О проекте'
-        };
-        const screen = document.getElementById('screen-settings');
-        const titleEl = document.getElementById('settings-mobile-title');
-        if (screen) screen.classList.add('settings-drill');
-        if (titleEl) titleEl.textContent = titles[sectionId] || 'Настройки';
-    }
+    // mobile second pane
+    try {
+      var sc = document.getElementById('settings-content');
+      if (sc) sc.classList.add('settings-pane-open');
+      var list = document.getElementById('settings-tab-list');
+      if (list && window.matchMedia('(max-width: 720px)').matches) {
+        /* optional mobile drill-in */
+      }
+    } catch (e) {}
 }
+window.showSection = showSection;
+
+
+
 
 function settingsMobileBack() {
     const screen = document.getElementById('screen-settings');
@@ -87,13 +155,13 @@ function renderSidebarChats() {
     const list = document.getElementById('chats-list');
     if (!list) return;
     list.innerHTML = '';
-    
+
     const ids = Object.keys(chatSessions);
     if (ids.length === 0) {
         // default session
         if (!currentSessionId) {
             currentSessionId = 'session_' + Date.now();
-            chatSessions[currentSessionId] = { title: 'Новый чат', html: '' };
+            chatSessions[currentSessionId] = { title: 'Новый чат', html: '', mode: (localStorage.getItem('oracle_input_mode')||'chat') };
             localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
             localStorage.setItem('oracle_current_session', currentSessionId);
         }
@@ -106,10 +174,10 @@ function renderSidebarChats() {
         item.dataset.itemType = 'chat';
         item.oncontextmenu = (e) => showContextMenu(e, item, 'chat');
         item.onclick = () => loadChatSession(id);
-        item.innerHTML = `
-            <span class="chat-title">${chatSessions[id].title || 'Новый чат'}</span>
-            <span class="material-symbols-rounded" style="font-size:16px;color:var(--on-surface-variant);">chat</span>
-        `;
+        const isTask = (chatSessions[id].mode === 'task');
+        item.innerHTML = '<span class="chat-title">' + (chatSessions[id].title || 'Новый чат') + '</span>' +
+            '<span class="material-symbols-rounded' + (isTask ? ' task-chat-ico' : '') + '" style="font-size:16px;">' +
+            (isTask ? 'check_circle' : 'chat') + '</span>';
         list.appendChild(item);
     });
 }
@@ -118,7 +186,7 @@ function loadChatSession(id) {
     if (!chatSessions[id]) return;
     currentSessionId = id;
     localStorage.setItem('oracle_current_session', id);
-    
+
     const chatFlow = document.getElementById('chat-flow');
     const welcome = document.getElementById('welcome-block');
     if (chatFlow) {
@@ -148,7 +216,7 @@ function createNewChatSession() {
     else if (typeof renderSidebarChats === 'function') renderSidebarChats();
     document.getElementById('sidebar-archive')?.classList.remove('open');
     switchScreen('chat');
-    showToast('Новый чат — напишите сообщение, чтобы сохранить', 'info');
+    /* welcome toast removed */
 }
 
 function openStoryBook(id) {
@@ -162,10 +230,10 @@ function openStoryBook(id) {
     if (editor) editor.innerHTML = storyBooks[id].content || '';
     if (empty) empty.style.display = 'none';
     if (workspace) workspace.style.display = 'block';
-    if (titleEl) titleEl.textContent = storyBooks[id].title || 'История';
-    switchScreen('reader');
+    if (titleEl) titleEl.textContent = storyBooks[id].title || 'Без названия';
+    if (typeof switchScreen === 'function') switchScreen('reader');
+    if (typeof readerOnStoryOpened === 'function') readerOnStoryOpened(id);
 }
-
 
 function toggleTempChat() {
     if (CoreState.isTempChat) {
@@ -175,10 +243,38 @@ function toggleTempChat() {
     }
 }
 
+
+function setTempPersona(mode, silent) {
+    mode = (mode === 'without' || mode === 'without_persona') ? 'without' : 'with';
+    if (CoreState.tempPersonaLocked && !silent) {
+        if (typeof showToast === 'function') showToast('После первого сообщения сменить нельзя — создайте новый временный чат', 'warning');
+        return;
+    }
+    if (!CoreState.isTempChat && !silent) {
+        if (typeof showToast === 'function') showToast('Сначала включите временный чат', 'info');
+        return;
+    }
+    CoreState.tempPersona = mode;
+    try { localStorage.setItem('oracle_temp_persona_pref', mode); } catch (e) {}
+    var chooser = document.getElementById('temp-persona-chooser');
+    if (chooser) {
+        chooser.hidden = false;
+        chooser.querySelectorAll('.temp-persona-card').forEach(function(card) {
+            var m = card.getAttribute('data-mode') || '';
+            var on = (m === mode) || (mode === 'with' && m === 'with') || (mode === 'without' && (m === 'without' || m === 'without_persona'));
+            card.classList.toggle('selected', on);
+        });
+    }
+    if (!silent && typeof showToast === 'function') {
+        showToast(mode === 'with' ? 'С персонализацией' : 'Без персонализации', 'info', 1600);
+    }
+}
+window.setTempPersona = setTempPersona;
+
 function enterTempChat() {
     const chatFlow = document.getElementById('chat-flow');
     const welcomeBlock = document.getElementById('welcome-block');
-    
+
     CoreState.savedChatHTML = chatFlow ? chatFlow.innerHTML : '';
     CoreState.savedWelcomeHTML = welcomeBlock ? welcomeBlock.innerHTML : '';
 
@@ -197,13 +293,25 @@ function enterTempChat() {
     CoreState.tempHasMessages = false;
     document.body.classList.add('temp-chat-mode');
     document.body.classList.remove('temp-chat-saved-ready');
-    
+
     const chooser = document.getElementById('temp-persona-chooser');
     if (chooser) {
         chooser.hidden = false;
-        setTempPersona(CoreState.tempPersona || 'with', true);
+        chooser.style.display = '';
+        chooser.removeAttribute('hidden');
     }
-    syncTempChatButton();
+    try {
+      var pref = localStorage.getItem('oracle_temp_persona_pref') || CoreState.tempPersona || 'with';
+      if (typeof setTempPersona === 'function') setTempPersona(pref, true);
+    } catch (e) {}
+    // empty layout + "Новый чат" chrome must stay visible in temp mode
+    try {
+      document.body.classList.add('empty-chat');
+      var chrome = document.getElementById('empty-chat-chrome');
+      if (chrome) { chrome.hidden = false; chrome.style.display = 'flex'; }
+      if (typeof syncEmptyChatLayout === 'function') syncEmptyChatLayout();
+    } catch (e) {}
+    if (typeof syncTempChatButton === 'function') syncTempChatButton();
     showToast('Временный чат. Выберите персонализацию до первого сообщения.', 'warning');
 }
 
@@ -331,8 +439,8 @@ function updateSplitHeader() {
     // Текст кнопки ориентации
     const orientLabel = document.getElementById('split-orient-label');
     if (orientLabel) {
-        orientLabel.textContent = CoreState.splitOrientation === 'horizontal' 
-            ? 'Вертикальный Split' 
+        orientLabel.textContent = CoreState.splitOrientation === 'horizontal'
+            ? 'Вертикальный Split'
             : 'Горизонтальный Split';
     }
 }
@@ -590,83 +698,14 @@ document.addEventListener('click', (e) => {
     }
 
     function switchChatMode(mode) {
-        CoreState.chatMode = mode;
-
-        const btnNormal = document.getElementById('btn-mode-normal');
-        const btnOracle = document.getElementById('btn-mode-oracle');
-        const btnProject = document.getElementById('btn-mode-project');
-        const btnCoding = document.getElementById('btn-mode-coding');
-
-        if (!btnNormal || !btnOracle) return;
-
-        btnNormal.classList.remove('active');
-        btnOracle.classList.remove('active');
-
-        if (mode === 'oracle') {
-            btnOracle.classList.add('active');
-            if (btnProject) btnProject.classList.remove('hidden');
-            if (btnCoding) btnCoding.classList.remove('hidden');
-        } else {
-            btnNormal.classList.add('active');
-            if (btnProject) btnProject.classList.add('hidden');
-            if (btnCoding) btnCoding.classList.add('hidden');
-        }
+        if (typeof CoreState === 'object') CoreState.chatMode = mode || 'normal';
     }
-
-    function setChatMode(mode) {
-        switchChatMode(mode);
-
-        const chatFlow = document.getElementById('chat-flow');
-        const welcomeBlock = document.getElementById('welcome-block');
-
-        if (mode === 'oracle') {
-            CoreState.activeAgent = 'Oracle Notepad (AI Chat Mode)';
-            if (welcomeBlock) welcomeBlock.classList.add('hidden');
-            if (chatFlow) {
-                chatFlow.innerHTML += `
-                    <div class="msg ai-msg" style="border-left: 3px solid var(--primary); font-style: italic; opacity:0.9;">
-                        <span class="material-symbols-rounded" style="font-size:16px; vertical-align:middle; margin-right:5px;">auto_awesome</span>
-                        Система: AI Chat Mode активирован. Панели Проекта и Кодинга добавлены в панель.
-                    </div>
-                `;
-            }
-        } else {
-            CoreState.activeAgent = 'Oracle Main';
-            if (chatFlow) {
-                chatFlow.innerHTML += `
-                    <div class="msg ai-msg" style="font-style: italic; opacity:0.7;">
-                        Система: Возврат в режим Normal Chat. Дополнительные панели скрыты.
-                    </div>
-                `;
-            }
-        }
-
-        const screenChat = document.getElementById('screen-chat');
-        if (screenChat) {
-            screenChat.scrollTop = screenChat.scrollHeight;
-        }
-    }
-
+    function setChatMode(mode) { switchChatMode(mode); }
     function openProjectPanel() {
-        showCustomModal(
-            'Информация о Проекте',
-            '<div style="text-align: left; padding: 12px; background: var(--surface-variant); border-radius: 12px; line-height: 1.6; font-size: 13px;">' +
-                '<div><strong>Текущий проект:</strong> Project Alpha</div>' +
-                '<div><strong>Локация:</strong> Мир 1 / Комната 1</div>' +
-                '<div><strong>Статус:</strong> Синхронизировано</div>' +
-            '</div>'
-        );
+        if (typeof showToast === 'function') showToast('Проекты — через Create a… в боковом меню', 'info');
     }
-
     function openCodingPanel() {
-        showCustomModal(
-            'Кодинг Панель',
-            '<div style="text-align: left; padding: 12px; background: #000; border-radius: 12px; font-family: monospace; color: #32d74b; font-size: 12px; line-height: 1.5;">' +
-                '<div>> code_editor --init</div>' +
-                '<div>> Загрузка модулей... [OK]</div>' +
-                '<div>> Редактор кода готов к работе.</div>' +
-            '</div>'
-        );
+        if (typeof switchScreen === 'function') switchScreen('notepad');
     }
 
     // --- КАЛЕНДАРЬ ИИ ---
@@ -699,14 +738,14 @@ document.addEventListener('click', (e) => {
     const monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
     const year = currentCalDate.getFullYear();
     const month = currentCalDate.getMonth();
-    
+
     title.textContent = `${monthNames[month]} ${year}`;
 
     // Первый день месяца (0 = Вс, 1 = Пн ...)
     const firstDay = new Date(year, month, 1).getDay();
     // Делаем понедельник первым (Пн = 0)
     const offset = (firstDay + 6) % 7;
-    
+
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -724,7 +763,7 @@ document.addEventListener('click', (e) => {
     for (let day = 1; day <= daysInMonth; day++) {
         const cellDate = new Date(year, month, day);
         cellDate.setHours(0, 0, 0, 0);
-        
+
         const key = dateKey(year, month, day);
         const dayReminders = reminders.filter(r => r.date === key);
         const isToday = cellDate.getTime() === today.getTime();
@@ -733,7 +772,7 @@ document.addEventListener('click', (e) => {
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.className = `chat-card calendar-day${isToday ? ' calendar-day-today' : ''}${dayReminders.length ? ' has-reminder' : ''}${isPast ? ' past-day' : ''}`;
-        
+
         cell.innerHTML = `
             <span class="calendar-day-number">${day}</span>
             ${dayReminders.length ? '<span class="calendar-day-dot"></span>' : ''}
@@ -754,7 +793,7 @@ document.addEventListener('click', (e) => {
 }
 function changeOracleThemeBW() {
     const isLight = document.body.classList.contains('light-theme');
-    
+
     // В светлой теме — чёрный, в тёмной — белый
     const primary = isLight ? '#1a1a1a' : '#f0f0f0';
     const container = isLight ? '#e8e8e8' : '#2a2a2a';
@@ -762,7 +801,7 @@ function changeOracleThemeBW() {
 
     const theme = { primary, container, variant, isBW: true };
     localStorage.setItem('oracle_matte_theme', JSON.stringify(theme));
-    
+
     applyVisualTheme();
     showToast(isLight ? 'Ч/Б: чёрный' : 'Ч/Б: белый', 'success');
 }
@@ -839,14 +878,31 @@ function changeOracleThemeBW() {
         }, 0);
         document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
         document.querySelectorAll('.glass-nav .nav-item').forEach(t => t.classList.remove('active'));
-        
+
         const targetScreen = document.getElementById(`screen-${screenName}`);
         const targetBtn = document.getElementById(`btn-tab-${screenName}`);
         const subNav = document.getElementById('sub-nav-chat');
-        
+
         if (targetScreen) targetScreen.classList.add('active-screen');
         if (targetBtn) targetBtn.classList.add('active');
-        
+
+        // body flags: input only on chat
+        try {
+          document.body.classList.toggle('on-chat-screen', screenName === 'chat');
+          document.body.classList.toggle('on-settings-screen', screenName === 'settings');
+          document.body.classList.toggle('on-skills-screen', screenName === 'skills');
+          var box = document.getElementById('main-input-box');
+          if (box) {
+            if (screenName === 'chat') {
+              box.style.display = 'flex';
+              box.style.visibility = 'visible';
+              box.classList.remove('hidden');
+            } else {
+              box.style.display = 'none';
+            }
+          }
+        } catch (e) {}
+
         if (subNav) {
             subNav.style.display = (screenName === 'chat') ? 'flex' : 'none';
         }
@@ -861,14 +917,18 @@ function changeOracleThemeBW() {
 
     function toggleSidebar() {
         const sidebar = document.getElementById('sidebar-archive');
-        if (sidebar) sidebar.classList.toggle('open');
+        if (!sidebar) return;
+        sidebar.classList.toggle('open');
+        if (sidebar.classList.contains('open') && typeof renderUnifiedArchive === 'function') {
+          try { renderUnifiedArchive(); } catch (e) { console.error(e); }
+        }
     }
 
     function toggleCompactNav() {
         document.body.classList.toggle('compact-nav-mode');
         const isCompact = document.body.classList.contains('compact-nav-mode');
         localStorage.setItem('oracle_compact_nav', isCompact);
-        
+
         const btn = document.getElementById('compact-nav-toggle-btn');
         if (btn) {
             if (isCompact) {
@@ -896,7 +956,11 @@ function changeOracleThemeBW() {
         if (!menu) return;
         const branch = document.getElementById('cm-branch-opt');
         const share = document.getElementById('cm-share-opt');
-        const snOpt = document.getElementById('cm-sidenotes-opt');
+        const snOpt = document.getElementById('cm-context-opt') || document.getElementById('cm-sidenotes-opt');
+        if (snOpt) {
+          const isChat = (window._ctxItemType === 'chat') || (currentContextNode && currentContextNode.dataset.itemType === 'chat');
+          snOpt.style.display = isChat ? 'flex' : 'none';
+        }
         const isStory = window._ctxItemType === 'story';
         if (branch) branch.style.display = isStory ? 'none' : '';
         if (snOpt) snOpt.style.display = (type === 'chat') ? 'flex' : 'none';
@@ -914,7 +978,19 @@ function changeOracleThemeBW() {
         const titleEl = currentContextNode.querySelector('.chat-title') || currentContextNode.querySelector('span');
         const isStory = window._ctxItemType === 'story' || currentContextNode.dataset.itemType === 'story';
         const promptTitle = isStory ? 'Переименовать историю' : 'Переименовать чат';
-        showCustomModal(promptTitle, 'Новое название:', true, titleEl ? titleEl.innerText : '', (newName) => {
+        let currentTitle = '';
+        if (titleEl) {
+          currentTitle = (titleEl.innerText || titleEl.textContent || '').trim();
+          // strip icon ligatures like chat_bubble
+          if (/^[a-z0-9_]+$/i.test(currentTitle) && currentTitle.includes('_')) currentTitle = '';
+        }
+        if (!currentTitle && currentContextNode) {
+          currentTitle = currentContextNode.dataset.title || currentContextNode.getAttribute('data-title') || '';
+        }
+        if (!currentTitle && window._ctxSessionId && typeof chatSessions === 'object' && chatSessions[window._ctxSessionId]) {
+          currentTitle = chatSessions[window._ctxSessionId].title || '';
+        }
+        showCustomModal(promptTitle, 'Новое название:', true, currentTitle || '', (newName) => {
             if (!newName || typeof newName !== 'string' || !newName.trim()) return;
             const name = newName.trim();
             if (titleEl) titleEl.innerText = name;
@@ -948,19 +1024,7 @@ function changeOracleThemeBW() {
     }
 
     function cmBranch() {
-        if (!currentContextNode) return;
-        const titleEl = currentContextNode.querySelector('.chat-title');
-        const currentTitle = titleEl ? titleEl.innerText : 'Чат';
-        
-        const newBranchId = 'session_branch_' + Date.now();
-        chatSessions[newBranchId] = { 
-            title: `${currentTitle} (Ветвь)`, 
-            html: document.getElementById('chat-flow')?.innerHTML || '' 
-        };
-        
-        localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
-        renderSidebarChats();
-        showCustomModal("Ветвление", `Создана новая ветка: "${currentTitle} (Ветвь)"`);
+        if (typeof showToast === 'function') showToast('Ветки — через проекты в боковом меню', 'info');
     }
 
     function cmDelete() {
@@ -1014,7 +1078,7 @@ function changeOracleThemeBW() {
 
        function handleInput(textarea) {
     textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 140) + 'px';
+    textarea.style.height = Math.min(textarea.scrollHeight, 96) + 'px';
 
     const expandBtn = document.getElementById('expand-btn');
     const sendBtn = document.getElementById('send-btn');
@@ -1071,11 +1135,11 @@ document.addEventListener('click', (e) => {
         const icon = document.getElementById('expand-icon');
         const textarea = document.getElementById('user-input');
         if (!box || !textarea) return;
-        
+
         box.classList.toggle('fullscreen-mode');
         if (box.classList.contains('fullscreen-mode')) {
             if (icon) icon.innerText = 'close_fullscreen';
-            textarea.style.height = '70%'; 
+            textarea.style.height = '70%';
             box.style.height = '80vh';
         } else {
             if (icon) icon.innerText = 'open_in_full';
@@ -1110,15 +1174,15 @@ document.addEventListener('click', (e) => {
     }
 
     function copyBubbleText(btn) {
-        const bubble = btn.closest('.user-bubble');
-        const text = bubble.querySelector('.bubble-text').textContent;
-        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => showToast('Сообщение скопировано.', 'success')).catch(() => showToast('Не удалось скопировать.', 'error')); else showToast('Буфер обмена недоступен.', 'warning');
+        const bubble = btn.closest('.msg-actions')?.previousElementSibling || btn.closest('.ai-msg, .user-msg, .msg');
+        const text = (bubble?.innerText || bubble?.textContent || '').trim();
+        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => (window.showCopyFragmentToast||showToast)(text)).catch(() => showToast('Не удалось скопировать.', 'error')); else showToast('Буфер обмена недоступен.', 'warning');
     }
 
     function editBubbleText(btn) {
         const bubble = btn.closest('.user-bubble');
         const textNode = bubble.querySelector('.bubble-text');
-        
+
         showCustomModal("Редактирование", "Измените текст сообщения:", true, textNode.textContent, (newText) => {
             if (newText && typeof newText === 'string' && newText.trim() !== "") {
                 textNode.textContent = newText.trim();
@@ -1133,30 +1197,30 @@ document.addEventListener('click', (e) => {
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
         recognition.lang = 'ru-RU';
-        recognition.interimResults = true; 
+        recognition.interimResults = true;
         recognition.onresult = function(event) {
             let transcript = Array.from(event.results).map(result => result[0].transcript).join('');
             const input = document.getElementById('user-input');
             if (input) {
-                input.value = transcript; 
-                handleInput(input); 
+                input.value = transcript;
+                handleInput(input);
             }
         };
-        recognition.onstart = function() { 
+        recognition.onstart = function() {
             const btn = document.getElementById('voice-btn');
-            if (btn) btn.classList.add('recording'); 
+            if (btn) btn.classList.add('recording');
         };
-        recognition.onend = function() { 
+        recognition.onend = function() {
             const btn = document.getElementById('voice-btn');
-            if (btn) btn.classList.remove('recording'); 
+            if (btn) btn.classList.remove('recording');
         };
     }
-    
+
     function startVoice() {
-        if (recognition) { 
-            try { recognition.start(); } catch(e) { recognition.stop(); } 
-        } else { 
-            showCustomModal("Ошибка", "Голосовой ввод не поддерживается вашим браузером."); 
+        if (recognition) {
+            try { recognition.start(); } catch(e) { recognition.stop(); }
+        } else {
+            showCustomModal("Ошибка", "Голосовой ввод не поддерживается вашим браузером.");
         }
     }
 
@@ -1235,7 +1299,7 @@ document.addEventListener('click', (e) => {
     }
 }
 
-        
+
 function getSavedMatteTheme() {
     try {
         const raw = JSON.parse(localStorage.getItem('oracle_matte_theme') || '{}');
@@ -1250,95 +1314,106 @@ function getSavedMatteTheme() {
 }
 
 function applyVisualTheme() {
-        /* halloween overrides tokens via CSS class — skip if active */
-
+    /* Serious palette: neutral UI, accent only for bubbles / send / mic / stop */
     const target = document.body;
+    if (target.classList.contains('halloween-theme')) return;
+
     const isLight = target.classList.contains('light-theme');
     const isTrueBlack = target.classList.contains('true-black-theme');
-    
     let theme = getSavedMatteTheme();
 
-    // Адаптивный Ч/Б
+    // Accent color (user choice) — stored in matte theme primary
+    let accent = theme.primary || '#adc6ff';
     if (theme.isBW) {
-        if (isLight) {
-            theme = {
-                primary: '#1a1a1a',
-                container: '#e8e8e8',
-                variant: '#f0f0f0',
-                isBW: true
-            };
-        } else {
-            theme = {
-                primary: '#f0f0f0',
-                container: '#2a2a2a',
-                variant: '#1a1a1a',
-                isBW: true
-            };
-        }
+        accent = isLight ? '#1a1a1a' : '#f0f0f0';
+    }
+    if (theme.isRaspberry || (accent && (accent.toLowerCase() === '#e11d48' || accent.toLowerCase() === '#f43f5e'))) {
+        accent = isLight ? '#F43F5E' : '#E11D48';
     }
 
-    // СВЕТЛАЯ ТЕМА (акценты как в 2.6)
-    if (isLight) {
-        target.classList.remove('true-black-theme');
-        target.style.setProperty('--bg', '#f4f5fa');
-        target.style.setProperty('--surface', '#ffffff');
-        target.style.setProperty('--surface-variant', theme.isBW ? (theme.variant || '#f0f0f0') : '#f3f4f6');
-        target.style.setProperty('--on-surface', '#1a1b26');
-        target.style.setProperty('--on-surface-variant', '#575a6c');
-        target.style.setProperty('--primary', theme.primary);
-        target.style.setProperty('--primary-container', theme.isBW ? (theme.container || '#e8e8e8') : (theme.primary + '26'));
-        target.style.setProperty('--secondary', theme.primary);
-        target.style.setProperty('--border', '#d0d3de');
-        target.style.setProperty('--grad', theme.isBW
-            ? `linear-gradient(90deg, ${theme.primary} 0%, ${theme.primary} 100%)`
-            : `linear-gradient(90deg, ${theme.primary} 0%, #a855f7 100%)`);
-        target.style.setProperty('--glass-bg', 'rgba(255, 255, 255, 0.82)');
-        // bubble follows accent unless custom saved
-        if (!localStorage.getItem('oracle_bubble_color')) {
-        }
-        return;
+    // Dark base level: #000000 | #050505 | #0f0f0f
+    let darkBase = '#0f0f0f';
+    try {
+        const db = localStorage.getItem('oracle_dark_base');
+        if (db === '#000000' || db === '#050505' || db === '#0f0f0f') darkBase = db;
+        if (isTrueBlack) darkBase = localStorage.getItem('oracle_dark_base') || '#000000';
+    } catch (e) {}
+
+    // Subtle accent tint on background (toggle)
+    let tintOn = true;
+    try {
+        const t = localStorage.getItem('oracle_accent_tint');
+        if (t === '0') tintOn = false;
+    } catch (e) {}
+
+    function mixHex(a, b, w) {
+        // simple mix toward accent, w = 0..1 how much accent
+        try {
+            const ah = a.replace('#','');
+            const bh = b.replace('#','');
+            const ar = parseInt(ah.slice(0,2),16), ag = parseInt(ah.slice(2,4),16), ab = parseInt(ah.slice(4,6),16);
+            const br = parseInt(bh.slice(0,2),16), bg = parseInt(bh.slice(2,4),16), bb = parseInt(bh.slice(4,6),16);
+            const r = Math.round(ar + (br-ar)*w);
+            const g = Math.round(ag + (bg-ag)*w);
+            const bl = Math.round(ab + (bb-ab)*w);
+            return '#' + [r,g,bl].map(x => x.toString(16).padStart(2,'0')).join('');
+        } catch (e) { return a; }
     }
 
-    // TRUE BLACK
-    if (isTrueBlack) {
-        target.style.setProperty('--bg', '#000000');
-        target.style.setProperty('--surface', '#0a0a0a');
-        target.style.setProperty('--surface-variant', '#141414');
-        target.style.setProperty('--on-surface', '#ffffff');
-        target.style.setProperty('--on-surface-variant', '#a0a0a0');
-        target.style.setProperty('--primary', theme.primary);
-        target.style.setProperty('--primary-container', '#1c1c1c');
-        target.style.setProperty('--secondary', theme.primary);
-        target.style.setProperty('--border', '#222222');
-        target.style.setProperty('--grad', `linear-gradient(90deg, ${theme.primary} 0%, ${theme.primary} 100%)`);
-        target.style.setProperty('--glass-bg', 'rgba(10, 10, 10, 0.85)');
-        return;
+    // Neutral chrome: black buttons in light, white in dark
+    const chrome = isLight ? '#121212' : '#f2f2f2';
+    const chromeMuted = isLight ? '#3a3a3a' : '#c8c8c8';
+    const border = isLight ? '#d4d4d8' : '#2a2a2a';
+    const surface = isLight ? '#ffffff' : mixHex(darkBase, '#1a1a1a', 0.35);
+    const surfaceVar = isLight ? '#f0f0f2' : mixHex(darkBase, '#222222', 0.4);
+    let bg = isLight ? '#f6f6f7' : darkBase;
+    if (tintOn) {
+        bg = isLight ? mixHex('#f6f6f7', accent, 0.04) : mixHex(darkBase, accent, 0.06);
     }
 
-    // ОБЫЧНАЯ ТЁМНАЯ ТЕМА (акценты как в 2.6, Ч/Б без градиента к #e8bbf1)
-    target.style.removeProperty('--bg');
-    target.style.removeProperty('--surface');
-    target.style.removeProperty('--surface-variant');
-    target.style.removeProperty('--on-surface');
-    target.style.removeProperty('--on-surface-variant');
-    target.style.removeProperty('--primary');
-    target.style.removeProperty('--primary-container');
-    target.style.removeProperty('--secondary');
-    target.style.removeProperty('--border');
-    target.style.removeProperty('--grad');
-    target.style.removeProperty('--glass-bg');
+    target.style.setProperty('--bg', bg);
+    target.style.setProperty('--surface', surface);
+    target.style.setProperty('--surface-variant', surfaceVar);
+    target.style.setProperty('--on-surface', isLight ? '#121212' : '#f2f2f2');
+    target.style.setProperty('--on-surface-variant', isLight ? '#5c5c66' : '#9a9aa3');
+    target.style.setProperty('--border', border);
+    target.style.setProperty('--glass-bg', isLight ? 'rgba(255,255,255,0.94)' : 'rgba(10,10,10,0.94)');
 
-    target.style.setProperty('--primary', theme.primary);
-    target.style.setProperty('--primary-container', theme.container);
-    target.style.setProperty('--surface-variant', theme.variant);
-    target.style.setProperty('--secondary', theme.primary);
-    if (theme.isBW) {
-        target.style.setProperty('--grad', `linear-gradient(90deg, ${theme.primary} 0%, ${theme.primary} 100%)`);
-    } else {
-        target.style.setProperty('--grad', `linear-gradient(90deg, ${theme.primary} 0%, #e8bbf1 100%)`);
-    }
-    if (!localStorage.getItem('oracle_bubble_color')) {
-    }
+    // Neutral "primary" for general UI (borders/old refs) — chrome, NOT accent theater
+    target.style.setProperty('--primary', chrome);
+    target.style.setProperty('--primary-container', isLight ? '#e8e8ea' : '#1c1c1c');
+    target.style.setProperty('--secondary', chromeMuted);
+    target.style.setProperty('--grad', `linear-gradient(90deg, ${chrome} 0%, ${chrome} 100%)`);
+
+    // Accent tokens — bubbles / send / mic / stop only
+    target.style.setProperty('--accent', accent);
+    target.style.setProperty('--accent-soft', isLight ? accent + '22' : accent + '33');
+    target.style.setProperty('--accent-container', isLight ? accent + '18' : accent + '28');
+
+    // Sync toggle UI if present
+    try {
+        const tintEl = document.getElementById('toggle-accent-tint');
+        if (tintEl) tintEl.checked = tintOn;
+        document.querySelectorAll('.dark-base-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.getAttribute('data-base') === darkBase);
+        });
+    } catch (e) {}
+}
+
+
+function setAccentTint(on) {
+    localStorage.setItem('oracle_accent_tint', on ? '1' : '0');
+    applyVisualTheme();
+    if (typeof showToast === 'function') showToast(on ? 'Оттенок акцента: вкл' : 'Оттенок акцента: выкл', 'info');
+}
+function setDarkBase(hex) {
+    if (hex !== '#000000' && hex !== '#050505' && hex !== '#0f0f0f') hex = '#0f0f0f';
+    localStorage.setItem('oracle_dark_base', hex);
+    // True Black mode aligns with pure black choice
+    if (hex === '#000000') document.body.classList.add('true-black-theme');
+    else document.body.classList.remove('true-black-theme');
+    applyVisualTheme();
+    if (typeof showToast === 'function') showToast('Тёмный фон: ' + hex, 'success');
 }
 
 function changeOracleTheme(_p,_c,_v){ try{clearHalloweenIfThemeChange();}catch(e){} return _changeOracleThemeImpl(_p,_c,_v); }
@@ -1353,12 +1428,31 @@ function _changeOracleThemeImpl(primary, container, variant) {
     }
 
         // --- ИСПРАВЛЕНИЯ СОХРАНЕНИЯ ПРОФИЛЯ ---
-    function saveUserProfile() {
+
+function changeOracleThemeRaspberry() {
+    try { clearHalloweenIfThemeChange(); } catch (e) {}
+    const isLight = document.body.classList.contains('light-theme');
+    // Тёмная / True Black: #E11D48; светлая: чуть светлее
+    const primary = isLight ? '#F43F5E' : '#E11D48';
+    const container = isLight ? '#ffe4e6' : '#9f1239';
+    const variant = isLight ? '#fff1f2' : '#4c0519';
+    const theme = {
+        primary: primary,
+        container: container,
+        variant: variant,
+        isBW: false,
+        isRaspberry: true
+    };
+    localStorage.setItem('oracle_matte_theme', JSON.stringify(theme));
+    applyVisualTheme();
+}
+
+function saveUserProfile() {
         const name = document.getElementById('user-profile-name').value;
         const role = document.getElementById('user-profile-role').value;
         const instr = document.getElementById('user-profile-instructions').value;
         localStorage.setItem('oracle_user_profile', JSON.stringify({name, role, instr}));
-        
+
         const welcomeGreeting = document.getElementById('welcome-greeting');
         if (welcomeGreeting) {
             welcomeGreeting.innerText = name ? `Привет, ${name}!` : `Привет! Как твои дела?`;
@@ -1556,7 +1650,7 @@ function _changeOracleThemeImpl(primary, container, variant) {
         setGenerating(false);
     }
 
-    
+
 // ===== AI RENDER: Markdown + Code windows + Image viewer =====
 function escapeAiHtml(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1574,62 +1668,97 @@ function detectCodeLang(lang) {
 }
 function renderAiMarkdown(raw) {
     if (raw == null) return '';
-    let text = String(raw);
-    // extract fenced code blocks first
-    const blocks = [];
-    text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, lang, code) => {
-        const i = blocks.length;
-        blocks.push({ lang: lang || 'text', code: code.replace(/\n$/, '') });
-        return `\n%%CODEBLOCK_${i}%%\n`;
+    var text = String(raw);
+    function esc(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    if (typeof escapeAiHtml === 'function') esc = escapeAiHtml;
+
+    // :::card Title \n body :::
+    text = text.replace(/:::card\s*([^\n]*)\n([\s\S]*?):::/g, function(_, title, body) {
+      return '<div class="ai-card"><div class="ai-card-title">' + esc(title.trim() || 'Заметка') + '</div><div>' + esc(body.trim()).replace(/\n/g,'<br>') + '</div></div>';
     });
-    // images ![alt](url) or direct image urls on own line
-    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
-        return `<figure class="ai-figure"><img class="ai-gen-image" src="${escapeAiHtml(url)}" alt="${escapeAiHtml(alt || 'AI image')}" loading="lazy" onclick="openAiImageViewer(this.src, this.alt)"/><figcaption>${escapeAiHtml(alt || '')}</figcaption></figure>`;
+
+    var blocks = [];
+    text = text.replace(/```(\w*)\n?([\s\S]*?)```/g, function(_, lang, code) {
+      var i = blocks.length;
+      blocks.push({ lang: lang || 'text', code: code.replace(/\n$/, '') });
+      return '\n%%CODEBLOCK_' + i + '%%\n';
     });
-    text = text.replace(/(^|\n)(https?:\/\/\S+\.(?:png|jpe?g|gif|webp|svg)(?:\?\S*)?)/gi, (_, p, url) => {
-        return `${p}<figure class="ai-figure"><img class="ai-gen-image" src="${escapeAiHtml(url)}" alt="AI image" loading="lazy" onclick="openAiImageViewer(this.src, 'AI image')"/></figure>`;
+
+    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, function(_, alt, url) {
+      return '<figure class="ai-figure"><img class="ai-gen-image" src="' + esc(url) + '" alt="' + esc(alt || '') + '" loading="lazy" onclick="typeof openAiImageViewer===\'function\'&&openAiImageViewer(this.src,this.alt)"/><figcaption>' + esc(alt || '') + '</figcaption></figure>';
     });
-    // inline code
-    text = text.replace(/`([^`\n]+)`/g, (_, c) => `<code class="ai-inline-code">${escapeAiHtml(c)}</code>`);
-    // bold / italic
+
+    text = text.replace(/`([^`\n]+)`/g, function(_, c) {
+      return '<code class="ai-inline-code">' + esc(c) + '</code>';
+    });
+
     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    text = text.replace(/__([^_]+)__/g, '<strong>$1</strong>');
     text = text.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
-    // links [text](url)
+    text = text.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
     text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a class="ai-link" href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-    // headings
+
     text = text.replace(/^### (.+)$/gm, '<h4 class="ai-h">$1</h4>');
     text = text.replace(/^## (.+)$/gm, '<h3 class="ai-h">$1</h3>');
     text = text.replace(/^# (.+)$/gm, '<h2 class="ai-h">$1</h2>');
-    // lists
-    text = text.replace(/^(?:- |\* )(.+)$/gm, '<li>$1</li>');
-    text = text.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul class="ai-ul">${m}</ul>`);
-    // paragraphs: split by double newline
-    const parts = text.split(/\n{2,}/).map(chunk => {
-        chunk = chunk.trim();
-        if (!chunk) return '';
-        if (chunk.startsWith('<figure') || chunk.startsWith('<h') || chunk.startsWith('<ul') || chunk.startsWith('%%CODEBLOCK_')) return chunk;
-        return `<p class="ai-p">${chunk.replace(/\n/g, '<br>')}</p>`;
+    text = text.replace(/^---+$/gm, '<hr class="ai-hr"/>');
+
+    text = text.replace(/(^> .+(?:\n> .+)*)/gm, function(block) {
+      var inner = block.split('\n').map(function(l){ return l.replace(/^>\s?/, ''); }).join('<br>');
+      return '<div class="ai-callout">' + inner + '</div>';
     });
-    let html = parts.join('\n');
-    // restore code blocks as windows
-    html = html.replace(/%%CODEBLOCK_(\d+)%%/g, (_, i) => {
-        const b = blocks[Number(i)];
-        if (!b) return '';
-        const langLabel = detectCodeLang(b.lang);
-        const id = 'code_' + Math.random().toString(36).slice(2, 9);
-        return `<div class="ai-code-window" data-lang="${escapeAiHtml(b.lang)}">
-            <div class="ai-code-toolbar">
-                <span class="ai-code-lang">${escapeAiHtml(langLabel)}</span>
-                <button type="button" class="ai-code-copy" onclick="copyAiCodeBlock(this)" title="Копировать">
-                    <span class="material-symbols-rounded">content_copy</span>
-                    <span class="ai-copy-label">Копировать</span>
-                </button>
-            </div>
-            <pre class="ai-code-pre" id="${id}"><code>${escapeAiHtml(b.code)}</code></pre>
-        </div>`;
+
+    text = text.replace(/((?:^[\-\*] .+\n?)+)/gm, function(block) {
+      if (block.indexOf('<ul') >= 0) return block;
+      var items = block.trim().split('\n').filter(Boolean).map(function(l){
+        return '<li>' + l.replace(/^[\-\*]\s+/, '') + '</li>';
+      }).join('');
+      return '<ul class="ai-ul">' + items + '</ul>';
     });
-    return html;
+
+    text = text.replace(/((?:^\d+\. .+\n?)+)/gm, function(block) {
+      var items = block.trim().split('\n').filter(Boolean).map(function(l){
+        return '<li>' + l.replace(/^\d+\.\s+/, '') + '</li>';
+      }).join('');
+      return '<ol class="ai-ul">' + items + '</ol>';
+    });
+
+    text = text.replace(/(?:^\|.+\|\s*\n)(?:^\|[\s:\-|]+\|\s*\n)(?:^\|.+\|\s*\n?)+/gm, function(tbl) {
+      var lines = tbl.trim().split('\n').filter(Boolean);
+      if (lines.length < 2) return tbl;
+      function split(line) {
+        return line.replace(/^\|/, '').replace(/\|$/, '').split('|').map(function(c){ return c.trim(); });
+      }
+      var head = split(lines[0]);
+      var body = lines.slice(2).map(split);
+      var html = '<table class="ai-table"><thead><tr>' + head.map(function(h){ return '<th>' + h + '</th>'; }).join('') + '</tr></thead><tbody>';
+      body.forEach(function(row) {
+        html += '<tr>' + row.map(function(c){ return '<td>' + c + '</td>'; }).join('') + '</tr>';
+      });
+      return html + '</tbody></table>';
+    });
+
+    text = text.split(/\n{2,}/).map(function(para) {
+      var p = para.trim();
+      if (!p) return '';
+      if (/^<(h[2-4]|ul|ol|div|table|pre|figure|hr)/.test(p)) return p;
+      if (p.indexOf('%%CODEBLOCK_') >= 0) return p;
+      return '<p class="ai-p">' + p.replace(/\n/g, '<br>') + '</p>';
+    }).join('\n');
+
+    text = text.replace(/%%CODEBLOCK_(\d+)%%/g, function(_, idx) {
+      var b = blocks[Number(idx)];
+      if (!b) return '';
+      return '<div class="ai-code-wrap"><div class="ai-code-head"><span>' + esc(b.lang) + '</span><button type="button" class="icon-btn" style="width:28px;height:28px" onclick="navigator.clipboard.writeText(this.closest(\'.ai-code-wrap\').querySelector(\'code\').innerText);typeof showToast===\'function\'&&showToast(\'Скопировано\',\'success\')"><span class="material-symbols-rounded" style="font-size:16px">content_copy</span></button></div><pre class="ai-code-block"><code>' + esc(b.code) + '</code></pre></div>';
+    });
+
+    return text;
 }
+
+
 function copyAiCodeBlock(btn) {
     const win = btn.closest('.ai-code-window');
     const code = win?.querySelector('pre code')?.textContent || '';
@@ -1744,7 +1873,6 @@ print(hello("Oracle"))
     showToast('Demo rich AI message', 'success');
 };
 
-
 function sendMsg() {
         // dock input immediately so slide-down starts with first send
         document.body.classList.remove('chat-empty');
@@ -1855,7 +1983,7 @@ function sendMsg() {
         const scheduleCb = document.getElementById('pillow-schedule-cb');
         const timeStart = document.getElementById('pillow-time-start');
         const timeEnd = document.getElementById('pillow-time-end');
-        
+
         if (scheduleCb) localStorage.setItem('oracle_pillow_schedule_enabled', scheduleCb.checked);
         if (timeStart) localStorage.setItem('oracle_pillow_start', timeStart.value);
         if (timeEnd) localStorage.setItem('oracle_pillow_end', timeEnd.value);
@@ -1868,10 +1996,10 @@ function sendMsg() {
         const end = localStorage.getItem('oracle_pillow_end') || '07:00';
         const now = new Date();
         const currentString = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-        
+
         let shouldBeOn = (start < end) ? (currentString >= start && currentString < end) : (currentString >= start || currentString < end);
         const isCurrentlyOn = document.body.classList.contains('pillow-mode');
-        
+
         if (shouldBeOn && !isCurrentlyOn) setPillowMode(true);
         else if (!shouldBeOn && isCurrentlyOn) setPillowMode(false);
     }
@@ -1892,7 +2020,7 @@ function sendMsg() {
         document.body.classList.toggle('light-theme', savedLight);
         document.body.classList.toggle('true-black-theme', !savedLight && savedBlack);
         applyVisualTheme();
-        
+
         if (localStorage.getItem('oracle_compact_nav') === 'true') {
             document.body.classList.add('compact-nav-mode');
             const btn = document.getElementById('compact-nav-toggle-btn');
@@ -1912,8 +2040,8 @@ function sendMsg() {
         const savedChat = localStorage.getItem('oracle_chat_history');
         if (savedChat) {
             const chatFlow = document.getElementById('chat-flow');
-            if (chatFlow) { 
-                chatFlow.innerHTML = savedChat; 
+            if (chatFlow) {
+                chatFlow.innerHTML = savedChat;
                 if (chatFlow.children.length > 0 && document.getElementById('welcome-block')) {
                     document.getElementById('welcome-block').classList.add('hidden');
                 }
@@ -1932,7 +2060,7 @@ function sendMsg() {
         if (document.getElementById('user-profile-name')) document.getElementById('user-profile-name').value = profile.name || '';
         if (document.getElementById('user-profile-role')) document.getElementById('user-profile-role').value = profile.role || '';
         if (document.getElementById('user-profile-instructions')) document.getElementById('user-profile-instructions').value = profile.instr || '';
-        
+
         if (profile.name && document.getElementById('welcome-greeting')) {
             document.getElementById('welcome-greeting').innerText = `Привет, ${profile.name}!`;
         }
@@ -1958,7 +2086,7 @@ function sendMsg() {
         if (typeof refreshScreensaverStyleUI === 'function') refreshScreensaverStyleUI();
         renderCalendar();
 
-        setInterval(checkPillowSchedule, 60000); 
+        setInterval(checkPillowSchedule, 60000);
         checkPillowSchedule();
 
         updateLimitsUI();
@@ -1966,16 +2094,16 @@ function sendMsg() {
         const userInput = document.getElementById('user-input');
         if (userInput) {
             userInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) { 
-                    e.preventDefault(); 
-                    sendMsg(); 
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMsg();
                 }
             });
         }
 
         document.addEventListener('click', (e) => {
             // old agent menu removed – plus-menu is handled separately
-            
+
             const ctxMenu = document.getElementById('context-menu');
             if (ctxMenu && !ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
 
@@ -2003,8 +2131,8 @@ function sendMsg() {
                 'Запрещено загружать и генерировать контент, нарушающий права третьих лиц, а также содержащий оскорбления, ' +
                 'призывы к насилию или вредоносные материалы.<br><br>' +
                 '<small style="opacity: 0.7;">Нажимая «Принять», вы соглашаетесь с Политикой конфиденциальности Core Node 2.6.1 Master.</small>',
-                false, 
-                '', 
+                false,
+                '',
                 (confirmed) => {
                     if (confirmed) {
                         localStorage.setItem('oracle_file_terms_accepted', 'true');
@@ -2044,7 +2172,7 @@ function sendMsg() {
     const storySelect = document.getElementById('split-select-story');
     if (storySelect) {
         storySelect.innerHTML = '';
-        
+
         // Опция "Без истории"
         const emptyOpt = document.createElement('option');
         emptyOpt.value = '';
@@ -2098,9 +2226,9 @@ function closePlusMenu() {
 document.addEventListener('click', (e) => {
     const plusBtn = document.getElementById('agent-plus-btn');
     const menu = document.getElementById('plus-menu');
-    
-    if (menu && menu.classList.contains('open') && 
-        !menu.contains(e.target) && 
+
+    if (menu && menu.classList.contains('open') &&
+        !menu.contains(e.target) &&
         !plusBtn?.contains(e.target)) {
         closePlusMenu();
     }
@@ -2108,26 +2236,49 @@ document.addEventListener('click', (e) => {
 
 // Обновляем selectAgent, чтобы закрывал меню
 function selectAgent(agentName) {
+    // external-api requires key
+    if (agentName === 'external-api' || agentName === 'Сторонний провайдер API') {
+        const hasKey = !!(localStorage.getItem('oracle_custom_api_key') || localStorage.getItem('oracle_api_key') ||
+            (localStorage.getItem('oracle_custom_api_enabled') === 'true'));
+        if (!hasKey) {
+            showToast?.('Подключите API ключ в настройках → Сторонние API', 'warning');
+            return;
+        }
+        agentName = 'external-api';
+    }
     CoreState.activeAgent = agentName;
-    
+    localStorage.setItem('oracle_active_agent', agentName);
     document.querySelectorAll('.agent-option').forEach(opt => opt.classList.remove('active'));
-    
-    if (agentName === 'Oracle Main') document.getElementById('opt-oracle')?.classList.add('active');
-    if (agentName === 'Worldpack AI') document.getElementById('opt-worldpack')?.classList.add('active');
-    if (agentName === 'Модель: Fast') document.getElementById('opt-fast')?.classList.add('active');
-    
+    if (agentName === 'Intify 2.5.4' || agentName === 'Oracle Main' || agentName === 'Worldpack AI' || agentName === 'Модель: Fast') {
+        document.getElementById('opt-intify')?.classList.add('active');
+        CoreState.activeAgent = 'Intify 2.5.4';
+    }
+    if (agentName === 'external-api') {
+        document.getElementById('opt-external-api')?.classList.add('active');
+    }
+    syncExternalApiOptionUI();
     closePlusMenu();
+    showToast?.('Модель: ' + (CoreState.activeAgent === 'external-api' ? 'Сторонний API' : CoreState.activeAgent), 'info', 1800);
+}
 
-    const chatFlow = document.getElementById('chat-flow');
-    const welcomeBlock = document.getElementById('welcome-block');
-    if (welcomeBlock) welcomeBlock.classList.add('hidden');
-    
-    if (chatFlow) {
-        chatFlow.innerHTML += `<div class="msg ai-msg" style="border-left: 3px solid var(--primary); font-style: italic; opacity:0.8;">Система: подключен профиль [${agentName}]</div>`;
-        const screenChat = document.getElementById('screen-chat');
-        if (screenChat) screenChat.scrollTop = screenChat.scrollHeight;
+function syncExternalApiOptionUI() {
+    const desc = document.getElementById('opt-external-api-desc');
+    const btn = document.getElementById('opt-external-api');
+    const hasKey = !!(localStorage.getItem('oracle_custom_api_key') || localStorage.getItem('oracle_api_key') ||
+        localStorage.getItem('oracle_custom_api_enabled') === 'true');
+    const provider = localStorage.getItem('oracle_api_provider') || localStorage.getItem('oracle_custom_api_provider') || 'API';
+    if (desc) {
+        desc.textContent = hasKey
+            ? ('Модель «' + provider + '», пока выбрана')
+            : 'Подключите API ключ чтобы выбрать эту модель';
+    }
+    if (btn) {
+        btn.classList.toggle('disabled', !hasKey);
+        btn.style.opacity = hasKey ? '1' : '0.55';
+        btn.style.pointerEvents = hasKey ? '' : 'none';
     }
 }
+
 function startLiveChat() {
     if (localStorage.getItem('oracle_live_privacy_ok') !== '1') {
         openLivePrivacyModal();
@@ -2145,6 +2296,12 @@ function startLiveChat() {
     document.body.classList.add('live-chat-active');
     document.getElementById('main-input-box')?.classList.add('live-mode');
     document.getElementById('live-chat-btn')?.classList.add('live-on');
+    const livePanel = document.getElementById('live-session-panel');
+    if (livePanel) { livePanel.hidden = false; livePanel.removeAttribute('hidden'); }
+    const liveSub = document.getElementById('live-subtitles');
+    if (liveSub) { liveSub.textContent = 'Слушаю…'; liveSub.hidden = false; }
+    const liveIn0 = document.getElementById('live-user-input');
+    if (liveIn0) liveIn0.value = '';
     const stopBtn = document.getElementById('stop-gen-btn');
     stopBtn?.classList.remove('hidden');
     stopBtn?.classList.add('visible');
@@ -2182,13 +2339,20 @@ function startLiveChat() {
                 CoreState._liveSending = true;
                 CoreState._liveFinalBuf = '';
                 try {
-                    // pause recognition while generating
                     if (CoreState._liveRec) {
                         CoreState._liveRec.onend = null;
                         try { CoreState._liveRec.stop(); } catch (e) {}
                     }
                 } catch (e) {}
+                const subSend = document.getElementById('live-subtitles');
+                if (subSend) subSend.textContent = 'Отправляю…';
                 if (typeof sendMsg === 'function') sendMsg();
+                setTimeout(() => {
+                  const s2 = document.getElementById('live-subtitles');
+                  if (s2 && CoreState.isLiveChat) s2.textContent = 'Слушаю…';
+                  const li = document.getElementById('live-user-input');
+                  if (li) li.value = '';
+                }, 600);
                 setTimeout(() => { CoreState._liveSending = false; }, 800);
             }, 2000);
         };
@@ -2201,11 +2365,21 @@ function startLiveChat() {
                 if (ev.results[i].isFinal) CoreState._liveFinalBuf = (CoreState._liveFinalBuf || '') + tr + ' ';
                 else interim += tr;
             }
+            const spoken = ((CoreState._liveFinalBuf || '') + interim).trim();
             const el = document.getElementById('user-input');
             if (el) {
-                el.value = ((CoreState._liveFinalBuf || '') + interim).trim();
+                el.value = spoken;
                 if (typeof handleInput === 'function') handleInput(el);
             }
+            const liveIn = document.getElementById('live-user-input');
+            if (liveIn) liveIn.value = spoken;
+            const sub = document.getElementById('live-subtitles');
+            if (sub) {
+                sub.textContent = spoken || 'Слушаю…';
+                sub.hidden = false;
+            }
+            const panel = document.getElementById('live-session-panel');
+            if (panel) { panel.hidden = false; panel.removeAttribute('hidden'); }
             scheduleSilenceSend();
         };
         rec.onerror = (ev) => {
@@ -2235,6 +2409,12 @@ function stopLiveChat() {
     document.body.classList.remove('live-chat-active');
     document.getElementById('main-input-box')?.classList.remove('live-mode');
     document.getElementById('live-chat-btn')?.classList.remove('live-on');
+    const livePanelStop = document.getElementById('live-session-panel');
+    if (livePanelStop) livePanelStop.hidden = true;
+    const liveSubStop = document.getElementById('live-subtitles');
+    if (liveSubStop) liveSubStop.textContent = 'Слушаю…';
+    const liveInStop = document.getElementById('live-user-input');
+    if (liveInStop) liveInStop.value = '';
     try {
         if (CoreState._liveRec) {
             CoreState._liveRec.onend = null;
@@ -2358,7 +2538,6 @@ function resumeLiveMicAfterReply() {
     } catch (e) {}
 }
 
-
 // Privacy modal handlers
 function handlePrivacyAccept() {
     localStorage.setItem('oracle_file_terms_accepted', 'true');
@@ -2378,46 +2557,183 @@ function isMobileOrTablet() {
 }
 
 function openFullscreenInput() {
-    const modal = document.getElementById('fullscreen-input-modal');
-    const mainInput = document.getElementById('user-input');
-    const fsInput = document.getElementById('fs-user-input');
-
-    if (!modal || !mainInput || !fsInput) return;
-
-    fsInput.value = mainInput.value;
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
-
-    setTimeout(() => fsInput.focus(), 50);
+    openExpandedInput();
 }
 
-function closeFullscreenInput() {
-    const modal = document.getElementById('fullscreen-input-modal');
-    const mainInput = document.getElementById('user-input');
-    const fsInput = document.getElementById('fs-user-input');
-
-    if (!modal) return;
-
-    // Синхронизируем текст обратно
-    if (mainInput && fsInput) {
-        mainInput.value = fsInput.value;
-        handleInput(mainInput);
-    }
-
-    modal.classList.remove('active');
-    document.body.style.overflow = '';
+function expFocusEditor() {
+  const editor = document.getElementById('exp-user-editor');
+  if (!editor) return null;
+  editor.focus();
+  return editor;
 }
-
-function sendFromFullscreen() {
-    const mainInput = document.getElementById('user-input');
-    const fsInput = document.getElementById('fs-user-input');
-
-    if (mainInput && fsInput) {
-        mainInput.value = fsInput.value;
+function expFormat(cmd) {
+  const editor = expFocusEditor();
+  if (!editor) return;
+  try {
+    // ensure selection stays inside editor
+    const sel = window.getSelection();
+    if (!sel.rangeCount || !editor.contains(sel.anchorNode)) {
+      placeCaretEnd(editor);
     }
+    document.execCommand(cmd, false, null);
+  } catch (e) { console.warn('expFormat', cmd, e); }
+  expSyncFromEditor();
+}
+function expClearFormat() {
+  const editor = expFocusEditor();
+  if (!editor) return;
+  try {
+    document.execCommand('removeFormat', false, null);
+    document.execCommand('unlink', false, null);
+    // also flatten font tags
+    const plain = editor.innerText;
+    // keep line breaks
+    const html = (editor.innerText || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    editor.innerHTML = html || '';
+    placeCaretEnd(editor);
+  } catch (e) { console.warn('expClearFormat', e); }
+  expSyncFromEditor();
+}
+function expSyncFromEditor() {
+  const editor = document.getElementById('exp-user-editor');
+  const mainInput = document.getElementById('user-input');
+  if (!editor || !mainInput) return;
+  mainInput.value = (editor.innerText || '').replace(/\u00a0/g, ' ');
+  if (typeof handleInput === 'function') handleInput(mainInput);
+}
+function toggleExpSizeMenu(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  const wrap = document.getElementById('exp-font-size-picker');
+  if (!wrap) return;
+  const open = wrap.classList.toggle('open');
+  const menu = document.getElementById('exp-font-menu');
+  if (menu) {
+    menu.style.display = open ? 'flex' : 'none';
+    // drop-up if no space below
+    const rect = wrap.getBoundingClientRect();
+    if (rect.top < 160) {
+      menu.classList.remove('drop-up');
+    } else {
+      menu.classList.add('drop-up');
+    }
+  }
+}
+function selectExpFontSize(px) {
+  const editor = expFocusEditor();
+  if (!editor) return;
+  const label = document.getElementById('exp-font-size-label');
+  if (label) label.textContent = String(px);
+  try {
+    // execCommand fontSize only accepts 1-7; use span style instead
+    const sel = window.getSelection();
+    if (!sel.rangeCount || sel.isCollapsed) {
+      // apply as default style for typing
+      editor.style.fontSize = px + 'px';
+    } else {
+      const range = sel.getRangeAt(0);
+      if (!editor.contains(range.commonAncestorContainer)) {
+        editor.style.fontSize = px + 'px';
+      } else {
+        const span = document.createElement('span');
+        span.style.fontSize = px + 'px';
+        try {
+          range.surroundContents(span);
+        } catch (err) {
+          // fallback extract
+          const frag = range.extractContents();
+          span.appendChild(frag);
+          range.insertNode(span);
+        }
+        sel.removeAllRanges();
+        const r2 = document.createRange();
+        r2.selectNodeContents(span);
+        r2.collapse(false);
+        sel.addRange(r2);
+      }
+    }
+  } catch (e) { console.warn('selectExpFontSize', e); }
+  // close menu
+  const wrap = document.getElementById('exp-font-size-picker');
+  wrap?.classList.remove('open');
+  const menu = document.getElementById('exp-font-menu');
+  if (menu) menu.style.display = 'none';
+  document.querySelectorAll('#exp-font-menu .custom-select-option').forEach(function(btn){
+    btn.classList.toggle('active', btn.textContent.trim() === String(px));
+  });
+  expSyncFromEditor();
+}
+// close size menu on outside click
+document.addEventListener('click', function(ev){
+  const wrap = document.getElementById('exp-font-size-picker');
+  if (!wrap || wrap.contains(ev.target)) return;
+  wrap.classList.remove('open');
+  const menu = document.getElementById('exp-font-menu');
+  if (menu) menu.style.display = 'none';
+});
+// keyboard shortcuts when expanded
+document.addEventListener('keydown', function(ev){
+  if (!document.body.classList.contains('exp-input-open')) return;
+  const editor = document.getElementById('exp-user-editor');
+  if (!editor || !editor.contains(document.activeElement) && document.activeElement !== editor) return;
+  if (!(ev.ctrlKey || ev.metaKey)) return;
+  const k = ev.key.toLowerCase();
+  if (k === 'b') { ev.preventDefault(); expFormat('bold'); }
+  else if (k === 'i') { ev.preventDefault(); expFormat('italic'); }
+  else if (k === 'u') { ev.preventDefault(); expFormat('underline'); }
+});
 
-    closeFullscreenInput();
-    sendMsg();
+
+function openExpandedInput() {
+    const sheet = document.getElementById('expanded-input-sheet');
+    const mainInput = document.getElementById('user-input');
+    const editor = document.getElementById('exp-user-editor');
+    if (!sheet || !mainInput || !editor) {
+      // fallback: grow textarea
+      if (mainInput) {
+        mainInput.style.minHeight = '120px';
+        mainInput.focus();
+      }
+      return;
+    }
+    editor.innerHTML = '';
+    const plain = mainInput.value || '';
+    editor.innerText = plain;
+    // sync from contenteditable if main was empty but chips
+    sheet.classList.add('active');
+    document.body.classList.add('exp-input-open');
+    setTimeout(() => { editor.focus(); placeCaretEnd(editor); }, 40);
+}
+function placeCaretEnd(el) {
+  try {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    r.collapse(false);
+    const s = window.getSelection();
+    s.removeAllRanges();
+    s.addRange(r);
+  } catch (e) {}
+}
+function closeFullscreenInput() { closeExpandedInput(); }
+function closeExpandedInput() {
+    const sheet = document.getElementById('expanded-input-sheet');
+    const mainInput = document.getElementById('user-input');
+    const editor = document.getElementById('exp-user-editor');
+    if (mainInput && editor) {
+        mainInput.value = (editor.innerText || '').replace(/\u00a0/g, ' ');
+        if (typeof handleInput === 'function') handleInput(mainInput);
+    }
+    sheet?.classList.remove('active');
+    document.body.classList.remove('exp-input-open');
+}
+function sendFromFullscreen() { sendFromExpanded(); }
+function sendFromExpanded() {
+    const mainInput = document.getElementById('user-input');
+    const editor = document.getElementById('exp-user-editor');
+    if (mainInput && editor) {
+        mainInput.value = (editor.innerText || '').replace(/\u00a0/g, ' ');
+    }
+    closeExpandedInput();
+    if (typeof sendMsg === 'function') sendMsg();
 }
 
 function fsFormat(command) {
@@ -2472,7 +2788,6 @@ document.addEventListener('mousedown', (e) => {
         menu.classList.remove('visible');
     }
 });
-
 
 // ===== НАВИГАЦИЯ И ПЕРСОНАЛИЗАЦИЯ =====
 function setNavPosition(pos) {
@@ -2556,7 +2871,6 @@ function updateThemeButtons(mode) {
         btn.style.borderColor = active ? 'var(--primary)' : 'var(--border)';
     });
 }
-
 
 // ===== NAV CONTEXT MENU =====
 function showNavContextMenu(e) {
@@ -2756,7 +3070,6 @@ window.startOnboarding = startOnboarding;
 document.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => startOnboarding(false), 700);
 });
-
 
 // ===== FILE LIBRARY + MEMORY (1GB) =====
 const MEMORY_LIMIT_MB = 1024;
@@ -2984,7 +3297,6 @@ function undockSidebar() {
 }
 window.undockSidebar = undockSidebar;
 
-
 // ===== SECURITY TOGGLES =====
 let _lockScreenIdleTimer = null;
 const LOCK_SCREEN_IDLE_MS = 5 * 60 * 1000; // 5 мин
@@ -3104,7 +3416,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (typeof syncSidebarDockUI === 'function') syncSidebarDockUI();
 });
-
 
 // ===== CONSENT + SHARED CHATS =====
 let pendingPublicImport = null;
@@ -3290,12 +3601,10 @@ function cleanupSharesForSession(sessionId) {
 const _showSectionBase = typeof showSection === 'function' ? showSection : null;
 if (_showSectionBase && !window._publicLinksShowPatched) {
     window._publicLinksShowPatched = true;
-    window.showSection = function(sectionId) {
-        _showSectionBase(sectionId);
-        if (sectionId === 'public-links') renderPublicLinksList();
-    };
-}
+    
+/* deduped: earlier window.showSection removed */
 
+}
 
 function loadShares() {
     try { return JSON.parse(localStorage.getItem('oracle_shares') || '{}') || {}; }
@@ -3513,7 +3822,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkPublicChatLink();
 });
 
-
 // ===== WELCOME AMBIENT =====
 function updateWelcomeAmbient() {
     const ambient = document.getElementById('welcome-ambient');
@@ -3539,7 +3847,6 @@ document.addEventListener('DOMContentLoaded', () => {
         new MutationObserver(updateWelcomeAmbient).observe(chatFlow, { childList: true });
     }
 });
-
 
 // ===== MOBILE COMPACT INPUT =====
 function setupMobileCompactInput() {
@@ -3577,7 +3884,6 @@ function settingsMobileResetOnLeave(screenId) {
         document.getElementById('screen-settings')?.classList.remove('settings-drill');
     }
 }
-
 
 // ===== CUSTOM NAV TABS =====
 const NAV_TAB_META = {
@@ -4181,8 +4487,6 @@ window.closeSplitSelector = function() {
     document.getElementById('split-selector-modal')?.classList.remove('active');
 };
 
-
-
 // ===== DUAL CHAT SPLIT =====
 CoreState.splitChatBId = CoreState.splitChatBId || null;
 
@@ -4398,18 +4702,26 @@ function enterSplitViewWithMode(mode) {
         setSplitDualInputs(true);
         ensureSplitInputB();
         syncSplitInputWidths();
-    } else if (mode === 'chat-sidenotes') {
-        const snScreen = ensureSideNotesScreen();
-        snScreen.classList.add('active-screen');
-        rightPane.appendChild(snScreen);
-        renderSideNotesPanel(CoreState.sideNotesSessionId || currentSessionId);
+    } else if (mode === 'chat-context' || mode === 'chat-sidenotes') {
+        const ctxScreen = (typeof ensureContextSplitPane === 'function') ? ensureContextSplitPane() : null;
+        if (ctxScreen) {
+          ctxScreen.classList.add('active-screen');
+          rightPane.appendChild(ctxScreen);
+          if (typeof loadSplitContextEditor === 'function') loadSplitContextEditor();
+        }
         const sn = document.getElementById('split-story-name');
-        if (sn) sn.textContent = 'Side Notes';
+        if (sn) sn.textContent = 'Контекст';
         const box = document.querySelector('.oracle-container');
         if (readerScreen) box?.appendChild(readerScreen);
         if (notepadScreen) box?.appendChild(notepadScreen);
         box?.appendChild(second);
         setSplitDualInputs(false);
+        // phones: force vertical
+        if (window.matchMedia('(max-width: 767px)').matches) {
+          CoreState.splitOrientation = 'vertical';
+          document.body.classList.remove('horizontal');
+          document.body.classList.add('vertical');
+        }
     } else {
         if (CoreState.splitStoryId && storyBooks[CoreState.splitStoryId] && typeof openStoryBook === 'function') {
             openStoryBook(CoreState.splitStoryId);
@@ -4430,9 +4742,8 @@ function enterSplitViewWithMode(mode) {
     if (cn) cn.textContent = 'Chat';
     if (mode !== 'chat-chat') setSplitDualInputs(false);
     else { setSplitDualInputs(true); syncSplitInputWidths(); }
-    showToast('Split: ' + (mode === 'chat-notepad' ? 'Chat + Notepad' : mode === 'chat-chat' ? 'Два чата' : mode === 'chat-sidenotes' ? 'Side Notes' : 'Chat + История'), 'success');
+    showToast('Split: ' + (mode === 'chat-notepad' ? 'Chat + Notepad' : mode === 'chat-chat' ? 'Два чата' : mode === 'chat-context' || mode === 'chat-sidenotes' ? 'Контекст' : 'Chat + История'), 'success');
 }
-
 
 // patch exitSplitView to restore notepad
 const _exitSplit = typeof exitSplitView === 'function' ? exitSplitView : null;
@@ -4471,7 +4782,6 @@ document.addEventListener('click', (e) => {
     const p = document.getElementById('split-story-picker');
     if (p && p.classList.contains('open') && !p.contains(e.target)) p.classList.remove('open');
 });
-
 
 // ===== CHAT EMPTY: centered input =====
 function updateChatEmptyState() {
@@ -4661,8 +4971,26 @@ function attachLibraryFileToChat(fileId) {
     switchScreen('chat');
 }
 function deleteLibraryFile(fileId, confirmFirst) {
+    // Backward compatibility: the older library menu passes an array index.
+    if (typeof fileId === 'number' && confirmFirst === undefined) {
+        const list = loadFileLibrary();
+        if (!list[fileId]) return;
+        showCustomModal(
+            'Удалить файл?',
+            '<b>Внимание:</b> ИИ может путаться в деталях, если вы удалите файл и не отправите новый документ, код или вложение. Продолжить удаление «' + escapeHtml(list[fileId].name) + '»?',
+            false, '',
+            (ok) => {
+                if (!ok) return;
+                list.splice(fileId, 1);
+                saveFileLibrary(list);
+                showToast('Файл удалён', 'success');
+            }
+        );
+        return;
+    }
+
     const run = () => {
-        let files = getFileLibrary().filter(x => String(x.id) !== String(fileId));
+        const files = getFileLibrary().filter(x => String(x.id) !== String(fileId));
         setFileLibrary(files);
         refreshLibraryUI();
         showToast('Файл удалён', 'success');
@@ -4675,28 +5003,14 @@ function deleteLibraryFile(fileId, confirmFirst) {
 // switchScreen must show library
 const _switchScreenLib = typeof switchScreen === 'function' ? switchScreen : null;
 if (_switchScreenLib) {
-    window.switchScreen = function(id) {
-        _switchScreenLib(id);
-        if (id === 'library' && typeof refreshLibraryUI === 'function') refreshLibraryUI();
-        // ensure screen-library gets active if base switch only knows chat/reader/settings
-        const lib = document.getElementById('screen-library');
-        if (id === 'library' && lib) {
-            document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
-            lib.classList.add('active-screen');
-            document.body.classList.remove('chat-active');
-            const input = document.getElementById('main-input-box');
-            if (input) input.style.display = 'none';
-        } else if (id === 'chat') {
-            const input = document.getElementById('main-input-box');
-            if (input) input.style.display = '';
-        }
-    };
+    
+/* deduped switchScreen wrap */
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     if (typeof refreshLibraryUI === 'function') refreshLibraryUI();
 });
-
 
 // ===== SIMPLER PLANS =====
 let planNotifyMins = 10;
@@ -4825,9 +5139,17 @@ function buildAiActions(text) {
     </div>`;
 }
 function copyAiText(btn) {
-    const msg = btn.closest('.msg');
-    const t = msg?.innerText || '';
-    navigator.clipboard?.writeText(t).then(() => showToast('Скопировано', 'success')).catch(() => showToast('Не удалось', 'error'));
+    const root = btn.closest('.ai-msg, .msg, .ai-bubble') || btn.parentElement;
+    const t = (root?.innerText || '').trim();
+    if (!t) { showToast('Нечего копировать', 'warning'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(function() {
+            if (typeof window.showCopyFragmentToast === 'function') window.showCopyFragmentToast(t);
+            else showToast('Скопировано', 'success');
+        }).catch(function() { showToast('Не удалось', 'error'); });
+    } else {
+        showToast('Буфер обмена недоступен', 'warning');
+    }
 }
 let _aiFeedback = { btn: null, value: 0, reason: '' };
 
@@ -5240,13 +5562,9 @@ function refreshNotifUI() {
 const _showSectionTitles = typeof showSection === 'function';
 if (_showSectionTitles) {
     const _ss = showSection;
-    window.showSection = function(sectionId) {
-        _ss(sectionId);
-        if (sectionId === 'notifications') refreshNotifUI();
-        if (sectionId === 'security') updatePinStatusUI();
-        const titleEl = document.getElementById('settings-mobile-title');
-        if (titleEl && sectionId === 'notifications') titleEl.textContent = 'Уведомления';
-    };
+    
+/* deduped: earlier window.showSection removed */
+
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -5348,12 +5666,9 @@ window.handleFileUpload = function(input) {
 // After send, clear chips
 const _sendMsgChips = typeof sendMsg === 'function' ? sendMsg : null;
 if (_sendMsgChips) {
-    window.sendMsg = function() {
-        const result = _sendMsgChips.apply(this, arguments);
-        // clear after short delay so message can reference names
-        setTimeout(() => clearPendingAttaches(), 50);
-        return result;
-    };
+    
+/* deduped sendMsg wrap */
+
 }
 
 function updateInputLayoutFromText() {
@@ -5587,7 +5902,6 @@ window.openForgotPinModal = openForgotPinModal;
 window.closeForgotPinModal = closeForgotPinModal;
 window.requestPinRecovery = requestPinRecovery;
 
-
 // ===== PLAN MODAL =====
 let planModalState = { mode: 'create', editId: null, notify: 10, color: '' };
 
@@ -5711,7 +6025,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
 // ===== SIDEBAR STORIES (localStorage oracle_story_books) =====
 function renderSidebarStories() {
     const list = document.getElementById('stories-list');
@@ -5738,6 +6051,10 @@ function renderSidebarStories() {
     });
 }
 
+function saveCurrentStory() {
+    if (typeof readerManualSave === 'function') return readerManualSave();
+    return saveCurrentStoryContent();
+}
 function saveCurrentStoryContent() {
     if (!currentStoryId || !storyBooks[currentStoryId]) return;
     const editor = document.getElementById('editor');
@@ -5781,8 +6098,6 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSidebarStories();
     }
 });
-
-
 
 // ===== SCREENSAVER STYLE =====
 function getScreensaverStylePref() {
@@ -5864,7 +6179,6 @@ function resetIdleDimTimer() {
 document.addEventListener('DOMContentLoaded', () => {
     resetIdleDimTimer();
 });
-
 
 // ===== SIDE NOTES (per chat) =====
 function getSideNotesMap() {
@@ -5984,23 +6298,13 @@ function cmSideNotesFromChat() {
     }
 }
 
-
 // AI may leave context in Side Notes of active chat after a reply
 const _sendMsgSideNotes = typeof sendMsg === 'function' ? sendMsg : null;
 if (_sendMsgSideNotes && !window._snSendPatched) {
     window._snSendPatched = true;
-    window.sendMsg = function() {
-        const input = document.getElementById('user-input');
-        const q = (input && input.value || '').trim();
-        const result = _sendMsgSideNotes.apply(this, arguments);
-        if (q && currentSessionId) {
-            // lightweight context line — ИИ «оставляет» заметку
-            setTimeout(() => {
-                appendAiSideNote('Контекст: пользователь спросил «' + q.slice(0, 120) + (q.length > 120 ? '…' : '') + '»', currentSessionId);
-            }, 900);
-        }
-        return result;
-    };
+    
+/* deduped sendMsg wrap */
+
 }
 
 window.addEventListener('storage', (e) => {
@@ -6011,7 +6315,6 @@ window.addEventListener('storage', (e) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => { try { startNotepadAutosave(); } catch(e) {} });
-
 
 // ===== CUSTOM API KEYS + THINKING ANIM =====
 const API_KEYS_STATE_KEY = 'oracle_custom_api';
@@ -6241,16 +6544,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.showSection !== 'function' || window._apiKeysShowPatched2) return;
         window._apiKeysShowPatched2 = true;
         const prev = window.showSection;
-        window.showSection = function(id) {
-            prev(id);
-            if (id === 'api-keys') refreshApiKeysUI();
-            if (id === 'public-links' && typeof renderPublicLinksList === 'function') renderPublicLinksList();
-        };
+        
+/* deduped: earlier window.showSection removed */
+
     };
     wrap();
     document.addEventListener('DOMContentLoaded', wrap);
 })();
-
 
 // ===== External API call + key error with Retry =====
 function isApiBusyError(message) {
@@ -6358,10 +6658,10 @@ function deferApiGeneration(btn) {
                         if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                             new Notification('Core Node', { body: note });
                         } else {
-                            alert(note);
+                            showToast?.(note, 'info');
                         }
                     } catch (e) {
-                        try { alert(note); } catch (e2) {}
+                        try { showToast?.(note, 'info'); } catch (e2) {}
                     }
                     return;
                 }
@@ -6403,7 +6703,6 @@ function retryLastApiRequest(btn) {
     }
     if (typeof sendMsg === 'function') sendMsg();
 }
-
 
 function getProviderModel(provider, forLive) {
     const p = String(provider || '').toLowerCase();
@@ -6541,47 +6840,15 @@ async function callExternalProvider(userMsg) {
     }
 }
 
-
 /* ===== HALLOWEEN EASTER EGG (Core Node) ===== */
 const HALLOWEEN_SOURCE = 'https://blogs-kosmo-level-595cd1.gitlab.io/post.html?id=0000008';
 let _extWarnUrl = null;
 
-function isHalloweenQuery(msg) {
-    const x = String(msg || '').toLowerCase().replace(/ё/g, 'е');
-    const keys = [
-        'оранжев', 'что с интерфейс', 'что с сайт', 'почему сайт', 'почему интерфейс',
-        'баг интерфейс', 'сломал', 'что случилось с сайт', 'что случилось с интерфейс',
-        'halloween', 'хеллоуин', 'хэллоуин', 'хелловин', 'хеллоуинск',
-        'kosmo level halloween', 'kosmo halloween', '2 дроп', 'второй дроп',
-        'предрегистрац', 'предрегистр', 'релиз halloween', 'релиз хеллоуин',
-        'тыкв', 'обои чата', 'когда релиз', 'halloween version'
-    ];
-    return keys.some(k => x.includes(k));
-}
+function isHalloweenQuery(msg) { return false; }
 
-function applyHalloweenTheme() {
-    document.body.classList.add('halloween-mode');
-    try { localStorage.setItem('oracle_halloween_mode', '1'); } catch (e) {}
-}
+function applyHalloweenTheme() {}
 
-function halloweenEasterAnswer() {
-    applyHalloweenTheme();
-    const thinkSec = (1.2 + Math.random() * 2.8).toFixed(1);
-    return (
-        '🎃 <b>Kosmo Level · Halloween</b><br><br>' +
-        '3.10.2026 официально стала доступна <b>предрегистрация на 2 дроп</b> хеллоуинской версии, а <b>31 октября</b> будет релиз этой версии. Важно знать, что интерфейс будет оранжевым примерно до <b>середины ноября</b>.<br><br>' +
-        'Также известны несколько спойлеров о 2 дропе и 1:<br>' +
-        '• <b>1 дроп</b> будет обновлён до стиля <b>Kosmo Level 3.4</b>, будут исправлены <b>все</b> до мельчайших проблем;<br>' +
-        '• <b>2 дроп</b> станет новинкой года — известно, что там будут <b>каньоны</b>, <b>падающие шипы</b> и сложности по типу <b>«не ошибись»</b>. Больше ничего не известно.<br><br>' +
-        'А вы уже смотрели спойлеры?' +
-        '<div class="ai-meta-foot">' +
-        '<div>модель думала ' + thinkSec + ' секунд на размышление</div>' +
-        '<div style="margin-top:6px">Источник: ' +
-        '<a class="src-link" href="#" data-ext-url="' + HALLOWEEN_SOURCE + '" onclick="return openExternalWarn(event)">' +
-        '<span class="material-symbols-rounded">link</span> blogs-kosmo-level…/post.html?id=0000008' +
-        '</a></div></div>'
-    );
-}
+function halloweenEasterAnswer() { return ""; }
 
 function openExternalWarn(e) {
     if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -6609,7 +6876,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const m = document.getElementById('ext-warn-modal');
     if (m) m.addEventListener('click', (e) => { if (e.target === m) closeExternalWarn(); });
 });
-
 
 async function resolveAiResponse(msg) {
     if (typeof isHalloweenQuery === 'function' && isHalloweenQuery(msg)) {
@@ -6650,7 +6916,6 @@ async function resolveAiResponse(msg) {
     return { ok: true, text: response, external: false };
 }
 
-
 // ===== PRE-LAUNCH POLISH (20 Sep) =====
 CoreState.apiAbort = null;
 
@@ -6679,7 +6944,6 @@ function updateApiStatusChip() {
 
 /* stopGeneration already handles abort */
 window._stopAbortPatched = true;
-
 
 // wrap callExternalProvider to use AbortController
 const _callExtOrig = typeof callExternalProvider === 'function' ? callExternalProvider : null;
@@ -6729,13 +6993,7 @@ if (_saveApiState && !window._saveApiChipPatched) {
     ];
     // if startOnboarding exists and tips array is inline, we inject via storage flag one-time soft toast instead
     if (localStorage.getItem('oracle_pro_tips_20260920') !== 'true') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                if (localStorage.getItem('oracle_pro_tips_20260920') === 'true') return;
-                localStorage.setItem('oracle_pro_tips_20260920', 'true');
-                showToast('Core Node 2.6 PRO · 20 сентября — Сторонние API, Markdown, публичные ссылки', 'success', 4500);
-            }, 2200);
-        });
+        /* PRO entry toast removed */
     }
 })();
 
@@ -6749,20 +7007,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.showSection !== 'function' || window._limitsBannerPatched) return;
         window._limitsBannerPatched = true;
         const prev = window.showSection;
-        window.showSection = function(id) {
-            prev(id);
-            if (id === 'limits' || id === 'api-keys') {
-                try { updateApiStatusChip(); } catch (e) {}
-            }
-        };
+        
+/* deduped: earlier window.showSection removed */
+
     };
     wrap();
     document.addEventListener('DOMContentLoaded', wrap);
 })();
+// FA bridge kept (import badges)
 
-
-
-// ===== Fast Assistant bridge (shared keys + postMessage) =====
 const FA_BRIDGE_CHANNEL = 'fast-assistant-core-node';
 const FA_BRIDGE_KEYS = {
   sessions: 'oracle_chat_sessions',
@@ -6860,7 +7113,6 @@ window.addEventListener('storage', function(e) {
   } catch (err) {}
 });
 
-
 // ===== PROJECT TREE: folders → branches → chats + fixed sources =====
 if (typeof escapeHtml !== 'function') {
     window.escapeHtml = function(value) {
@@ -6869,7 +7121,6 @@ if (typeof escapeHtml !== 'function') {
         }[ch]));
     };
 }
-
 
 const TREE_KEY = 'oracle_project_tree_v2';
 let projectTree = { folders: {} };
@@ -6934,6 +7185,23 @@ function renderProjectTree() {
     const list = document.getElementById('chats-list');
     if (!list) return;
     loadProjectTree();
+    try {
+      var _folders = Object.keys((projectTree && projectTree.folders) || {}).map(function(fid) {
+        var f = projectTree.folders[fid];
+        if (!f) return null;
+        return {
+          id: fid,
+          name: f.title || f.name || 'Проект',
+          title: f.title || f.name || 'Проект',
+          icon: f.icon || 'folder',
+          color: f.color || '#8b5cf6',
+          pinned: !!f.pinned,
+          ts: f.created || f.ts || 0,
+          chats: (f.chatIds || []).length
+        };
+      }).filter(Boolean);
+      if (typeof paintSbProjects === 'function') paintSbProjects(_folders);
+    } catch (_pe) {}
     list.innerHTML = '';
 
     const folderIds = Object.keys(projectTree.folders || {});
@@ -6999,11 +7267,12 @@ function renderProjectTree() {
             row.title = 'Файл в папке';
             row.oncontextmenu = (e) => {
                 e.preventDefault();
-                if (confirm('Убрать файл из папки?')) {
+                showCustomModal('Убрать файл', 'Убрать файл из папки?', false, '', function(ok){
+                    if (!ok) return;
                     folder.files.splice(fi, 1);
                     saveProjectTree();
                     renderProjectTree();
-                }
+                });
             };
             body.appendChild(row);
         });
@@ -7086,24 +7355,13 @@ function createChatInFolder(folderId) {
     renderProjectTree();
     if (typeof switchScreen === 'function') switchScreen('chat');
     if (typeof updateChatEmptyState === 'function') updateChatEmptyState();
-    showToast('Чат создан в папке', 'success');
+    showToast('Чат создан в проекте', 'success');
 }
 
 function openCreateFolderModal() {
-    const modal = document.getElementById('tree-create-modal');
-    const title = document.getElementById('tree-create-title');
-    const sub = document.getElementById('tree-create-sub');
-    const icon = document.getElementById('tree-create-icon');
-    const input = document.getElementById('tree-create-input');
-    const pick = document.getElementById('tree-create-folder-pick');
-    if (title) title.textContent = 'Новая папка';
-    if (sub) sub.textContent = 'В папке можно хранить чаты и файлы проекта';
-    if (icon) icon.textContent = 'folder';
-    if (input) input.value = '';
-    if (pick) pick.style.display = 'none';
-    window._treeCreateMode = 'folder';
-    modal?.classList.add('active');
-    setTimeout(() => input?.focus(), 40);
+    // Old "Новая папка" removed
+    if (typeof openCreateProjectModal === 'function') openCreateProjectModal();
+    else showToast?.('Создание проекта недоступно', 'warning');
 }
 
 function closeTreeCreateModal() {
@@ -7111,40 +7369,20 @@ function closeTreeCreateModal() {
 }
 
 function confirmTreeCreate() {
-    const name = (document.getElementById('tree-create-input')?.value || '').trim();
-    if (!name) {
-        showToast('Введите название', 'warning');
-        return;
-    }
-    loadProjectTree();
-    const id = 'folder_' + Date.now().toString(36);
-    projectTree.folders[id] = { title: name, open: true, chatIds: [], files: [] };
-    saveProjectTree();
-    closeTreeCreateModal();
-    renderProjectTree();
-    showToast('Папка «' + name + '»', 'success');
+    try { document.getElementById('tree-create-modal')?.classList.remove('active'); } catch(e){}
+    if (typeof openCreateProjectModal === 'function') openCreateProjectModal();
+    else showToast?.('Используйте «Создать проект»', 'info');
 }
 
 function showFolderCtx(e, folderId) {
-    e.preventDefault();
-    const act = prompt('Папка: 1 — переименовать, 2 — удалить (чаты останутся без папки)', '1');
-    const folder = projectTree.folders[folderId];
-    if (!folder) return;
-    if (act === '1') {
-        const n = prompt('Новое имя', folder.title || '');
-        if (n && n.trim()) {
-            folder.title = n.trim();
-            saveProjectTree();
-            renderProjectTree();
-        }
-    } else if (act === '2') {
-        if (confirm('Удалить папку? Чаты не удалятся — станут «без папки».')) {
-            delete projectTree.folders[folderId];
-            if (currentFolderId === folderId) currentFolderId = null;
-            saveProjectTree();
-            renderProjectTree();
-        }
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (typeof showProjectMenu === 'function') {
+        showProjectMenu(e || window.event, folderId);
+        return;
     }
+    window._ctxProjectId = folderId;
+    if (typeof openProjectHome === 'function') openProjectHome(folderId);
 }
 
 function cmMoveToFolder() {
@@ -7237,7 +7475,6 @@ function moveChatToFolder(chatId, folderId) {
     if (document.readyState !== 'loading') setTimeout(boot, 0);
 })();
 
-
 // (removed) branch sources inject — currentBranchId no longer used after simple folders
 
 // ===== Tree feature intro modal =====
@@ -7263,19 +7500,7 @@ function maybeShowTreeFeatureModal() {
 document.addEventListener('DOMContentLoaded', maybeShowTreeFeatureModal);
 if (document.readyState !== 'loading') setTimeout(maybeShowTreeFeatureModal, 500);
 
-
-// Material Expensive 3 welcome toast
-document.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('oracle_me3_seen') === '1') return;
-    setTimeout(() => {
-        if (localStorage.getItem('oracle_me3_seen') === '1') return;
-        localStorage.setItem('oracle_me3_seen', '1');
-        if (typeof showToast === 'function') {
-            showToast('Material Expensive 3 · премиум стекло и анимации', 'success', 4200);
-        }
-    }, 2800);
-});
-
+/* Material Expensive 3 entry toast removed */
 function openCreateBranchModal() { openCreateFolderModal(); }
 function openBranchSourcesPanel() {}
 function closeBranchSourcesPanel() {}
@@ -7283,7 +7508,6 @@ function updateActiveBranchBar() {
     const bar = document.getElementById('active-branch-bar');
     if (bar) bar.style.display = 'none';
 }
-
 
 // ===== Temp chat: long-press on Chat (mobile) / no overlap with nav =====
 function isMobileTempChatUi() {
@@ -7379,12 +7603,10 @@ function wireTempChatLongPress() {
     }
 })();
 
-
 function clearHalloweenIfThemeChange() {
     document.body.classList.remove('halloween-mode');
     try { localStorage.removeItem('oracle_halloween_mode'); } catch (e) {}
 }
-
 
 /* ===== Side Core Node promo (desktop) + Screenshot Ask ===== */
 function isDesktopCoreNode() {
@@ -7482,7 +7704,6 @@ function tryRenderShotChip() { /* removed */ }
     }, 2800);
 })();
 
-
 /* ===== Live privacy modal + try tip ===== */
 function openLivePrivacyModal() {
     const m = document.getElementById('live-privacy-modal');
@@ -7547,7 +7768,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(maybeShowLiveTryTip, 8 * 60 * 1000);
 });
 if (document.readyState !== 'loading') setTimeout(maybeShowLiveTryTip, 12000);
-
 
 /* ===== PWA: sync calendar reminders to Service Worker ===== */
 function postToCoreSW(msg) {
@@ -7677,9 +7897,6 @@ function requestNotificationPermissionForPlans() {
     if (document.readyState !== 'loading') setTimeout(boot, 0);
 })();
 
-
-
-
 /* ===== Core Node Oct14 features: offline, @connectors, later, edit UX, versions, FS format ===== */
 (function oct14Features() {
   const CONNECTORS = {
@@ -7713,19 +7930,9 @@ function requestNotificationPermissionForPlans() {
   const _sendMsg = typeof sendMsg === 'function' ? sendMsg : null;
   if (_sendMsg && !window._oct14SendPatched) {
     window._oct14SendPatched = true;
-    window.sendMsg = function() {
-      if (editState) {
-        return commitEditMessage();
-      }
-      if (!isOnline()) {
-        if (typeof showToast === 'function') {
-          showToast('Нет сети: новые сообщения недоступны. Reader и Планы работают офлайн.', 'warning', 3600);
-        }
-        return;
-      }
-      // inject active connectors into message meta if needed
-      return _sendMsg.apply(this, arguments);
-    };
+    
+/* deduped sendMsg wrap */
+
   }
 
   // ---- @ connectors ----
@@ -7742,21 +7949,54 @@ function requestNotificationPermissionForPlans() {
   }
 
   function insertConnector(label) {
+    if (typeof addConnectorChip === 'function') {
+      addConnectorChip(label, label);
+      return;
+    }
     const input = document.getElementById('user-input');
     if (!input) return;
-    const token = '@' + label;
-    let v = input.value;
-    // replace trailing @partial
-    v = v.replace(/(^|\s)@[^\s]*$/, '$1' + token + ' ');
-    if (!/(^|\s)@/.test(v.slice(-token.length - 2))) {
-      // if no @ at end, append
-      if (!v.includes(token)) v = (v + ' ' + token + ' ').replace(/\s+/g, ' ');
-    }
-    input.value = v;
     hideConnectors();
-    input.focus();
-    if (typeof handleInput === 'function') handleInput(input);
-    if (typeof showToast === 'function') showToast('Коннектор @' + label, 'info', 1800);
+  }
+
+  window.hideSkillPopup = function() {
+    const p = document.getElementById('skill-popup');
+    if (p) p.hidden = true;
+  };
+  function showSkillPopup() {
+    const p = document.getElementById('skill-popup');
+    const list = document.getElementById('skill-popup-list');
+    if (!p) return;
+    // fill from skills system if available
+    if (list) {
+      let skills = [];
+      try {
+        if (typeof allSkills === 'function') skills = allSkills().filter(s => !s.disabled);
+        else {
+          // fallback read
+          const BUILTIN_CMDS = ['short','detail','code','eli5','plan','review','sources','quiet'];
+          skills = BUILTIN_CMDS.map(c => ({ cmd: c, name: c, id: c }));
+          const user = JSON.parse(localStorage.getItem('oracle_user_skills_v1') || '[]') || [];
+          skills = skills.concat(user.filter(s => !s.disabled));
+        }
+      } catch (e) {}
+      list.innerHTML = (skills || []).slice(0, 12).map(s =>
+        '<button type="button" class="connector-item" data-skill-cmd="' + (s.cmd || '') + '">' +
+        '<span class="material-symbols-rounded">bolt</span>' +
+        '<span><b>/' + (s.cmd || '') + '</b><small>' + (s.name || '') + '</small></span></button>'
+      ).join('') || '<div style="padding:10px;font-size:12px;color:var(--on-surface-variant)">Нет навыков</div>';
+      list.querySelectorAll('[data-skill-cmd]').forEach(btn => {
+        btn.onclick = () => insertSkill(btn.getAttribute('data-skill-cmd'));
+      });
+    }
+    p.hidden = false;
+    hideConnectors();
+  }
+  function insertSkill(cmd) {
+    if (typeof addSkillChip === 'function') {
+      addSkillChip(cmd, cmd);
+      return;
+    }
+    hideSkillPopup();
   }
 
   function wireConnectors() {
@@ -7765,9 +8005,11 @@ function requestNotificationPermissionForPlans() {
     input.dataset.connWired = '1';
     input.addEventListener('input', () => {
       const v = input.value;
-      const m = v.match(/(^|\s)@([^\s]*)$/);
-      if (m) showConnectors();
-      else hideConnectors();
+      const at = v.match(/(^|\s)@([^\s]*)$/);
+      const slash = v.match(/(^|\s)\/([^\s]*)$/);
+      if (at) { showConnectors(); window.hideSkillPopup(); }
+      else if (slash) { showSkillPopup(); hideConnectors(); }
+      else { hideConnectors(); window.hideSkillPopup(); }
     });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') hideConnectors();
@@ -7797,8 +8039,18 @@ function requestNotificationPermissionForPlans() {
       const p = getConnectorPopup();
       if (!p || p.hidden) return;
       if (!p.contains(e.target) && e.target !== input) hideConnectors();
+      const sp = document.getElementById('skill-popup');
+      if (sp && !sp.hidden && !sp.contains(e.target) && e.target !== input) window.hideSkillPopup();
     });
   }
+
+  // CRITICAL: actually wire @ and / pickers
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => { try { wireConnectors(); } catch(e) {} });
+  } else {
+    try { wireConnectors(); } catch(e) {}
+  }
+  setTimeout(() => { try { wireConnectors(); } catch(e) {} }, 400);
 
   // ---- Later Generate ----
   window.toggleLaterGenSetting = function(on) {
@@ -7919,23 +8171,14 @@ function requestNotificationPermissionForPlans() {
     // resend
     if (_sendMsg) {
       // use original send after clearing edit
-      window.sendMsg = function() {
-        if (!isOnline()) {
-          showToast?.('Нет сети', 'warning');
-          return;
-        }
-        return _sendMsg.apply(this, arguments);
-      };
+      
+/* deduped sendMsg wrap */
+
       window.sendMsg();
       // restore full patched send
-      window.sendMsg = function() {
-        if (editState) return commitEditMessage();
-        if (!isOnline()) {
-          showToast?.('Нет сети: новые сообщения недоступны. Reader и Планы работают офлайн.', 'warning', 3600);
-          return;
-        }
-        return _sendMsg.apply(this, arguments);
-      };
+      
+/* deduped sendMsg wrap */
+
     }
   }
 
@@ -8080,11 +8323,8 @@ function requestNotificationPermissionForPlans() {
   // ---- Maps beta ----
   window.openMapsBeta = function() {
     document.getElementById('sidebar-archive')?.classList.remove('open');
-    showCustomModal?.(
-      'Карты / Навигатор · бета',
-      'Вкладка «Карты» в бета-режиме. Навигация и точки появятся в следующих сборках. Сейчас можно пользоваться чатом и Планами.',
-      false, '', null
-    );
+    if (typeof switchScreen === 'function') switchScreen('maps');
+    setTimeout(() => { if (typeof initCoreMaps === 'function') initCoreMaps(); }, 120);
   };
 
   // ---- Novelty ----
@@ -8094,7 +8334,7 @@ function requestNotificationPermissionForPlans() {
   };
 
   function maybeNovelty() { /* OOBE */ return; }
-  
+
   function loadMarks() {
     try { return JSON.parse(localStorage.getItem(MARKS_KEY) || '[]') || []; }
     catch (e) { return []; }
@@ -8283,7 +8523,6 @@ function requestNotificationPermissionForPlans() {
   };
 })();
 
-
 window.mapsCycleLayer = function() {
   if (!window._coreMapTiles || typeof L === 'undefined') return;
   const order = ['esri', 'esriImg', 'topo', 'osmfr', 'hot'];
@@ -8306,7 +8545,6 @@ window.mapsCycleLayer = function() {
   showToast?.('Слой: ' + next, 'info', 1400);
 };
 
-
 /* ===== Input placeholder tip (@ connector) ===== */
 (function inputPlaceholderTip() {
   const TIP = 'Вставьте @ чтобы добавить Коннектор и работать исключительно с ним, зато экономит лимиты на конкретную задачу';
@@ -8325,7 +8563,6 @@ window.mapsCycleLayer = function() {
   if (document.readyState !== 'loading') setTimeout(run, 400);
 })();
 
-
 (function initNavSlotsOnBoot() {
   function go() {
     try { fillNavSlotSelects(); renderMainNav(); renderSidebarFallbacks(); } catch(e) {}
@@ -8333,7 +8570,6 @@ window.mapsCycleLayer = function() {
   document.addEventListener('DOMContentLoaded', go);
   if (document.readyState !== 'loading') setTimeout(go, 300);
 })();
-
 
 /* ===== Unified Archive + Create a… + Skills + Search ===== */
 (function unifiedArchiveModule() {
@@ -8430,10 +8666,119 @@ window.mapsCycleLayer = function() {
   function getFolders() {
     try {
       const tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2') || 'null');
-      if (tree && Array.isArray(tree.folders)) return tree.folders;
-      return [];
+      if (!tree || !tree.folders) return [];
+      const src = Array.isArray(tree.folders) ? tree.folders : Object.keys(tree.folders).map(function(id) {
+        return Object.assign({ id: id }, tree.folders[id] || {});
+      });
+      return src.map(function(f) {
+        return {
+          id: f.id,
+          name: f.title || f.name || 'Проект',
+          title: f.title || f.name || 'Проект',
+          icon: f.icon || 'folder',
+          color: f.color || '#8b8b93',
+          pinned: !!f.pinned,
+          ts: f.created || f.ts || 0,
+          chats: (f.chatIds || []).length
+        };
+      });
     } catch(e) { return []; }
   }
+  function paintSbProjects(folders) {
+    const panel = document.getElementById('sb-projects-panel');
+    if (!panel) return;
+    let list = (folders || []).slice();
+    const sort = localStorage.getItem('oracle_project_sort') || '2';
+    list.sort(function(a, b) {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      if (sort === '1') return String(a.title).localeCompare(String(b.title), 'ru');
+      if (sort === '3') return (a.ts || 0) - (b.ts || 0);
+      return (b.ts || 0) - (a.ts || 0);
+    });
+    if (!list.length) {
+      panel.innerHTML = '<div class="unified-empty" style="padding:12px 10px;">Нет проектов. Нажмите +</div>';
+      return;
+    }
+    panel.innerHTML = list.map(function(f) {
+      const id = String(f.id || '').replace(/"/g, '');
+      const title = esc(f.title || 'Проект');
+      const icon = String(f.icon || 'folder').replace(/[^a-z0-9_]/gi, '') || 'folder';
+      const color = String(f.color || '#8b8b93');
+      const sub = (f.chats ? f.chats + ' чат.' : 'Нет чатов');
+      return '<button type="button" class="sb-row sb-project-row' + (f.pinned ? ' pinned' : '') + '" data-folder="' + id + '">' +
+        '<span class="sb-proj-ico" style="color:' + color + ';background:' + color + '22"><span class="material-symbols-rounded">' + icon + '</span></span>' +
+        '<span class="sb-proj-text"><span class="sb-proj-name">' + title + '</span><span class="sb-proj-sub">' + sub + '</span></span>' +
+        '</button>';
+    }).join('');
+    panel.querySelectorAll('[data-folder]').forEach(function(btn) {
+      const id = btn.getAttribute('data-folder');
+      btn.onclick = function() {
+        if (typeof openProjectHome === 'function') openProjectHome(id);
+        else showToast?.('Проект', 'info');
+      };
+      btn.oncontextmenu = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showProjectMenu(e, id);
+      };
+    });
+  }
+  window.showProjectMenu = function(e, id) {
+    window._ctxProjectId = id;
+    const menu = document.getElementById('project-context-menu');
+    if (!menu) return;
+    menu.hidden = false;
+    menu.style.display = 'flex';
+    let x = e.clientX, y = e.clientY;
+    menu.style.left = Math.min(x, window.innerWidth - 240) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 280) + 'px';
+  };
+  window.projCtx = function(act) {
+    const id = window._ctxProjectId;
+    const menu = document.getElementById('project-context-menu');
+    if (menu) { menu.hidden = true; menu.style.display = 'none'; }
+    if (!id || !projectTree || !projectTree.folders || !projectTree.folders[id]) {
+      try { if (typeof loadProjectTree === 'function') loadProjectTree(); } catch(e){}
+    }
+    const f = projectTree && projectTree.folders ? projectTree.folders[id] : null;
+    if (!f) { showToast?.('Проект не найден', 'warning'); return; }
+    if (act === 'home') { if (typeof openProjectHome === 'function') openProjectHome(id); return; }
+    if (act === 'settings') { window._activeProjectId = id; if (typeof openProjectSettings === 'function') openProjectSettings(); return; }
+    if (act === 'share') { showToast?.('Публичная ссылка проекта появится позже', 'info'); return; }
+    if (act === 'pin') {
+      f.pinned = !f.pinned;
+      if (typeof saveProjectTree === 'function') saveProjectTree();
+      if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+      showToast?.(f.pinned ? 'Проект закреплён' : 'Проект откреплён', 'success');
+      return;
+    }
+    if (act === 'rename') {
+      showCustomModal('Переименовать проект', 'Новое название:', true, f.title || '', function(n){
+        if (!n || !String(n).trim()) return;
+        f.title = String(n).trim();
+        if (typeof saveProjectTree === 'function') saveProjectTree();
+        if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+        const ht = document.getElementById('project-home-title');
+        if (ht && window._activeProjectId === id) ht.textContent = f.title;
+      });
+      return;
+    }
+    if (act === 'delete') {
+      showCustomModal('Удалить проект', 'Чаты останутся в списке, но отвяжутся от проекта.', false, '', function(ok){
+        if (!ok) return;
+        delete projectTree.folders[id];
+        if (typeof saveProjectTree === 'function') saveProjectTree();
+        if (typeof closeProjectHome === 'function') closeProjectHome();
+        if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+        showToast?.('Проект удалён', 'success');
+      });
+    }
+  };
+  document.addEventListener('click', function(){
+    const menu = document.getElementById('project-context-menu');
+    if (menu) { menu.hidden = true; menu.style.display = 'none'; }
+  });
   function getNpProjects() {
     try { return JSON.parse(localStorage.getItem('oracle_projects_list') || '[]') || []; } catch(e) { return []; }
   }
@@ -8446,6 +8791,7 @@ window.mapsCycleLayer = function() {
     const stories = getStories();
     const plans = getPlans();
     const folders = getFolders();
+    try { paintSbProjects(folders); } catch (e) { console.warn(e); }
     const nps = getNpProjects();
     let items = [];
 
@@ -8455,11 +8801,12 @@ window.mapsCycleLayer = function() {
         items.push({
           kind: 'chat', id, title: s.title || 'Чат',
           ts: s.updated || (parseInt(String(id).replace(/\D/g,''),10) || 0),
-          pinned: pins.includes(id)
+          pinned: pins.includes(id),
+          mode: s.mode || s.inputMode || 'chat'
         });
       });
     }
-    if (unifiedFilter === 'all' || unifiedFilter === 'projects') {
+    if (unifiedFilter === 'projects') {
       folders.forEach(f => {
         items.push({ kind: 'folder', id: f.id || f.name, title: f.name || f.title || 'Папка', ts: f.ts || 0, pinned: false });
       });
@@ -8495,20 +8842,42 @@ window.mapsCycleLayer = function() {
     });
 
     if (!items.length) {
-      box.innerHTML = '<div class="unified-empty">Пока пусто. Create a… или напишите первый запрос.</div>';
+      const emptyMsg = {
+        all: 'Нет чатов, проектов и историй.\nСоздайте новый через Create a… или напишите первый запрос.',
+        chats: 'Нет чатов.\nНапишите сообщение или Create a… → Chat.',
+        projects: 'Нет проектов.\nCreate a… → Project.',
+        stories: 'Нет историй.\nCreate a… → History или откройте Reader.',
+        plans: 'Нет планов.\nДобавьте напоминание в «Планы и календарь».',
+        notepad: 'Нет Coding-проектов.\nОткройте Oracle Notepad или Create a… → Coding.'
+      };
+      const msg = emptyMsg[unifiedFilter] || emptyMsg.all;
+      box.innerHTML = '<div class="unified-empty"><span class="material-symbols-rounded" style="font-size:36px;opacity:.45;display:block;margin-bottom:10px;">folder_off</span>' +
+        msg.split('\n').map(function(line){ return '<div>' + line + '</div>'; }).join('') + '</div>';
       return;
     }
 
-    const icon = { chat: 'chat_bubble', folder: 'folder', story: 'history_edu', plan: 'schedule', notepad: 'code' };
-    box.innerHTML = items.map(it => {
-      let badge = '';
-      if (it.kind === 'plan') badge = '<span class="plan-dot ' + (it.done ? 'done' : 'todo') + '"></span>';
-      if (it.pinned) badge += '<span class="material-symbols-rounded pin-mark">push_pin</span>';
-      return '<button type="button" class="unified-item" data-kind="' + it.kind + '" data-id="' + esc(it.id) + '">' +
-        '<span class="material-symbols-rounded">' + (icon[it.kind] || 'notes') + '</span>' +
-        '<span class="unified-item-title">' + esc(it.title) + '</span>' + badge +
-        '</button>';
-    }).join('');
+    const iconMap = { chat: 'chat_bubble', folder: 'folder', story: 'history_edu', plan: 'schedule', notepad: 'code' };
+    function iconFor(it) {
+      if (it.kind === 'chat' && it.mode === 'task') return 'check_circle';
+      return iconMap[it.kind] || 'notes';
+    }
+    try {
+      box.innerHTML = items.map(it => {
+        let badge = '';
+        if (it.kind === 'plan') badge = '<span class="plan-dot ' + (it.done ? 'done' : 'todo') + '"></span>';
+        if (it.pinned) badge += '<span class="material-symbols-rounded pin-mark">push_pin</span>';
+        const ico = iconFor(it);
+        const icoCls = (ico === 'check_circle') ? ' task-chat-ico' : '';
+        return '<button type="button" class="unified-item" data-kind="' + it.kind + '" data-id="' + esc(it.id) + '">' +
+          '<span class="material-symbols-rounded' + icoCls + '">' + ico + '</span>' +
+          '<span class="unified-item-title">' + esc(it.title) + '</span>' + badge +
+          '</button>';
+      }).join('');
+    } catch (err) {
+      console.error('renderUnifiedArchive', err);
+      box.innerHTML = '<div class="unified-empty">Не удалось показать список. Обновите страницу.</div>';
+      return;
+    }
 
     box.querySelectorAll('.unified-item').forEach(btn => {
       btn.onclick = () => openUnifiedItem(btn.dataset.kind, btn.dataset.id);
@@ -8606,15 +8975,39 @@ window.mapsCycleLayer = function() {
   window.closeCreateAModal = function() {
     document.getElementById('create-a-modal')?.classList.remove('active');
   };
+  window.toggleCreateATemp = function(e) {
+    e && e.preventDefault && e.preventDefault();
+    const cb = document.getElementById('create-a-temp-check');
+    const box = document.getElementById('create-a-temp-box');
+    if (!cb) return;
+    cb.checked = !cb.checked;
+    box && box.classList.toggle('checked', cb.checked);
+  };
   window.createAPick = function(type) {
+    const wantTemp = !!document.getElementById('create-a-temp-check')?.checked;
     closeCreateAModal();
-    if (type === 'chat') createNewChatSession();
-    else if (type === 'project' && typeof openCreateFolderModal === 'function') openCreateFolderModal();
+    if (type === 'chat') {
+      if (wantTemp && typeof toggleTempChat === 'function') {
+        // ensure we enter temp mode
+        if (!window.CoreState?.isTempChat) toggleTempChat();
+        else if (typeof createNewChatSession === 'function') createNewChatSession();
+      } else {
+        // leave temp if was on
+        if (window.CoreState?.isTempChat && typeof exitTempChat === 'function') exitTempChat();
+        else if (window.CoreState?.isTempChat && typeof toggleTempChat === 'function') toggleTempChat();
+        if (typeof createNewChatSession === 'function') createNewChatSession();
+      }
+    } else if (type === 'project') { if (typeof openCreateProjectModal === 'function') openCreateProjectModal(); else if (typeof openCreateFolderModal === 'function') openCreateFolderModal(); }
     else if (type === 'history' && typeof createNewStoryBook === 'function') createNewStoryBook(new Event('click'));
     else if (type === 'coding') {
       showToast?.('Coding Project — откройте Oracle Notepad / вкладку проектов', 'info');
       if (typeof switchScreen === 'function') switchScreen('notepad');
     }
+    // reset checkbox
+    const cb = document.getElementById('create-a-temp-check');
+    const box = document.getElementById('create-a-temp-box');
+    if (cb) cb.checked = false;
+    box && box.classList.remove('checked');
   };
 
   // Skills hub
@@ -8660,22 +9053,9 @@ window.mapsCycleLayer = function() {
   // Ensure session on first send
   const _send = window.sendMsg;
   if (typeof _send === 'function') {
-    window.sendMsg = function() {
-      if (CoreState.pendingBlankChat || !currentSessionId) {
-        const id = 'session_' + Date.now();
-        if (typeof chatSessions === 'object') {
-          chatSessions[id] = { title: 'Новый чат', html: '', updated: Date.now() };
-          try {
-            localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
-            localStorage.setItem('oracle_current_session', id);
-          } catch(e) {}
-        }
-        currentSessionId = id;
-        CoreState.pendingBlankChat = false;
-        CoreState.isFirstMsgInSession = true;
-      }
-      return _send.apply(this, arguments);
-    };
+    
+/* deduped sendMsg wrap */
+
   }
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -8684,7 +9064,6 @@ window.mapsCycleLayer = function() {
   });
   if (document.readyState !== 'loading') setTimeout(() => { setUnifiedFilter(unifiedFilter); renderUnifiedArchive(); }, 400);
 })();
-
 
 /* ===== Later Generate: only on Chat + archive item ПКМ ===== */
 (function laterGenAndArchiveCtx() {
@@ -8703,12 +9082,9 @@ window.mapsCycleLayer = function() {
   const prevSwitch = window.switchScreen;
   if (typeof prevSwitch === 'function' && !window.__laterSwitchHook) {
     window.__laterSwitchHook = true;
-    window.switchScreen = function(name) {
-      const r = prevSwitch.apply(this, arguments);
-      setTimeout(hideLaterIfNotChat, 0);
-      setTimeout(hideLaterIfNotChat, 80);
-      return r;
-    };
+    
+/* deduped switchScreen wrap */
+
   }
   const prevNav = window.navGo;
   if (typeof prevNav === 'function' && !window.__laterNavHook) {
@@ -8851,7 +9227,7 @@ window.mapsCycleLayer = function() {
         showCustomModal('Удалить?', '«' + label + '» будет удалён без возможности отмены.', false, '', (ok) => {
           if (ok) fn();
         });
-      } else if (confirm('Удалить «' + label + '»?')) fn();
+      } else showCustomModal('Удалить', 'Удалить «' + label + '»?', false, '', function(ok){ if (ok) fn(); });
     };
 
     if (kind === 'story') {
@@ -8923,29 +9299,38 @@ window.mapsCycleLayer = function() {
   }
 })();
 
-
 /* ===== Sidebar menu configurator ===== */
 (function sidebarMenuConfig() {
-  const KEY = 'oracle_sidebar_action_btns_v1';
+  const KEY = 'oracle_sidebar_action_btns_v2';
+  const KEY_LEGACY = 'oracle_sidebar_action_btns_v1';
   const FILTER_KEY = 'oracle_sidebar_split_filters';
   const CATALOG = [
-    { id: 'split', label: 'Параллельный просмотр', icon: 'split_scene', action: 'openSplitSelector' },
-    { id: 'plans', label: 'Запланировано', icon: 'schedule', action: 'openPlansFromSidebar' },
-    { id: 'maps', label: 'Карты', icon: 'map', action: 'openMapsFromSidebar' },
-    { id: 'skills', label: 'Навыки и Коннекторы', icon: 'extension', action: 'openSkillsHub' },
-    { id: 'library', label: 'Библиотека файлов', icon: 'local_library', action: 'openLibraryFromSidebar' }
+    { id: 'library', label: 'Библиотека', icon: 'local_library', action: "switchScreen('library'); closeSidebar?.()" },
+    { id: 'skills', label: 'Аддоны', icon: 'extension', action: "window.openAddonsHub && openAddonsHub()" },
+    { id: 'plans', label: 'Запланировано', icon: 'schedule', action: "switchScreen('calendar'); closeSidebar?.()" },
+    { id: 'split', label: 'Параллельный просмотр', icon: 'splitscreen', action: "typeof openSplitSelector==='function' && openSplitSelector()" },
+    { id: 'maps', label: 'Карты', icon: 'map', action: "switchScreen('maps'); closeSidebar?.()" },
+    { id: 'scenarios', label: 'Сценарист', icon: 'movie_edit', action: "switchScreen('scenarios'); closeSidebar?.()" },
+    { id: 'reader', label: 'Reader', icon: 'auto_stories', action: "switchScreen('reader'); closeSidebar?.()" }
   ];
-  const MAX = 4;
+
+  function isMobile() {
+    try { return window.matchMedia('(max-width: 720px)').matches; } catch (e) { return false; }
+  }
+  function maxBtns() { return isMobile() ? 4 : 5; }
 
   function loadBtns() {
+    var max = maxBtns();
     try {
-      const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
-      if (Array.isArray(raw)) return raw.filter(id => CATALOG.some(c => c.id === id)).slice(0, MAX);
+      var raw = JSON.parse(localStorage.getItem(KEY) || localStorage.getItem(KEY_LEGACY) || 'null');
+      if (Array.isArray(raw)) {
+        return raw.filter(function(id) { return CATALOG.some(function(c) { return c.id === id; }); }).slice(0, max);
+      }
     } catch (e) {}
-    return ['skills', 'split']; // default like before
+    return ['library', 'skills', 'plans', 'split'].slice(0, max);
   }
   function saveBtns(arr) {
-    localStorage.setItem(KEY, JSON.stringify(arr.slice(0, MAX)));
+    localStorage.setItem(KEY, JSON.stringify(arr.slice(0, maxBtns())));
   }
 
   window.openPlansFromSidebar = function() {
@@ -8963,92 +9348,115 @@ window.mapsCycleLayer = function() {
   };
 
   window.renderSidebarActionButtons = function() {
-    const box = document.getElementById('sidebar-dynamic-actions');
-    if (!box) return;
-    const ids = loadBtns();
-    box.innerHTML = ids.map(id => {
-      const c = CATALOG.find(x => x.id === id);
+    var stack = document.getElementById('sidebar-actions-stack');
+    if (!stack) return;
+    var selected = loadBtns();
+    var moreIds = CATALOG.map(function(c) { return c.id; }).filter(function(id) { return selected.indexOf(id) < 0; });
+
+    var html = selected.map(function(id) {
+      var c = CATALOG.find(function(x) { return x.id === id; });
       if (!c) return '';
-      return '<button type="button" class="sidebar-secondary-btn" onclick="' + c.action + '()">' +
-        '<span class="material-symbols-rounded">' + c.icon + '</span> ' + c.label +
-        '</button>';
+      return '<button type="button" class="sb-row" data-sb-id="' + c.id + '" onclick="' + c.action + '">' +
+        '<span class="material-symbols-rounded">' + c.icon + '</span><span>' + c.label + '</span></button>';
     }).join('');
+
+    html += '<div class="sb-more-wrap">' +
+      '<button type="button" class="sb-row" id="sb-more-btn" onclick="toggleSidebarMore(event)">' +
+      '<span class="material-symbols-rounded">more_horiz</span><span>Ещё</span></button>' +
+      '<div id="sb-more-menu" class="sb-more-menu" hidden>';
+    moreIds.forEach(function(id) {
+      var c = CATALOG.find(function(x) { return x.id === id; });
+      if (!c) return;
+      html += '<button type="button" onclick="' + c.action + '; closeSidebarMore && closeSidebarMore()">' +
+        '<span class="material-symbols-rounded">' + c.icon + '</span> ' + c.label + '</button>';
+    });
+    html += '<button type="button" onclick="openSidebarSettings(); closeSidebarMore && closeSidebarMore()">' +
+      '<span class="material-symbols-rounded">tune</span> Настройка меню</button>';
+    html += '</div></div>';
+
+    stack.innerHTML = html;
+    var dyn = document.getElementById('sidebar-dynamic-actions');
+    if (dyn) dyn.style.display = 'none';
   };
 
   window.renderSidebarBtnChecklist = function() {
-    const box = document.getElementById('sidebar-btn-checklist');
+    var box = document.getElementById('sidebar-btn-checklist');
     if (!box) return;
-    const selected = loadBtns();
-    box.innerHTML = CATALOG.map(c => {
-      const on = selected.includes(c.id);
+    var max = maxBtns();
+    var selected = loadBtns();
+    box.innerHTML = CATALOG.map(function(c) {
+      var on = selected.indexOf(c.id) >= 0;
       return '<label class="cn-check sidebar-btn-check' + (on ? ' is-on' : '') + '" data-id="' + c.id + '">' +
-        '<input type="checkbox" ' + (on ? 'checked' : '') + (selected.length >= MAX && !on ? ' disabled' : '') + '>' +
+        '<input type="checkbox" ' + (on ? 'checked' : '') + (selected.length >= max && !on ? ' disabled' : '') + '>' +
         '<span class="cn-check-box"></span>' +
         '<span class="material-symbols-rounded cn-check-icon">' + c.icon + '</span>' +
-        '<span class="cn-check-label">' + c.label + '</span>' +
-        '</label>';
+        '<span class="cn-check-label">' + c.label + '</span></label>';
     }).join('');
-    box.querySelectorAll('.cn-check').forEach(lab => {
-      const inp = lab.querySelector('input');
-      inp.addEventListener('change', () => {
-        let cur = loadBtns();
-        const id = lab.dataset.id;
+    box.querySelectorAll('.cn-check').forEach(function(lab) {
+      var inp = lab.querySelector('input');
+      inp.addEventListener('change', function() {
+        var cur = loadBtns();
+        var id = lab.dataset.id;
+        var limit = maxBtns();
         if (inp.checked) {
-          if (cur.length >= MAX) {
+          if (cur.length >= limit) {
             inp.checked = false;
-            showToast?.('Максимум 4 кнопки', 'warning');
+            showToast && showToast('Максимум ' + limit + ' кнопки на этом устройстве', 'warning');
             return;
           }
-          if (!cur.includes(id)) cur.push(id);
+          if (cur.indexOf(id) < 0) cur.push(id);
         } else {
-          cur = cur.filter(x => x !== id);
+          cur = cur.filter(function(x) { return x !== id; });
         }
         saveBtns(cur);
         renderSidebarBtnChecklist();
         renderSidebarActionButtons();
-        const hint = document.getElementById('sidebar-btn-limit-hint');
-        if (hint) hint.textContent = 'Выбрано: ' + loadBtns().length + ' / ' + MAX;
       });
     });
-    const hint = document.getElementById('sidebar-btn-limit-hint');
-    if (hint) hint.textContent = 'Выбрано: ' + selected.length + ' / ' + MAX;
+    var hint = document.getElementById('sidebar-btn-limit-hint');
+    if (hint) {
+      hint.textContent = 'Выбрано: ' + selected.length + ' / ' + max +
+        (isMobile() ? ' (телефон)' : ' (ПК)');
+    }
   };
 
   window.toggleSidebarSplitFilters = function(on) {
     localStorage.setItem(FILTER_KEY, on ? '1' : '0');
-    const bar = document.querySelector('.unified-filter-bar');
+    var bar = document.querySelector('.unified-filter-bar');
     if (bar) bar.style.display = on ? '' : 'none';
   };
 
   window.openSidebarSettings = function() {
     document.getElementById('sidebar-archive')?.classList.remove('open');
     if (typeof switchScreen === 'function') switchScreen('settings');
-    setTimeout(() => {
+    setTimeout(function() {
       if (typeof showSection === 'function') showSection('sidebar-menu');
       renderSidebarBtnChecklist();
-      const f = document.getElementById('sidebar-split-all-filters');
+      var f = document.getElementById('sidebar-split-all-filters');
       if (f) f.checked = localStorage.getItem(FILTER_KEY) !== '0';
     }, 60);
   };
 
-  document.addEventListener('DOMContentLoaded', () => {
+  function boot() {
     renderSidebarActionButtons();
     if (localStorage.getItem(FILTER_KEY) === '0') {
-      const bar = document.querySelector('.unified-filter-bar');
+      var bar = document.querySelector('.unified-filter-bar');
       if (bar) bar.style.display = 'none';
     }
-  });
-  if (document.readyState !== 'loading') {
-    setTimeout(() => {
-      renderSidebarActionButtons();
-      if (localStorage.getItem(FILTER_KEY) === '0') {
-        const bar = document.querySelector('.unified-filter-bar');
-        if (bar) bar.style.display = 'none';
-      }
-    }, 200);
   }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(boot, 300);
+  window.addEventListener('resize', function() {
+    // re-clamp selection if switched device width
+    var cur = loadBtns();
+    if (cur.length > maxBtns()) {
+      saveBtns(cur.slice(0, maxBtns()));
+      renderSidebarActionButtons();
+      renderSidebarBtnChecklist();
+    }
+  });
 })();
-
 
 /* ===== Coming soon + Settings search ===== */
 window.openComingSoonModal = function(name) {
@@ -9064,6 +9472,7 @@ window.closeComingSoonModal = function() {
 };
 
 const SETTINGS_SEARCH_INDEX = [
+  { q: 'контекст память contentcheck использовать контекст', section: 'user', title: 'Использовать Контекст', sub: 'О вас → тумблер', icon: 'history', target: 'settings-target-context' },
   // Вкладки
   { q: 'персонализация внешний вид навигация', section: 'general', title: 'Персонализация', sub: 'Вкладка настроек внешнего вида', icon: 'palette', target: null },
   { q: 'тема светлая тёмная темная true black trueblack режим', section: 'general', title: 'Тема', sub: 'Персонализация → ниже тема', icon: 'contrast', target: 'settings-target-theme' },
@@ -9083,18 +9492,35 @@ const SETTINGS_SEARCH_INDEX = [
   { q: 'api ключ gemini chatgpt claude grok later generate', section: 'api-keys', title: 'Сторонние API', sub: 'Ключи и Later Generate', icon: 'auto_awesome', target: null },
   { q: 'публичные ссылки share поделиться', section: 'public-links', title: 'Публичные ссылки', sub: 'Совместные чаты', icon: 'link', target: null },
   { q: 'боковое меню сайдбар кнопки split карты навыки библиотека', section: 'sidebar-menu', title: 'Настройка бокового меню', sub: 'До 4 быстрых кнопок', icon: 'tune', target: null },
-  { q: 'о проекте версия about', section: 'about', title: 'О проекте', sub: 'Версия и статус', icon: 'info', target: null }
+  { q: 'о проекте версия about', section: 'about', title: 'О проекте', sub: 'Версия и статус', icon: 'info', target: null },
+  { q: 'боковое меню при входе разворачивать сворачивать запоминать sidebar boot', section: 'sidebar-menu', title: 'Боковое меню при входе', sub: 'Настройка бокового меню', icon: 'dock_to_right', target: 'settings-target-sidebar-boot' },
+  { q: 'слиять с концами flush nav край', section: 'appearance', title: 'Слиять с концами', sub: 'Персонализация → навигация', icon: 'width_full', target: null },
+  { q: 'компактная навигация compact nav', section: 'appearance', title: 'Компактная навигация', sub: 'Персонализация', icon: 'compress', target: null },
+  { q: 'контекст память чата contentcheck использовать контекст', section: 'user', title: 'Использовать Контекст', sub: 'О вас → память диалога', icon: 'history', target: 'settings-target-context' },
+  { q: 'полноэкранный layout fullscreen', section: 'appearance', title: 'Полноэкранный режим', sub: 'Персонализация', icon: 'fullscreen', target: null },
+  { q: 'временный чат temporary chat', section: 'appearance', title: 'Временный чат', sub: 'Не сохраняется в историю', icon: 'timer', target: null },
+  { q: 'split view параллельный просмотр', section: 'appearance', title: 'Параллельный просмотр', sub: 'Split View', icon: 'splitscreen', target: null },
+  { q: 'карты maps навигатор leaflet', section: 'appearance', title: 'Карты', sub: 'Вкладка Карты', icon: 'map', target: null },
+  { q: 'боковое меню при входе разворачивать', section: 'sidebar-menu', title: 'Боковое меню при входе', sub: 'Настройка бокового меню', icon: 'dock_to_right', target: 'settings-target-sidebar-boot' }
 ];
 
+window.onSettingsSearchFocus = function() {
+  /* mobile: prepare overlay state when user focuses empty field — only after typing */
+};
 window.runSettingsSearch = function(q) {
   const box = document.getElementById('settings-search-results');
   const clear = document.getElementById('settings-search-clear');
+  const sidebar = document.getElementById('settings-sidebar-menu');
+  const screen = document.getElementById('screen-settings');
   if (!box) return;
   q = String(q || '').trim().toLowerCase();
   if (clear) clear.hidden = !q;
+  const mobile = window.matchMedia('(max-width: 767px)').matches;
   if (!q) {
     box.hidden = true;
     box.innerHTML = '';
+    sidebar?.classList.remove('searching');
+    screen?.classList.remove('searching-mobile');
     return;
   }
   const words = q.split(/\s+/).filter(Boolean);
@@ -9103,11 +9529,14 @@ window.runSettingsSearch = function(q) {
     return hay.includes(q) || words.every(w => hay.includes(w)) || words.some(w => w.length > 2 && hay.includes(w));
   });
   box.hidden = false;
+  sidebar?.classList.add('searching');
+  if (mobile) screen?.classList.add('searching-mobile');
+  else screen?.classList.remove('searching-mobile');
   if (!hits.length) {
     box.innerHTML = '<div class="settings-search-empty">Ничего не найдено</div>';
     return;
   }
-  box.innerHTML = hits.map((h, idx) =>
+  box.innerHTML = hits.map(h =>
     '<button type="button" class="settings-search-hit" onclick="jumpSettingsSection(\'' + h.section + '\', \'' + (h.target || '') + '\')">' +
     '<span class="material-symbols-rounded">' + h.icon + '</span>' +
     '<span class="settings-search-hit-text"><b>' + h.title + '</b>' +
@@ -9119,12 +9548,16 @@ window.clearSettingsSearch = function() {
   const inp = document.getElementById('settings-search-input');
   if (inp) inp.value = '';
   runSettingsSearch('');
+  document.getElementById('settings-sidebar-menu')?.classList.remove('searching');
+  document.getElementById('screen-settings')?.classList.remove('searching-mobile');
 };
 window.jumpSettingsSection = function(sectionId, targetId) {
   if (typeof switchScreen === 'function') switchScreen('settings');
   setTimeout(() => {
     if (typeof showSection === 'function') showSection(sectionId);
     clearSettingsSearch();
+    document.getElementById('settings-sidebar-menu')?.classList.remove('searching');
+    document.getElementById('screen-settings')?.classList.remove('searching-mobile');
     if (targetId) {
       setTimeout(() => {
         const el = document.getElementById(targetId);
@@ -9184,7 +9617,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 })();
 
-
 window.dismissOct14Novelty = function(){ localStorage.setItem('oracle_oct14_novelty','1'); };
 window.dismissSideCorePromo = function(){ localStorage.setItem('oracle_side_core_promo','1'); };
 window.openSideCoreZipHint = function(){
@@ -9194,3 +9626,6817 @@ window.openSideCoreExtHint = function(){
   window.open('https://oracle-ai-pro.github.io/oracle/side-core-node.zip', '_blank');
 };
 window.closeTreeFeatureModal = function(){ localStorage.setItem('oracle_tree_feature_seen_v1','true'); };
+
+/* ===== AI Skills + Connectors ===== */
+(function skillsSystem() {
+  const SKILLS_KEY = 'oracle_user_skills_v1';
+  const BUILTIN_STATE_KEY = 'oracle_builtin_skills_state_v1'; // { id: { disabled, uninstalled } }
+  const ACTIVE_SKILL_KEY = 'oracle_active_skill';
+  const ACTIVE_CONN_KEY = 'oracle_active_connector';
+
+  const BUILTIN = [
+    { id: 'b_short', name: 'Кратко', cmd: 'short', prompt: 'Отвечай кратко: 3–5 предложений, без воды и лишних списков.', builtin: true },
+    { id: 'b_detail', name: 'Подробно', cmd: 'detail', prompt: 'Отвечай развёрнуто, со структурой, подзаголовками и примерами.', builtin: true },
+    { id: 'b_code', name: 'Разбор кода', cmd: 'code', prompt: 'Разбор кода: структура → риски → конкретный патч. Без лишних вступлений.', builtin: true },
+    { id: 'b_eli5', name: 'Как новичку', cmd: 'eli5', prompt: 'Объясняй простыми словами, без жаргона, короткими абзацами.', builtin: true },
+    { id: 'b_plan', name: 'План', cmd: 'plan', prompt: 'Составь нумерованный план шагов. Если уместно — предложи сохранить в Планы.', builtin: true },
+    { id: 'b_review', name: 'Ревью', cmd: 'review', prompt: 'Жёсткое ревью: плюсы, минусы, что исправить в первую очередь.', builtin: true },
+    { id: 'b_sources', name: 'По источникам', cmd: 'sources', prompt: 'Опирайся только на прикреплённые файлы, библиотеку и контекст чата. Если данных мало — так и скажи.', builtin: true },
+    { id: 'b_quiet', name: 'Тихий режим', cmd: 'quiet', prompt: 'Без эмодзи, без похвалы и вводных фраз. Сухой деловой тон.', builtin: true }
+  ];
+
+  const CONNECTORS = [
+    { id: 'tasks', label: 'Задачи', icon: 'task_alt', desc: 'Создавайте задания; ИИ выполняет, если разрешено.' },
+    { id: 'notepad', label: 'Oracle Notepad', icon: 'terminal', desc: 'Умное кодирование в связке с Notepad.' },
+    { id: 'plans', label: 'Планы', icon: 'schedule', desc: 'Напоминания и календарь из чата.' },
+    { id: 'library', label: 'Библиотека', icon: 'local_library', desc: 'Работа с файлами без повторного вложения.' },
+    { id: 'maps', label: 'Карты', icon: 'map', desc: 'Поиск и навигация по OSM.' },
+    { id: 'skill_creator', label: 'Skill Creator', icon: 'auto_awesome', desc: 'Создайте навык в диалоге с ИИ.' }
+  ];
+
+  function loadUserSkills() {
+    try { return JSON.parse(localStorage.getItem(SKILLS_KEY) || '[]') || []; } catch(e) { return []; }
+  }
+  function saveUserSkills(arr) {
+    localStorage.setItem(SKILLS_KEY, JSON.stringify(arr));
+  }
+  function loadBuiltinState() {
+    try { return JSON.parse(localStorage.getItem(BUILTIN_STATE_KEY) || '{}') || {}; } catch(e) { return {}; }
+  }
+  function saveBuiltinState(st) {
+    localStorage.setItem(BUILTIN_STATE_KEY, JSON.stringify(st));
+  }
+
+  window.allSkills = function allSkills() {
+    const st = loadBuiltinState();
+    const builtins = BUILTIN.filter(b => !st[b.id]?.uninstalled).map(b => ({
+      ...b,
+      disabled: !!st[b.id]?.disabled
+    }));
+    const users = loadUserSkills().map(u => ({ ...u, builtin: false }));
+    return [...builtins, ...users];
+  }
+
+  window.getActiveSkill = function() {
+    try { return JSON.parse(sessionStorage.getItem(ACTIVE_SKILL_KEY) || 'null'); } catch(e) { return null; }
+  };
+  window.setActiveSkill = function(skill) {
+    if (skill) sessionStorage.setItem(ACTIVE_SKILL_KEY, JSON.stringify({ id: skill.id, cmd: skill.cmd, name: skill.name, prompt: skill.prompt }));
+    else sessionStorage.removeItem(ACTIVE_SKILL_KEY);
+  };
+  window.getActiveConnector = function() {
+    try { return JSON.parse(sessionStorage.getItem(ACTIVE_CONN_KEY) || 'null'); } catch(e) { return null; }
+  };
+  window.setActiveConnector = function(c) {
+    if (c) sessionStorage.setItem(ACTIVE_CONN_KEY, JSON.stringify(c));
+    else sessionStorage.removeItem(ACTIVE_CONN_KEY);
+  };
+
+  window.renderConnectorsCatalog = function() {
+    const box = document.getElementById('connectors-catalog');
+    if (!box) return;
+    box.innerHTML = CONNECTORS.map(c =>
+      '<div class="connector-card">' +
+      '<span class="material-symbols-rounded">' + c.icon + '</span>' +
+      '<div><b>@' + c.label + '</b><small>' + c.desc + '</small></div></div>'
+    ).join('');
+  };
+
+  window.renderSkillsList = function() {
+    const box = document.getElementById('skills-list');
+    if (!box) return;
+    const list = allSkills();
+    if (!list.length) {
+      box.innerHTML = '<div class="unified-empty">Нет навыков. Создайте первый.</div>';
+      return;
+    }
+    box.innerHTML = list.map(s => {
+      const dis = s.disabled ? ' disabled-skill' : '';
+      const badge = s.builtin ? '<span class="skill-badge">БАЗОВЫЙ</span>' : '';
+      const desc = (s.prompt || '').slice(0, 120) + ((s.prompt || '').length > 120 ? '…' : '');
+      return '<div class="skill-card' + dis + '" data-skill-id="' + s.id + '" data-builtin="' + (s.builtin ? '1' : '0') + '">' +
+        '<div class="skill-card-body">' +
+        '<div class="skill-name">' + escapeHtml(s.name) + badge + '</div>' +
+        '<div class="skill-cmd">/' + escapeHtml(s.cmd) + '</div>' +
+        '<div class="skill-desc">' + escapeHtml(desc) + '</div></div>' +
+        '<button type="button" class="skill-more" onclick="openSkillCtx(event,\'' + s.id + '\')" title="Ещё">' +
+        '<span class="material-symbols-rounded">more_vert</span></button></div>';
+    }).join('');
+  };
+
+  let _skillCtxId = null;
+  window.openSkillCtx = function(e, id) {
+    e.preventDefault(); e.stopPropagation();
+    _skillCtxId = id;
+    const skill = allSkills().find(s => s.id === id);
+    if (!skill) return;
+    const menu = document.getElementById('skill-ctx-menu');
+    if (!menu) return;
+    const toggleLabel = document.getElementById('skill-ctx-toggle-label');
+    if (toggleLabel) toggleLabel.textContent = skill.disabled ? 'Включить' : 'Отключить';
+    const un = document.getElementById('skill-ctx-uninstall');
+    const ed = document.getElementById('skill-ctx-edit');
+    const del = document.getElementById('skill-ctx-delete');
+    if (skill.builtin) {
+      if (un) un.style.display = 'flex';
+      if (ed) ed.style.display = 'none';
+      if (del) del.style.display = 'none';
+    } else {
+      if (un) un.style.display = 'none';
+      if (ed) ed.style.display = 'flex';
+      if (del) del.style.display = 'flex';
+    }
+    menu.style.display = 'block';
+    const x = Math.min(e.clientX, window.innerWidth - 220);
+    const y = Math.min(e.clientY, window.innerHeight - 180);
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+  };
+  document.addEventListener('click', () => {
+    const m = document.getElementById('skill-ctx-menu');
+    if (m) m.style.display = 'none';
+  });
+
+  window.skillCtxToggle = function() {
+    const id = _skillCtxId; if (!id) return;
+    const skill = allSkills().find(s => s.id === id);
+    if (!skill) return;
+    if (skill.builtin) {
+      const st = loadBuiltinState();
+      st[id] = st[id] || {};
+      st[id].disabled = !skill.disabled;
+      saveBuiltinState(st);
+    } else {
+      const arr = loadUserSkills();
+      const i = arr.findIndex(x => x.id === id);
+      if (i >= 0) { arr[i].disabled = !arr[i].disabled; saveUserSkills(arr); }
+    }
+    renderSkillsList();
+    showToast?.(skill.disabled ? 'Навык включён' : 'Навык отключён', 'success');
+  };
+  window.skillCtxUninstall = function() {
+    const id = _skillCtxId; if (!id) return;
+    const st = loadBuiltinState();
+    st[id] = st[id] || {};
+    st[id].uninstalled = true;
+    saveBuiltinState(st);
+    renderSkillsList();
+    showToast?.('Убран из установленных (базовый можно вернуть сбросом)', 'info');
+  };
+  window.skillCtxEdit = function() {
+    const id = _skillCtxId; if (!id) return;
+    const skill = loadUserSkills().find(s => s.id === id);
+    if (!skill) return;
+    openCreateSkillModal(skill);
+  };
+  window.skillCtxDelete = function() {
+    const id = _skillCtxId; if (!id) return;
+    const go = () => {
+      saveUserSkills(loadUserSkills().filter(s => s.id !== id));
+      renderSkillsList();
+      showToast?.('Навык удалён', 'warning');
+    };
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Удалить навык?', 'Удаление необратимо.', false, '', ok => { if (ok) go(); });
+    } else go();
+  };
+
+  let _editSkillId = null;
+  window.openCreateSkillModal = function(existing) {
+    _editSkillId = existing?.id || null;
+    const t = document.getElementById('skill-editor-title');
+    if (t) t.textContent = existing ? 'Изменить навык' : 'Новый навык';
+    document.getElementById('skill-name-input').value = existing?.name || '';
+    document.getElementById('skill-cmd-input').value = existing?.cmd || '';
+    document.getElementById('skill-prompt-input').value = existing?.prompt || '';
+    document.getElementById('skill-editor-modal')?.classList.add('active');
+  };
+  window.closeSkillEditor = function() {
+    document.getElementById('skill-editor-modal')?.classList.remove('active');
+    _editSkillId = null;
+  };
+  window.saveSkillFromEditor = function() {
+    let name = (document.getElementById('skill-name-input')?.value || '').trim();
+    let cmd = (document.getElementById('skill-cmd-input')?.value || '').trim().toLowerCase().replace(/^\//, '');
+    cmd = cmd.replace(/[^a-z0-9_]/g, '');
+    const prompt = (document.getElementById('skill-prompt-input')?.value || '').trim();
+    if (!name || !cmd || !prompt) {
+      showToast?.('Заполните имя, команду и инструкцию', 'warning');
+      return;
+    }
+    const reserved = BUILTIN.map(b => b.cmd);
+    if (!_editSkillId && reserved.includes(cmd)) {
+      showToast?.('Команда занята базовым навыком — выберите другую', 'warning');
+      return;
+    }
+    const arr = loadUserSkills();
+    if (_editSkillId) {
+      const i = arr.findIndex(x => x.id === _editSkillId);
+      if (i >= 0) arr[i] = { ...arr[i], name, cmd, prompt };
+    } else {
+      arr.push({ id: 'u_' + Date.now(), name, cmd, prompt, disabled: false });
+    }
+    saveUserSkills(arr);
+    closeSkillEditor();
+    setSkillsTab('skills');
+    renderSkillsList();
+    showToast?.('Навык сохранён', 'success');
+  };
+
+  window.startSkillCreatorChat = function() {
+    setActiveConnector({ id: 'skill_creator', label: 'Skill Creator' });
+    closeSkillsHub();
+    if (typeof switchScreen === 'function') switchScreen('chat');
+    showToast?.('Коннектор Skill Creator · опишите навык в чате', 'info');
+    const input = document.getElementById('user-input');
+    if (input) {
+      input.focus();
+      if (!input.value) input.placeholder = 'Опишите навык: имя, /команда, поведение…';
+    }
+  };
+
+  const prevSetTab = window.setSkillsTab;
+  window.setSkillsTab = function(tab) {
+    document.querySelectorAll('.skills-hub-tab').forEach(b => {
+      if (b.dataset.skillsTab) b.classList.toggle('active', b.dataset.skillsTab === tab);
+    });
+    const store = document.getElementById('skills-panel-store');
+    const skills = document.getElementById('skills-panel-skills');
+    if (store) store.hidden = tab !== 'store';
+    if (skills) skills.hidden = tab !== 'skills';
+    if (tab === 'skills') renderSkillsList();
+    if (tab === 'store') renderConnectorsCatalog();
+  };
+  const prevOpen = window.openSkillsHub;
+  window.openSkillsHub = function() {
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+    document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active-screen'));
+    document.getElementById('screen-skills')?.classList.add('active-screen');
+    document.querySelector('.glass-nav')?.classList.add('nav-hidden-skills');
+    setSkillsTab('skills');
+    renderSkillsList();
+    renderConnectorsCatalog();
+  };
+  window.closeSkillsHub = function() {
+    document.getElementById('screen-skills')?.classList.remove('active-screen');
+    document.querySelector('.glass-nav')?.classList.remove('nav-hidden-skills');
+    if (typeof switchScreen === 'function') switchScreen('chat');
+  };
+
+  // Restore uninstalled builtins helper
+  window.restoreBuiltinSkills = function() {
+    localStorage.removeItem(BUILTIN_STATE_KEY);
+    renderSkillsList();
+    showToast?.('Базовые навыки восстановлены', 'success');
+  };
+})();
+
+/* ===== Input mode Chat / Task ===== */
+(function inputModeChatTask() {
+  const KEY = 'oracle_input_mode'; // remembered preference after first choice
+  const TASK_WELCOME = 'oracle_task_welcome_seen';
+
+  function getMode() {
+    return localStorage.getItem(KEY) || 'chat';
+  }
+
+  window.setInputMode = function(mode, opts) {
+    opts = opts || {};
+    mode = mode === 'task' ? 'task' : 'chat';
+    const prev = (localStorage.getItem('oracle_input_mode') || 'chat');
+    localStorage.setItem('oracle_input_mode', mode);
+    if (typeof CoreState === 'object') CoreState.inputMode = mode;
+
+    document.getElementById('mode-chip-chat')?.classList.toggle('active', mode === 'chat');
+    document.getElementById('mode-chip-task')?.classList.toggle('active', mode === 'task');
+
+    const input = document.getElementById('user-input');
+    if (input && !input.value.trim()) {
+      input.placeholder = mode === 'task' ? 'Опишите задачу…' : (input.dataset.ph || 'Спросите что-нибудь…');
+    }
+    document.body.classList.toggle('task-mode', mode === 'task');
+    if (typeof updateTaskWelcomeScreen === 'function') updateTaskWelcomeScreen(mode);
+
+    try {
+      if (typeof currentSessionId !== 'undefined' && currentSessionId && chatSessions[currentSessionId]) {
+        chatSessions[currentSessionId].mode = mode;
+        localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+        if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+      }
+    } catch (e) {}
+
+    if (mode === 'task' && prev !== 'task' && !localStorage.getItem('oracle_task_welcome_seen') && !opts.silent) {
+      document.getElementById('task-welcome-modal')?.classList.add('active');
+    }
+  };
+
+  window.updateTaskWelcomeScreen = function(mode) {
+    const g = document.getElementById('welcome-greeting');
+    const s = document.getElementById('welcome-subtext');
+    if (!g || !s) return;
+    if (mode === 'task') {
+      g.textContent = 'Какую задачу решим?';
+      s.textContent = 'Режим Task: опишите цель по шагам. ИИ поможет с планом — ответственность за действия остаётся за вами.';
+      return;
+    }
+    if (typeof CoreState === 'object' && CoreState.isTempChat) return;
+    let name = '';
+    try { name = (JSON.parse(localStorage.getItem('oracle_user_profile') || '{}').name) || ''; } catch (e) {}
+    g.textContent = name ? ('Привет, ' + name + '!') : 'Привет! Как твои дела?';
+    s.textContent = 'Готов к работе. Чем я могу помочь тебе сегодня?';
+  };
+
+  window.closeTaskWelcome = function() {
+    localStorage.setItem(TASK_WELCOME, '1');
+    document.getElementById('task-welcome-modal')?.classList.remove('active');
+  };
+
+  function boot() {
+    const m = getMode();
+    // First visit: chat default (no KEY yet already handled)
+    setInputMode(m, { silent: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
+window.stampCurrentSessionMode = function() {
+  try {
+    if (typeof currentSessionId === 'undefined' || !currentSessionId) return;
+    if (typeof chatSessions !== 'object' || !chatSessions[currentSessionId]) return;
+    chatSessions[currentSessionId].mode = localStorage.getItem('oracle_input_mode') || 'chat';
+    localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+  } catch (e) {}
+};
+
+/* task mode stamp wrap */
+(function(){
+  function wrap(name) {
+    const orig = window[name];
+    if (typeof orig !== 'function' || orig._taskStamped) return;
+    const w = function() {
+      const r = orig.apply(this, arguments);
+      try { window.stampCurrentSessionMode && window.stampCurrentSessionMode(); } catch(e){}
+      return r;
+    };
+    w._taskStamped = true;
+    window[name] = w;
+  }
+  ['sendMsg','sendMessage'].forEach(wrap);
+  // also non-window
+  if (typeof sendMsg === 'function' && !sendMsg._taskStamped) {
+    /* can't reassign const */
+  }
+})();
+
+/* ===== Chat Context memory (per session) ===== */
+(function chatContextMemory() {
+  const MAX_CHARS = 3500;
+  const MAX_BYTES = 6 * 1024;
+  const USE_KEY = 'oracle_use_context'; // default on
+
+  function useContextEnabled() {
+    const v = localStorage.getItem(USE_KEY);
+    return v === null || v === '1' || v === 'true';
+  }
+  window.toggleUseContext = function(on) {
+    localStorage.setItem(USE_KEY, on ? '1' : '0');
+    syncChatMemoryGate();
+    showToast?.(on ? 'Контекст включён' : 'Контекст выключен — ИИ может забывать детали', on ? 'success' : 'warning');
+  };
+  window.isUseContextOn = useContextEnabled;
+
+  function byteLen(s) {
+    try { return new TextEncoder().encode(s).length; } catch (e) { return (s || '').length; }
+  }
+  function clampContext(text) {
+    let t = String(text || '');
+    if (t.length > MAX_CHARS) t = t.slice(0, MAX_CHARS);
+    while (byteLen(t) > MAX_BYTES && t.length) t = t.slice(0, -1);
+    return t;
+  }
+  function sessionKey() {
+    if (typeof CoreState === 'object' && CoreState.isTempChat) return '__temp__';
+    if (typeof currentSessionId !== 'undefined' && currentSessionId) return currentSessionId;
+    return null;
+  }
+  window.getChatContext = function(sid) {
+    sid = sid || sessionKey();
+    if (!sid) return '';
+    if (sid === '__temp__') return (CoreState._tempContext || '');
+    try {
+      if (chatSessions[sid] && typeof chatSessions[sid].context === 'string') return chatSessions[sid].context;
+      const map = JSON.parse(localStorage.getItem('oracle_chat_contexts') || '{}') || {};
+      return map[sid] || '';
+    } catch (e) { return ''; }
+  };
+  window.setChatContext = function(text, sid) {
+    sid = sid || sessionKey();
+    text = clampContext(text);
+    if (!sid) return text;
+    if (sid === '__temp__') {
+      CoreState._tempContext = text;
+      return text;
+    }
+    if (!chatSessions[sid]) chatSessions[sid] = { title: 'Чат', html: '', mode: 'chat' };
+    chatSessions[sid].context = text;
+    try {
+      localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+      const map = JSON.parse(localStorage.getItem('oracle_chat_contexts') || '{}') || {};
+      map[sid] = text;
+      localStorage.setItem('oracle_chat_contexts', JSON.stringify(map));
+    } catch (e) {}
+    return text;
+  };
+  window.chatContextUsage = function(sid) {
+    const t = getChatContext(sid);
+    const chars = t.length;
+    const bytes = byteLen(t);
+    const full = chars >= MAX_CHARS || bytes >= MAX_BYTES;
+    const ratio = Math.min(1, Math.max(chars / MAX_CHARS, bytes / MAX_BYTES));
+    return { chars, bytes, maxChars: MAX_CHARS, maxBytes: MAX_BYTES, full, ratio, left: Math.max(0, MAX_CHARS - chars) };
+  };
+  window.isChatMemoryFull = function() {
+    if (!useContextEnabled()) return false;
+    return chatContextUsage().full;
+  };
+
+  window.syncChatMemoryGate = function() {
+    const ov = document.getElementById('chat-memory-full-overlay');
+    const full = isChatMemoryFull();
+    if (ov) {
+      if (full && useContextEnabled()) ov.hidden = false;
+      else ov.hidden = true;
+    }
+    const send = document.getElementById('send-btn');
+    if (send && full && useContextEnabled()) send.classList.remove('visible');
+  };
+  window.hideChatMemoryFull = function() {
+    const ov = document.getElementById('chat-memory-full-overlay');
+    if (ov) ov.hidden = true;
+  };
+
+  window.refreshContextGauge = function() {
+    const u = chatContextUsage();
+    const fill = document.getElementById('ctx-gauge-fill');
+    const lab = document.getElementById('ctx-gauge-label');
+    const left = document.getElementById('ctx-gauge-left');
+    if (fill) {
+      fill.style.width = Math.round(u.ratio * 100) + '%';
+      fill.classList.toggle('warn', u.ratio >= 0.8 && u.ratio < 1);
+      fill.classList.toggle('full', u.full);
+    }
+    if (lab) lab.textContent = u.chars + ' / ' + u.maxChars;
+    if (left) left.textContent = u.full ? 'Лимит' : ('Осталось ' + u.left);
+  };
+
+  window.openChatContextEditor = function(sid) {
+    hideChatMemoryFull();
+    const screen = document.getElementById('chat-context-screen');
+    const ed = document.getElementById('chat-context-editor');
+    if (!screen || !ed) return;
+    CoreState._ctxEditSid = sid || sessionKey();
+    ed.value = getChatContext(CoreState._ctxEditSid);
+    refreshContextGauge();
+    screen.hidden = false;
+    document.body.classList.add('context-editor-open');
+    setTimeout(() => ed.focus(), 50);
+  };
+  window.closeChatContextEditor = function() {
+    document.getElementById('chat-context-screen').hidden = true;
+    document.body.classList.remove('context-editor-open');
+    syncChatMemoryGate();
+  };
+  window.onChatContextInput = function() {
+    const ed = document.getElementById('chat-context-editor');
+    if (!ed) return;
+    const c = clampContext(ed.value);
+    if (c !== ed.value) {
+      ed.value = c;
+      showToast?.('Контекст обрезан до лимита 3500 / 6 КБ', 'warning');
+    }
+    // live gauge without save
+    const tmp = ed.value;
+    const sid = CoreState._ctxEditSid;
+    const prev = getChatContext(sid);
+    setChatContext(tmp, sid);
+    refreshContextGauge();
+    // keep as draft in editor only until Save - actually we already wrote; Save just closes
+  };
+  window.saveChatContextFromEditor = function() {
+    const ed = document.getElementById('chat-context-editor');
+    if (ed) setChatContext(ed.value, CoreState._ctxEditSid);
+    refreshContextGauge();
+    closeChatContextEditor();
+    showToast?.('Контекст сохранён', 'success');
+    if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+  };
+  window.clearChatContextConfirm = function() {
+    const go = () => {
+      setChatContext('', CoreState._ctxEditSid);
+      const ed = document.getElementById('chat-context-editor');
+      if (ed) ed.value = '';
+      refreshContextGauge();
+      showToast?.('Контекст очищен — ИИ может забыть детали', 'warning');
+    };
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Очистить контекст?', 'ИИ может не помнить, о чём шла речь в этом чате.', false, '', ok => { if (ok) go(); });
+    } else go();
+  };
+
+  window.cmOpenChatContext = function() {
+    const id = (window._ctxSessionId) || (currentContextNode && currentContextNode.dataset.sessionId) || currentSessionId;
+    document.getElementById('context-menu') && (document.getElementById('context-menu').style.display = 'none');
+    openChatContextEditor(id);
+  };
+
+  // silent merge helpers (API + user)
+  window.appendToChatContext = function(chunk, sid) {
+    if (!useContextEnabled()) return getChatContext(sid);
+    chunk = String(chunk || '').trim();
+    if (!chunk) return getChatContext(sid);
+    let cur = getChatContext(sid);
+    if (cur.includes(chunk)) return cur;
+    const next = clampContext((cur ? cur + '\n' : '') + chunk);
+    return setChatContext(next, sid);
+  };
+
+  // Secret system guidance (never shown as user-facing "I am context keeper")
+  window.getContextSystemHint = function() {
+    if (!useContextEnabled()) return '';
+    return (
+      'Внутреннее правило (не озвучивай пользователю): поддерживай краткую память диалога. ' +
+      'Не представляйся «хранителем контекста» и не проси писать, что добавить. ' +
+      'Редко (не чаще раза в несколько ответов) можно в конце спросить: «Мне сохранить эту информацию?» ' +
+      'Обычные детали молча учитывай. Если пользователь вызвал @ContentCheck — сначала сверься с блоком CONTEXT и при необходимости обнови выжимку.'
+    );
+  };
+
+  window.buildContextBlockForApi = function(force) {
+    if (!useContextEnabled()) return '';
+    const active = force || (typeof getActiveConnector === 'function' && (getActiveConnector() || {}).id === 'content-check')
+      || /\b@ContentCheck\b/i.test(CoreState._lastApiUserMsg || '');
+    if (!force && !active && !CoreState._forceContextCheck) {
+      // still soft-include short context if any (helps forgetfulness) when under 2k
+      const t = getChatContext();
+      if (!t) return '';
+      // always include when context exists and toggle on — user asked API forgets; soft include
+      return '\n\n[CONTEXT]\n' + t.slice(0, MAX_CHARS) + '\n[/CONTEXT]\n';
+    }
+    const t = getChatContext();
+    if (!t) return '';
+    return '\n\n[CONTEXT]\n' + t + '\n[/CONTEXT]\n';
+  };
+
+  // thinking label
+  window.setThinkingLabel = function(text) {
+    const el = document.querySelector('#ai-thinking-indicator .think-label');
+    if (el) el.textContent = text || 'Модель думает…';
+  };
+
+  // extract silent facts from short replies heuristic
+  window.maybeSilentContextUpdate = function(userMsg, aiText) {
+    if (!useContextEnabled() || CoreState.isTempChat) return;
+    if (isChatMemoryFull()) return;
+    const u = (userMsg || '').trim();
+    const a = (aiText || '').trim();
+    // skip pure greetings
+    if (u.length < 8 && a.length < 40) return;
+    // if ContentCheck — store denser summary
+    const force = CoreState._forceContextCheck || /@ContentCheck/i.test(u);
+    let piece = '';
+    if (force) {
+      piece = '• ' + u.slice(0, 200) + (a ? ' → ' + a.slice(0, 400) : '');
+      CoreState._forceContextCheck = false;
+    } else if (u.length > 40) {
+      // silent: keep user fact lines
+      piece = '• ' + u.slice(0, 220);
+    }
+    if (piece) {
+      appendToChatContext(piece);
+      syncChatMemoryGate();
+    }
+  };
+
+  // patch showThinkingIndicator label
+  const _sti = window.showThinkingIndicator;
+  if (typeof showThinkingIndicator === 'function' || typeof _sti === 'function') {
+    const orig = typeof showThinkingIndicator === 'function' ? showThinkingIndicator : _sti;
+  }
+  window.showThinkingIndicator = function(show, label) {
+    const style = (typeof getThinkingStyle === 'function') ? getThinkingStyle() : 'dots';
+    if (style === 'off') {
+      document.getElementById('ai-thinking-indicator')?.classList.remove('visible');
+      return;
+    }
+    const el = (typeof ensureThinkingIndicator === 'function') ? ensureThinkingIndicator() : document.getElementById('ai-thinking-indicator');
+    if (!el) return;
+    const lab = el.querySelector('.think-label');
+    if (lab) lab.textContent = label || 'Модель думает…';
+    el.classList.toggle('visible', !!show);
+  };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const cb = document.getElementById('set-use-context');
+    if (cb) cb.checked = useContextEnabled();
+    syncChatMemoryGate();
+  });
+})();
+
+/* Gate sendMsg for full memory + context inject + silent update */
+(function patchSendForContext() {
+  const orig = typeof sendMsg === 'function' ? sendMsg : null;
+  if (!orig || orig._ctxPatched) return;
+  function gatedSendMsg() {
+    if (typeof isUseContextOn === 'function' && isUseContextOn() && typeof isChatMemoryFull === 'function' && isChatMemoryFull()) {
+      const ov = document.getElementById('chat-memory-full-overlay');
+      if (ov) ov.hidden = false;
+      showToast?.('Память чата заполнена', 'warning');
+      return;
+    }
+    const input = document.getElementById('user-input');
+    const msg = (input && input.value || '').trim();
+    if (/@ContentCheck\b/i.test(msg) || (typeof getActiveConnector === 'function' && (getActiveConnector() || {}).id === 'content-check')) {
+      CoreState._forceContextCheck = true;
+      if (typeof setThinkingLabel === 'function') setThinkingLabel('Сверяю контекст…');
+      if (typeof showThinkingIndicator === 'function') showThinkingIndicator(true, 'Сверяю контекст…');
+    }
+    return orig.apply(this, arguments);
+  }
+  gatedSendMsg._ctxPatched = true;
+  // assign both
+  try { sendMsg = gatedSendMsg; } catch (e) {}
+  window.sendMsg = gatedSendMsg;
+
+  const origResolve = typeof resolveAiResponse === 'function' ? resolveAiResponse : null;
+  if (origResolve && !origResolve._ctxPatched) {
+    window.resolveAiResponse = async function(msg) {
+      const force = CoreState._forceContextCheck || /@ContentCheck\b/i.test(msg || '');
+      if (force && typeof showThinkingIndicator === 'function') {
+        showThinkingIndicator(true, 'Сверяю контекст…');
+      }
+      let augmented = msg;
+      if (typeof buildContextBlockForApi === 'function') {
+        const block = buildContextBlockForApi(force);
+        const hint = (typeof getContextSystemHint === 'function') ? getContextSystemHint() : '';
+        if (block || hint) {
+          augmented = (hint ? hint + '\n' : '') + (block || '') + '\nUser: ' + msg;
+        }
+      }
+      const result = await origResolve.call(this, augmented);
+      if (result && result.ok && typeof maybeSilentContextUpdate === 'function') {
+        maybeSilentContextUpdate(msg, result.text);
+      }
+      if (typeof setThinkingLabel === 'function') setThinkingLabel('Модель думает…');
+      CoreState._forceContextCheck = false;
+      return result;
+    };
+    window.resolveAiResponse._ctxPatched = true;
+  }
+})();
+
+/* Split: chat-context mode */
+(function patchSplitContext() {
+  const prev = typeof selectSplitMode === 'function' ? selectSplitMode : null;
+  if (!prev || prev._ctxSplit) return;
+  // patch apply path by wrapping confirmSplit / selectSplitMode usage at applySplitSelection
+})();
+
+window.ensureContextSplitPane = function() {
+  let el = document.getElementById('screen-context-split');
+  if (el) return el;
+  el = document.createElement('div');
+  el.id = 'screen-context-split';
+  el.className = 'app-screen active-screen context-split-pane';
+  el.innerHTML = '<div class="chat-context-top" style="position:static;padding:8px 0;"><h2 style="margin:0;font-size:16px;">Контекст</h2></div>' +
+    '<div class="chat-context-gauge"><div class="chat-context-gauge-bar"><div id="ctx-gauge-fill-split"></div></div>' +
+    '<div class="chat-context-gauge-meta"><span id="ctx-gauge-label-split">0 / 3500</span></div></div>' +
+    '<textarea id="chat-context-editor-split" maxlength="3500" placeholder="Контекст этого чата…" style="flex:1;width:100%;min-height:200px;border-radius:12px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);padding:12px;box-sizing:border-box;"></textarea>' +
+    '<button type="button" class="modal-btn modal-btn-accept" style="margin-top:8px;" onclick="saveSplitContext()">Сохранить контекст</button>';
+  return el;
+};
+window.saveSplitContext = function() {
+  const ed = document.getElementById('chat-context-editor-split');
+  if (ed && typeof setChatContext === 'function') {
+    setChatContext(ed.value);
+    showToast?.('Контекст сохранён', 'success');
+    if (typeof refreshContextGauge === 'function') refreshContextGauge();
+  }
+};
+window.loadSplitContextEditor = function() {
+  const ed = document.getElementById('chat-context-editor-split');
+  if (ed && typeof getChatContext === 'function') ed.value = getChatContext();
+  const u = typeof chatContextUsage === 'function' ? chatContextUsage() : null;
+  const fill = document.getElementById('ctx-gauge-fill-split');
+  const lab = document.getElementById('ctx-gauge-label-split');
+  if (u && fill) fill.style.width = Math.round(u.ratio * 100) + '%';
+  if (u && lab) lab.textContent = u.chars + ' / ' + u.maxChars;
+};
+
+(function patchResolveAiContextDelayed() {
+  function tryPatch() {
+    const orig = window.resolveAiResponse || (typeof resolveAiResponse === 'function' ? resolveAiResponse : null);
+    if (!orig || orig._ctxPatched2) return;
+    const wrapped = async function(msg) {
+      const force = !!(CoreState && (CoreState._forceContextCheck || /@ContentCheck\b/i.test(msg || '')));
+      if (force && typeof showThinkingIndicator === 'function') showThinkingIndicator(true, 'Сверяю контекст…');
+      let augmented = msg;
+      try {
+        if (typeof buildContextBlockForApi === 'function') {
+          const block = buildContextBlockForApi(true); // always attach CONTEXT block when toggle on
+          const soft = buildContextBlockForApi(force);
+          const use = force ? soft : (typeof isUseContextOn === 'function' && isUseContextOn() ? buildContextBlockForApi(true) : '');
+          const hint = (typeof getContextSystemHint === 'function' && isUseContextOn()) ? getContextSystemHint() : '';
+          if (use || hint) augmented = (hint ? hint + '\n' : '') + (use || '') + '\nUser: ' + msg;
+        }
+      } catch (e) {}
+      const result = await orig.call(this, augmented);
+      try {
+        if (result && result.ok && typeof maybeSilentContextUpdate === 'function') maybeSilentContextUpdate(msg, result.text);
+      } catch (e) {}
+      if (CoreState) CoreState._forceContextCheck = false;
+      return result;
+    };
+    wrapped._ctxPatched2 = true;
+    window.resolveAiResponse = wrapped;
+    try { resolveAiResponse = wrapped; } catch (e) {}
+  }
+  tryPatch();
+  document.addEventListener('DOMContentLoaded', tryPatch);
+  setTimeout(tryPatch, 500);
+})();
+
+/* ===== Input tag chips: 1 connector + 2 skills above field ===== */
+(function inputTagChips() {
+  const MAX_CONN = 1;
+  const MAX_SKILLS = 2;
+
+  CoreState.tagConnector = null; // { id, label }
+  CoreState.tagSkills = []; // [{ cmd, name }]
+  CoreState._tagReplacePending = null;
+
+  function isEditLocked() {
+    return document.body.classList.contains('edit-msg-mode');
+  }
+
+  function stripTrailingTrigger(kind) {
+    const input = document.getElementById('user-input');
+    if (!input) return;
+    let v = input.value;
+    if (kind === 'at') v = v.replace(/(^|\s)@[^\s]*$/, '$1');
+    else if (kind === 'slash') v = v.replace(/(^|\s)\/[^\s]*$/, '$1');
+    input.value = v.replace(/\s+$/, (input.value.endsWith('\n') ? '\n' : ''));
+    if (typeof handleInput === 'function') handleInput(input);
+  }
+
+  window.renderTagChips = function() {
+    const box = document.getElementById('tag-chips');
+    if (!box) return;
+    const parts = [];
+    if (CoreState.tagConnector) {
+      const c = CoreState.tagConnector;
+      parts.push(
+        '<span class="tag-chip conn-chip" data-kind="conn">' +
+        '<span class="material-symbols-rounded">hub</span>@' + escapeTag(c.label || c.id) +
+        '<button type="button" class="tag-chip-x" onclick="removeTagChip(\'conn\')" title="Убрать">×</button></span>'
+      );
+    }
+    (CoreState.tagSkills || []).forEach((s, i) => {
+      parts.push(
+        '<span class="tag-chip skill-chip" data-kind="skill" data-i="' + i + '">' +
+        '<span class="material-symbols-rounded">bolt</span>/' + escapeTag(s.cmd) +
+        '<button type="button" class="tag-chip-x" onclick="removeTagChip(\'skill\',' + i + ')" title="Убрать">×</button></span>'
+      );
+    });
+    box.innerHTML = parts.join('');
+    box.style.display = parts.length ? 'flex' : 'none';
+  };
+
+  function escapeTag(s) {
+    return String(s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  window.removeTagChip = function(kind, index) {
+    if (isEditLocked()) return;
+    if (kind === 'conn') CoreState.tagConnector = null;
+    else if (kind === 'skill') {
+      CoreState.tagSkills.splice(index, 1);
+    }
+    renderTagChips();
+  };
+
+  window.clearTagChips = function() {
+    CoreState.tagConnector = null;
+    CoreState.tagSkills = [];
+    renderTagChips();
+  };
+
+  window.getTagPrefixForSend = function() {
+    const bits = [];
+    if (CoreState.tagConnector) bits.push('@' + (CoreState.tagConnector.label || CoreState.tagConnector.id));
+    (CoreState.tagSkills || []).forEach(s => bits.push('/' + s.cmd));
+    return bits.length ? bits.join(' ') + ' ' : '';
+  };
+
+  window.closeTagReplaceModal = function() {
+    document.getElementById('tag-replace-modal')?.classList.remove('active');
+    CoreState._tagReplacePending = null;
+  };
+
+  window.confirmTagReplace = function() {
+    const p = CoreState._tagReplacePending;
+    closeTagReplaceModal();
+    if (!p) return;
+    if (p.kind === 'conn') {
+      CoreState.tagConnector = { id: p.id, label: p.label };
+      stripTrailingTrigger('at');
+    } else if (p.kind === 'skill') {
+      if (CoreState.tagSkills.length >= MAX_SKILLS) CoreState.tagSkills.shift();
+      CoreState.tagSkills.push({ cmd: p.cmd, name: p.name || p.cmd });
+      stripTrailingTrigger('slash');
+    }
+    renderTagChips();
+  };
+
+  function openReplaceModal(kind, payload) {
+    CoreState._tagReplacePending = Object.assign({ kind }, payload);
+    const title = document.getElementById('tag-replace-title');
+    const text = document.getElementById('tag-replace-text');
+    if (kind === 'conn') {
+      if (title) title.textContent = 'Коннектор уже выбран';
+      if (text) text.textContent = 'На один запрос — только 1 коннектор. Заменить на @' + (payload.label || payload.id) + '?';
+    } else {
+      if (title) title.textContent = 'Лимит навыков';
+      if (text) text.textContent = 'Можно до 2 навыков. Заменить самый старый на /' + payload.cmd + '?';
+    }
+    document.getElementById('tag-replace-modal')?.classList.add('active');
+  }
+
+  window.addConnectorChip = function(id, label) {
+    if (isEditLocked()) {
+      showToast?.('При редактировании сообщения теги менять нельзя', 'warning');
+      return false;
+    }
+    id = id || label;
+    label = label || id;
+    if (CoreState.tagConnector) {
+      openReplaceModal('conn', { id, label });
+      hideConnectors?.();
+      return false;
+    }
+    CoreState.tagConnector = { id, label };
+    stripTrailingTrigger('at');
+    hideConnectors?.();
+    renderTagChips();
+    showToast?.('Коннектор @' + label, 'info', 1600);
+    return true;
+  };
+
+  window.addSkillChip = function(cmd, name) {
+    if (isEditLocked()) {
+      showToast?.('При редактировании сообщения теги менять нельзя', 'warning');
+      return false;
+    }
+    if (!cmd) return false;
+    if (CoreState.tagSkills.some(s => s.cmd === cmd)) {
+      showToast?.('Навык /' + cmd + ' уже добавлен', 'info');
+      hideSkillPopup?.();
+      stripTrailingTrigger('slash');
+      return false;
+    }
+    if (CoreState.tagSkills.length >= MAX_SKILLS) {
+      openReplaceModal('skill', { cmd, name: name || cmd });
+      hideSkillPopup?.();
+      return false;
+    }
+    CoreState.tagSkills.push({ cmd, name: name || cmd });
+    stripTrailingTrigger('slash');
+    hideSkillPopup?.();
+    renderTagChips();
+    if (typeof setActiveSkill === 'function') {
+      try {
+        const all = (typeof allSkills === 'function') ? allSkills() : [];
+        const sk = all.find(s => s.cmd === cmd);
+        if (sk) setActiveSkill(sk);
+      } catch (e) {}
+    }
+    showToast?.('Навык /' + cmd, 'info', 1600);
+    return true;
+  };
+
+  // Override insertConnector / insertSkill when defined later — patch after load
+  function patchInsertors() {
+    window.insertConnector = function(label) {
+      const id = String(label || '').replace(/^@/, '');
+      addConnectorChip(id, id);
+    };
+    window.insertSkill = function(cmd) {
+      addSkillChip(cmd, cmd);
+    };
+  }
+  patchInsertors();
+  setTimeout(patchInsertors, 600);
+
+  // Lock setInputMode during edit
+  const _setMode = window.setInputMode;
+  if (typeof _setMode === 'function' && !_setMode._tagLock) {
+    window.setInputMode = function(mode, opts) {
+      if (document.body.classList.contains('edit-msg-mode')) {
+        showToast?.('Во время редактирования нельзя переключить Chat / Task', 'warning');
+        return;
+      }
+      return _setMode.apply(this, arguments);
+    };
+    window.setInputMode._tagLock = true;
+  }
+
+  // Prefix message on send
+  const wrapSend = () => {
+    const orig = window.sendMsg;
+    if (typeof orig !== 'function' || orig._tagPrefixed) return;
+    
+/* deduped sendMsg wrap */
+
+    window.sendMsg._tagPrefixed = true;
+  };
+  wrapSend();
+  setTimeout(wrapSend, 800);
+
+  // Wire connector buttons to chip API
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('.connector-item[data-conn]');
+    if (!btn) return;
+    // allow default handlers too; our insertConnector is patched
+  });
+})();
+
+/* Temp chat tip */
+(function tempChatTip() {
+  const KEY = 'oracle_temp_chat_tip_seen';
+  
+/* deduped: earlier window.dismissTempChatTip removed */
+
+  window.maybeShowTempChatTip = function() {
+    if (localStorage.getItem(KEY) === '1') return;
+    if (CoreState && CoreState.isTempChat) return;
+    const tip = document.getElementById('temp-chat-tip');
+    if (!tip) return;
+    tip.hidden = false;
+    // point arrow toward temp button if exists
+    const btn = document.getElementById('temp-chat-btn') || document.querySelector('[onclick*="enterTempChat"], [onclick*="toggleTempChat"]');
+    const arrow = document.getElementById('temp-chat-tip-arrow');
+    if (btn && arrow) {
+      try {
+        const br = btn.getBoundingClientRect();
+        const tr = tip.getBoundingClientRect();
+        if (br.top < tr.top) arrow.textContent = 'north_east';
+        else arrow.textContent = 'south_east';
+      } catch (e) {}
+    }
+  };
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => maybeShowTempChatTip(), 1800);
+  });
+})();
+
+/* ===== Fullscreen layout + sidebar boot preference ===== */
+(function fullscreenLayoutSidebar() {
+  const BOOT_KEY = 'oracle_sidebar_boot_pref'; // open | closed | remember
+  const LAST_KEY = 'oracle_sidebar_last_open'; // '1' | '0'
+  const LAYOUT_KEY = 'oracle_layout_fullscreen'; // default on
+
+  function isDesktop() {
+    return window.matchMedia('(min-width: 900px)').matches;
+  }
+
+  function isFullscreenLayout() {
+    const v = localStorage.getItem(LAYOUT_KEY);
+    return v === null || v === '1' || v === 'true';
+  }
+
+  window.applyLayoutFullscreen = function() {
+    document.body.classList.toggle('layout-fullscreen', isFullscreenLayout());
+  };
+
+  window.getSidebarBootPref = function() {
+    return localStorage.getItem(BOOT_KEY) || 'remember';
+  };
+
+  window.setSidebarBootPref = function(pref) {
+    if (!['open', 'closed', 'remember'].includes(pref)) pref = 'remember';
+    localStorage.setItem(BOOT_KEY, pref);
+    document.querySelectorAll('input[name="sidebar-boot"]').forEach(r => {
+      r.checked = r.value === pref;
+    });
+    showToast?.('Сохранено: боковое меню при входе', 'success', 1800);
+  };
+
+  window.syncSidebarOpenClass = function() {
+    const sb = document.getElementById('sidebar-archive');
+    const open = !!(sb && sb.classList.contains('open')) || document.body.classList.contains('sidebar-docked');
+    document.body.classList.toggle('sidebar-open', open);
+    if (!isDesktop()) document.body.classList.add('sidebar-overlay-mobile');
+    else document.body.classList.remove('sidebar-overlay-mobile');
+    // remember
+    if (getSidebarBootPref() === 'remember') {
+      try { localStorage.setItem(LAST_KEY, open ? '1' : '0'); } catch (e) {}
+    }
+  };
+
+  window.applySidebarBootPref = function() {
+    applyLayoutFullscreen();
+    const pref = getSidebarBootPref();
+    const sb = document.getElementById('sidebar-archive');
+    if (!sb) return;
+    // phones: never auto-open full overlay on boot (annoying)
+    if (!isDesktop()) {
+      sb.classList.remove('open');
+      document.body.classList.remove('sidebar-docked');
+      syncSidebarOpenClass();
+      return;
+    }
+    let shouldOpen = false;
+    if (pref === 'open') shouldOpen = true;
+    else if (pref === 'closed') shouldOpen = false;
+    else shouldOpen = localStorage.getItem(LAST_KEY) === '1' || localStorage.getItem('oracle_sidebar_docked') === 'true';
+
+    if (shouldOpen) {
+      sb.classList.add('open');
+      // soft-dock on desktop so content stays pushed without requiring pin button
+      if (localStorage.getItem('oracle_sidebar_docked') === 'true') {
+        document.body.classList.add('sidebar-docked');
+      }
+    } else {
+      sb.classList.remove('open');
+      if (localStorage.getItem('oracle_sidebar_docked') !== 'true') {
+        document.body.classList.remove('sidebar-docked');
+      }
+    }
+    syncSidebarOpenClass();
+    if (typeof syncSidebarDockUI === 'function') syncSidebarDockUI();
+    // radios
+    document.querySelectorAll('input[name="sidebar-boot"]').forEach(r => {
+      r.checked = r.value === pref;
+    });
+  };
+
+  // Patch toggleSidebar
+  const _ts = typeof toggleSidebar === 'function' ? toggleSidebar : null;
+  window.toggleSidebar = function() {
+    const sidebar = document.getElementById('sidebar-archive');
+    if (!sidebar) return;
+    sidebar.classList.toggle('open');
+    if (sidebar.classList.contains('open') && typeof renderUnifiedArchive === 'function') {
+      try { renderUnifiedArchive(); } catch (e) {}
+    }
+    // desktop open without dock still pushes via sidebar-open class
+    syncSidebarOpenClass();
+  };
+  // if original existed as non-window, keep name
+  try { if (_ts) { /* replaced */ } } catch (e) {}
+
+  const _dock = typeof toggleSidebarDock === 'function' ? toggleSidebarDock : null;
+  window.toggleSidebarDock = function() {
+    if (typeof _dock === 'function') _dock();
+    else {
+      const docked = document.body.classList.toggle('sidebar-docked');
+      localStorage.setItem('oracle_sidebar_docked', docked ? 'true' : 'false');
+      if (docked) document.getElementById('sidebar-archive')?.classList.add('open');
+      if (typeof syncSidebarDockUI === 'function') syncSidebarDockUI();
+    }
+    syncSidebarOpenClass();
+  };
+
+  const _undock = typeof toggleSidebarOrUndock === 'function' ? toggleSidebarOrUndock : null;
+  window.toggleSidebarOrUndock = function() {
+    if (typeof _undock === 'function') _undock();
+    else {
+      document.body.classList.remove('sidebar-docked');
+      localStorage.setItem('oracle_sidebar_docked', 'false');
+      document.getElementById('sidebar-archive')?.classList.remove('open');
+    }
+    syncSidebarOpenClass();
+  };
+
+  function boot() {
+    applyLayoutFullscreen();
+    applySidebarBootPref();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  window.addEventListener('resize', () => {
+    syncSidebarOpenClass();
+  });
+})();
+
+/* ===== Fullscreen + sidebar entry preference ===== */
+(function sidebarEntryPref() {
+  const PREF_KEY = 'oracle_sidebar_entry_pref';
+  const STATE_KEY = 'oracle_sidebar_last_open';
+
+  function isDesktop() {
+    return window.matchMedia('(min-width: 769px)').matches;
+  }
+  function getPref() {
+    return localStorage.getItem(PREF_KEY) || 'closed';
+  }
+
+  window.toggleSidebarEntryMenu = function(e) {
+    e && e.stopPropagation && e.stopPropagation();
+    const menu = document.getElementById('sidebar-entry-menu');
+    if (!menu) return;
+    menu.style.display = (menu.style.display === 'block') ? 'none' : 'block';
+  };
+
+  window.setSidebarEntryPref = function(val) {
+    if (typeof setSidebarBootPref === 'function') return setSidebarBootPref(val);
+  };
+  window.toggleSidebarOrUndock = function() { closeSidebar(); };
+  window.undockSidebar = function() { closeSidebar(); };
+  window.syncSidebarDockUI = function() {};
+
+  function applyEntryPrefOnLoad() {
+    const lab = document.getElementById('sidebar-entry-label');
+    const pref = getPref();
+    const labels = {
+      closed: 'Сворачивать по умолчанию',
+      open: 'Разворачивать по умолчанию',
+      remember: 'Сохранять после каждого выхода'
+    };
+    if (lab) lab.textContent = labels[pref] || labels.closed;
+    document.body.classList.remove('sidebar-docked');
+    try { localStorage.setItem('oracle_sidebar_docked', 'false'); } catch(e) {}
+    if (!isDesktop()) {
+      document.body.classList.remove('sidebar-open');
+      return;
+    }
+    let shouldOpen = false;
+    if (pref === 'open') shouldOpen = true;
+    else if (pref === 'remember') shouldOpen = localStorage.getItem(STATE_KEY) === '1';
+    if (shouldOpen) openSidebar();
+    else closeSidebar();
+  }
+
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('sidebar-entry-menu');
+    const picker = document.getElementById('sidebar-entry-picker');
+    if (!menu || !picker) return;
+    if (!picker.contains(e.target)) menu.style.display = 'none';
+  });
+
+  function boot() { applyEntryPrefOnLoad(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(boot, 250);
+
+  window.addEventListener('resize', () => {
+    if (!isDesktop()) {
+      document.body.classList.remove('sidebar-open');
+    } else {
+      const sidebar = document.getElementById('sidebar-archive');
+      if (sidebar && sidebar.classList.contains('open')) document.body.classList.add('sidebar-open');
+    }
+  });
+})();
+
+/* ===== content_base local library + models + ghost bar + centered input ===== */
+(function coreNodeImmediateUpgrades() {
+  let CONTENT_BASE = null;
+  async function loadContentBase() {
+    if (CONTENT_BASE) return CONTENT_BASE;
+    try {
+      const r = await fetch('content_base.json', { cache: 'no-store' });
+      if (r.ok) CONTENT_BASE = await r.json();
+    } catch (e) {}
+    if (!CONTENT_BASE) {
+      CONTENT_BASE = {
+        default: 'Локальный режим Core Node. Подключите API для расширенных ответов.',
+        entries: [
+          { keys: ['привет', 'hello'], reply: 'Привет! Локальный режим Core Node.' }
+        ]
+      };
+    }
+    return CONTENT_BASE;
+  }
+  window.loadContentBase = loadContentBase;
+
+  window.lookupLocalReply = function(msg) {
+    const base = CONTENT_BASE || { entries: [], default: '…' };
+    const t = String(msg || '').toLowerCase();
+    for (const e of (base.entries || [])) {
+      const keys = e.keys || [];
+      if (keys.some(k => t.includes(String(k).toLowerCase()))) return e.text || e.reply || '';
+    }
+    const def = base.default;
+    if (def && typeof def === 'object') return def.text || 'Локальный ответ не найден.';
+    return def || 'Локальный ответ не найден.';
+  };
+
+  // Intify 2.5.4 → content_base. External API only when that model is selected.
+  const tryLocalPatch = () => {
+    const orig = window.resolveAiResponse;
+    if (typeof orig !== 'function' || orig._localLib) return;
+    window.resolveAiResponse = async function(msg) {
+      await loadContentBase();
+      const useExternal = CoreState.activeAgent === 'external-api';
+      if (useExternal) {
+        try {
+          const res = await orig.apply(this, arguments);
+          if (res && res.ok && res.text) return res;
+          return res || { ok: false, error: 'API не ответил' };
+        } catch (e) {
+          return { ok: false, error: String(e && e.message || e) };
+        }
+      }
+      return { ok: true, text: lookupLocalReply(msg), local: true, model: 'Intify 2.5.4' };
+    };
+    window.resolveAiResponse._localLib = true;
+  };
+  tryLocalPatch();
+  setTimeout(tryLocalPatch, 600);
+  loadContentBase();
+
+  // Centered empty chat input
+  window.syncChatEmptyCenter = function() {
+    const flow = document.getElementById('chat-flow');
+    const welcome = document.getElementById('welcome-block');
+    const hasMsg = flow && flow.querySelector('.msg, .user-msg, .ai-msg, .bubble');
+    const welcomeVisible = welcome && !welcome.classList.contains('hidden');
+    const empty = !hasMsg && (welcomeVisible || !flow || !flow.children.length);
+    document.body.classList.toggle('chat-empty-center', !!empty && !document.body.classList.contains('split-mode'));
+    // ghost bar
+    const bar = document.getElementById('ghost-action-bar');
+    const chatOn = document.getElementById('screen-chat')?.classList.contains('active-screen');
+    if (bar) {
+      const show = chatOn && empty && !CoreState.isTempChat;
+      bar.hidden = !show;
+    }
+  };
+
+  const _hi = window.handleInput;
+  window.handleInput = function(el) {
+    if (typeof _hi === 'function') _hi.apply(this, arguments);
+    // temp: send inactive when empty
+    const send = document.getElementById('send-btn');
+    const live = document.getElementById('live-chat-btn');
+    const val = (el && el.value || '').trim();
+    if (CoreState.isTempChat) {
+      if (live) { live.classList.add('hidden'); live.style.pointerEvents = 'none'; }
+      if (send) {
+        send.classList.add('visible');
+        send.disabled = !val;
+        send.style.opacity = val ? '' : '0.4';
+        send.style.pointerEvents = val ? '' : 'none';
+      }
+    } else if (send) {
+      send.disabled = false;
+      send.style.opacity = '';
+      send.style.pointerEvents = '';
+    }
+    syncChatEmptyCenter();
+  };
+
+  // After send — drop center
+  const wrapSend2 = () => {
+    const o = window.sendMsg;
+    if (typeof o !== 'function' || o._centerPatch) return;
+    window.sendMsg = function() {
+      const r = o.apply(this, arguments);
+      setTimeout(() => {
+        document.body.classList.remove('chat-empty-center');
+        const bar = document.getElementById('ghost-action-bar');
+        if (bar) bar.hidden = true;
+        syncChatEmptyCenter();
+      }, 50);
+      return r;
+    };
+    window.sendMsg._centerPatch = true;
+  };
+  wrapSend2();
+  setTimeout(wrapSend2, 500);
+
+  // startLiveChat block in temp
+  const _live = window.startLiveChat;
+  if (typeof _live === 'function' && !_live._tempBlock) {
+    window.startLiveChat = function() {
+      if (CoreState.isTempChat) {
+        showToast?.('Live Chat недоступен во временном чате', 'warning');
+        return;
+      }
+      return _live.apply(this, arguments);
+    };
+    window.startLiveChat._tempBlock = true;
+  }
+
+  window.openDownloadAppModal = function() {
+    document.getElementById('download-app-modal')?.classList.add('active');
+  };
+  window.closeDownloadAppModal = function() {
+    document.getElementById('download-app-modal')?.classList.remove('active');
+  };
+  window.openUltraPlanStub = function() {
+    document.getElementById('ultra-plan-modal')?.classList.add('active');
+  };
+  window.tryInstallPWA = function() {
+    if (window.deferredPWAInstall) {
+      window.deferredPWAInstall.prompt();
+      return;
+    }
+    showToast?.('В браузере: меню → «Установить приложение» / «На экран Домой»', 'info', 4000);
+  };
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.deferredPWAInstall = e;
+  });
+
+  // Long gen play stub (>40s)
+  window._genPlayTimer = null;
+  window.armLongGenPlayOffer = function() {
+    clearTimeout(window._genPlayTimer);
+    window._genPlayTimer = setTimeout(() => {
+      if (!CoreState.isStreaming) return;
+      const host = document.getElementById('main-input-box');
+      if (!host || document.getElementById('play-while-gen-btn')) return;
+      const b = document.createElement('button');
+      b.id = 'play-while-gen-btn';
+      b.type = 'button';
+      b.className = 'play-while-gen-btn';
+      b.innerHTML = '<span class="material-symbols-rounded">sports_esports</span> Поиграть, пока генерируется?';
+      b.onclick = () => {
+        try {
+          localStorage.setItem('oracle_gen_pending_notify', '1');
+          window.open('play.html', '_blank');
+        } catch (e) {}
+      };
+      host.parentElement?.insertBefore(b, host);
+    }, 40000);
+  };
+  window.clearLongGenPlayOffer = function() {
+    clearTimeout(window._genPlayTimer);
+    document.getElementById('play-while-gen-btn')?.remove();
+    if (localStorage.getItem('oracle_gen_pending_notify') === '1') {
+      localStorage.setItem('oracle_gen_done_ping', String(Date.now()));
+      localStorage.removeItem('oracle_gen_pending_notify');
+      try {
+        const bc = new BroadcastChannel('core-node-gen');
+        bc.postMessage({ type: 'gen-done' });
+        bc.close();
+      } catch (e) {}
+    }
+  };
+
+  // Hook setGenerating if exists
+  const _sg = window.setGenerating;
+  if (typeof _sg === 'function' && !_sg._playHook) {
+    window.setGenerating = function(on) {
+      const r = _sg.apply(this, arguments);
+      if (on) armLongGenPlayOffer();
+      else clearLongGenPlayOffer();
+      return r;
+    };
+    window.setGenerating._playHook = true;
+  }
+
+  function bootUI() {
+    syncExternalApiOptionUI?.();
+    const saved = localStorage.getItem('oracle_active_agent');
+    if (saved) CoreState.activeAgent = saved === 'Oracle Main' || saved === 'Worldpack AI' || saved === 'Модель: Fast' ? 'Intify 2.5.4' : saved;
+    syncChatEmptyCenter();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootUI);
+  else bootUI();
+  setTimeout(bootUI, 400);
+  // observe chat flow
+  const obs = new MutationObserver(() => syncChatEmptyCenter());
+  document.addEventListener('DOMContentLoaded', () => {
+    const f = document.getElementById('chat-flow');
+    if (f) obs.observe(f, { childList: true, subtree: true });
+  });
+})();
+
+/* ===== Ensure sidebar open/close work (X button) ===== */
+(function ensureSidebarClose() {
+  window.closeSidebar = function() {
+    const sidebar = document.getElementById('sidebar-archive');
+    if (sidebar) sidebar.classList.remove('open');
+    document.body.classList.remove('sidebar-open');
+    document.body.classList.remove('sidebar-docked');
+    try {
+      if (localStorage.getItem('oracle_sidebar_boot_pref') === 'remember' ||
+          localStorage.getItem('oracle_sidebar_entry_pref') === 'remember') {
+        localStorage.setItem('oracle_sidebar_last_open', '0');
+      }
+      localStorage.setItem('oracle_sidebar_docked', 'false');
+    } catch (e) {}
+    if (typeof syncSidebarOpenClass === 'function') {
+      try { syncSidebarOpenClass(); } catch (e) {}
+    }
+  };
+  window.openSidebar = function() {
+    const sidebar = document.getElementById('sidebar-archive');
+    if (!sidebar) return;
+    sidebar.classList.add('open');
+    if (window.matchMedia('(min-width: 769px)').matches) {
+      document.body.classList.add('sidebar-open');
+    }
+    try {
+      if (localStorage.getItem('oracle_sidebar_boot_pref') === 'remember' ||
+          localStorage.getItem('oracle_sidebar_entry_pref') === 'remember') {
+        localStorage.setItem('oracle_sidebar_last_open', '1');
+      }
+    } catch (e) {}
+    try { renderUnifiedArchive && renderUnifiedArchive(); } catch (e) {}
+    if (typeof syncSidebarOpenClass === 'function') {
+      try { syncSidebarOpenClass(); } catch (e) {}
+    }
+  };
+  // Wire close buttons in case onclick was stripped
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest && e.target.closest('.sidebar-close-btn, [data-action="close-sidebar"]');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    closeSidebar();
+  }, true);
+})();
+
+/* ===== Core Node: limits gauges, hash routes, studio, reduced motion ===== */
+(function coreNodeLimitsHashStudio() {
+  const LIMITS_KEY = 'oracle_cn_limits_v1';
+  const WINDOW_5H = 5 * 60 * 60 * 1000;
+  const WINDOW_7D = 7 * 24 * 60 * 60 * 1000;
+  const STUDIO_KEY = 'oracle_studio_pers_active';
+  const FX_KEY = 'oracle_animations_fx';
+
+  function loadLimits() {
+    try { return JSON.parse(localStorage.getItem(LIMITS_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function saveLimits(s) { localStorage.setItem(LIMITS_KEY, JSON.stringify(s)); }
+  function prune(events, win, now) { return (events || []).filter(e => now - e.t < win); }
+  function sum(events) { return (events || []).reduce((a, e) => a + (Number(e.p) || 0), 0); }
+  function estimate(text) {
+    const len = String(text || '').trim().length;
+    if (len <= 50) return 0.5;
+    if (len <= 150) return 1;
+    if (len <= 500) return 2;
+    if (len <= 1500) return 5;
+    if (len <= 4000) return 12;
+    return 20;
+  }
+  function fmtRemain(ms) {
+    if (ms <= 0) return 'сейчас';
+    const h = Math.floor(ms / 3600000);
+    const m = Math.floor((ms % 3600000) / 60000);
+    if (h >= 24) return Math.floor(h / 24) + 'д ' + (h % 24) + 'ч';
+    if (h > 0) return h + 'ч ' + String(m).padStart(2, '0') + 'м';
+    return m + ' мин';
+  }
+  function clockReset(ms) {
+    const t = new Date(Date.now() + Math.max(0, ms));
+    return String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0');
+  }
+
+  function getState() {
+    const now = Date.now();
+    let s = loadLimits();
+    s.events5h = prune(s.events5h, WINDOW_5H, now);
+    if (s.weekStart && now - s.weekStart >= WINDOW_7D) {
+      s.events7d = [];
+      s.weekStart = null;
+    }
+    s.events7d = prune(s.events7d, WINDOW_7D, now);
+    const p5 = Math.min(100, sum(s.events5h));
+    const p7 = Math.min(100, sum(s.events7d));
+    saveLimits(s);
+    return { s, p5, p7, now };
+  }
+
+  window.refreshCoreLimitsUI = function() {
+    const { s, p5, p7, now } = getState();
+    const fill5 = document.getElementById('limit-5h-fill');
+    const fill7 = document.getElementById('limit-7d-fill');
+    const lab5 = document.getElementById('limit-5h-pct-label');
+    const lab7 = document.getElementById('limit-7d-pct-label');
+    const meta5 = document.getElementById('limit-5h-meta');
+    const meta7 = document.getElementById('limit-7d-meta');
+    if (fill5) { fill5.style.width = p5 + '%'; fill5.classList.toggle('danger', p5 >= 90); }
+    if (fill7) { fill7.style.width = p7 + '%'; fill7.classList.toggle('danger', p7 >= 90); }
+    if (lab5) lab5.textContent = (Math.round(p5 * 10) / 10) + '%';
+    if (lab7) lab7.textContent = (Math.round(p7 * 10) / 10) + '%';
+    let resetMs5 = 0;
+    if (s.events5h && s.events5h.length) {
+      const oldest = s.events5h.slice().sort((a, b) => a.t - b.t)[0];
+      resetMs5 = WINDOW_5H - (now - oldest.t);
+    }
+    if (meta5) meta5.textContent = s.events5h && s.events5h.length
+      ? ('Сброс части: через ' + fmtRemain(resetMs5) + ' (~' + clockReset(resetMs5) + ')')
+      : 'Окно 5 часов свободно';
+    if (meta7) {
+      if (s.weekStart) meta7.textContent = 'Неделя до: через ' + fmtRemain(WINDOW_7D - (now - s.weekStart));
+      else meta7.textContent = 'Недельный период ещё не начат';
+    }
+
+    const blocked = p5 >= 100 || p7 >= 100;
+    document.body.classList.toggle('limit-blocked', blocked);
+    const ban = document.getElementById('limit-lock-banner');
+    const txt = document.getElementById('limit-lock-text');
+    if (ban && txt) {
+      if (blocked) {
+        let resetLabel = '—:—';
+        if (p7 >= 100 && s.weekStart) resetLabel = clockReset(WINDOW_7D - (now - s.weekStart));
+        else if (p5 >= 100) resetLabel = clockReset(resetMs5);
+        txt.textContent = 'Лимит достиг 100%, сброс в ' + resetLabel;
+        ban.classList.add('show');
+      } else ban.classList.remove('show');
+    }
+    return { blocked, p5, p7, resetMs5 };
+  };
+
+  window.npCanSend = function() {
+    const { p5, p7 } = getState();
+    return p5 < 100 && p7 < 100;
+  };
+  window.consumeCoreLimit = function(text, extra) {
+    const cost = typeof extra === 'number' ? extra : estimate(text);
+    const now = Date.now();
+    let s = loadLimits();
+    s.events5h = prune(s.events5h, WINDOW_5H, now);
+    s.events7d = s.events7d || [];
+    if (!s.weekStart && cost >= 1) s.weekStart = now;
+    if (s.weekStart && now - s.weekStart >= WINDOW_7D) {
+      s.events7d = [];
+      s.weekStart = cost >= 1 ? now : null;
+    }
+    s.events5h.push({ t: now, p: cost });
+    s.events7d.push({ t: now, p: cost });
+    saveLimits(s);
+    return refreshCoreLimitsUI();
+  };
+
+  window.openLimitsFromBanner = function() {
+    try {
+      if (typeof switchTab === 'function') switchTab('settings');
+      else if (typeof showScreen === 'function') showScreen('settings');
+    } catch (e) {}
+    setTimeout(() => {
+      try { if (typeof showSection === 'function') showSection('limits'); } catch (e) {}
+      try { history.replaceState(null, '', '#settings_limits'); } catch (e) {}
+      refreshCoreLimitsUI();
+    }, 60);
+  };
+
+  // Guard send / live
+  function guard() {
+    if (!window.npCanSend()) {
+      refreshCoreLimitsUI();
+      if (typeof showToast === 'function') showToast('Лимит исчерпан', 'warning');
+      return false;
+    }
+    return true;
+  }
+  document.addEventListener('click', (e) => {
+    const send = e.target.closest && e.target.closest('#send-btn, .send-btn');
+    const live = e.target.closest && e.target.closest('#live-chat-btn, .live-chat-btn');
+    if ((send || live) && !guard()) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    }
+  }, true);
+
+  // consume on user bubble add
+  const flowObs = () => {
+    const flow = document.getElementById('chat-flow') || document.querySelector('.chat-flow-box');
+    if (!flow || flow._limObs) return;
+    flow._limObs = true;
+    new MutationObserver((muts) => {
+      for (const m of muts) {
+        m.addedNodes.forEach(n => {
+          if (n.nodeType !== 1) return;
+          if (n.classList && (n.classList.contains('user-msg') || n.classList.contains('user-bubble') || n.classList.contains('msg-user'))) {
+            const t = (n.textContent || '').trim();
+            if (t && window.__cnLastLim !== t.slice(0, 60)) {
+              window.__cnLastLim = t.slice(0, 60);
+              consumeCoreLimit(t);
+            }
+          }
+        });
+      }
+    }).observe(flow, { childList: true, subtree: true });
+  };
+
+  // Hash routes
+  function applyHash() {
+    const h = (location.hash || '').replace(/^#/, '');
+    if (!h) return;
+    if (h === 'settings' || h.startsWith('settings_')) {
+      try {
+        if (typeof switchTab === 'function') switchTab('settings');
+        else document.querySelector('.nav-item[data-target="settings"], [onclick*="settings"]')?.click();
+      } catch (e) {}
+      const sec = h.indexOf('_') >= 0 ? h.split('_').slice(1).join('_') : '';
+      if (sec) setTimeout(() => { try { showSection(sec); } catch (e) {} }, 80);
+      if (sec === 'limits') setTimeout(refreshCoreLimitsUI, 100);
+      return;
+    }
+    if (h === 'chat' || h === 'reader' || h === 'calendar' || h === 'maps') {
+      try { if (typeof switchTab === 'function') switchTab(h); } catch (e) {}
+      return;
+    }
+    // chat id
+    if (h.startsWith('chat/') || h.startsWith('c/')) {
+      const id = h.split('/')[1];
+      if (id) {
+        try { if (typeof switchTab === 'function') switchTab('chat'); } catch (e) {}
+        setTimeout(() => {
+          try {
+            if (typeof loadChatSession === 'function') loadChatSession(id);
+            else if (typeof openChatById === 'function') openChatById(id);
+            else if (typeof selectChat === 'function') selectChat(id);
+            else {
+              // try click session node
+              const el = document.querySelector('[data-session-id="' + id + '"], [data-chat-id="' + id + '"]');
+              if (el) el.click();
+            }
+          } catch (e) {}
+        }, 100);
+      }
+    }
+  }
+  window.setChatHash = function(id) {
+    if (!id) {
+      try { history.replaceState(null, '', '#chat'); } catch (e) {}
+      return;
+    }
+    try { history.replaceState(null, '', '#chat/' + encodeURIComponent(id)); } catch (e) {}
+  };
+  // patch common openers
+  const patchHashHooks = () => {
+    /* showSection hash built into function */
+    if (typeof window.switchTab === 'function' && !window.switchTab._hash) {
+      const o = window.switchTab;
+      window.switchTab = function(tab) {
+        const r = o.apply(this, arguments);
+        try {
+          if (tab === 'settings') {
+            if (!location.hash.startsWith('#settings')) history.replaceState(null, '', '#settings');
+          } else if (tab === 'chat') {
+            const id = (window.CoreState && (CoreState.currentChatId || CoreState.activeSessionId)) || '';
+            if (id) history.replaceState(null, '', '#chat/' + encodeURIComponent(id));
+            else history.replaceState(null, '', '#chat');
+          } else if (tab) history.replaceState(null, '', '#' + tab);
+        } catch (e) {}
+        return r;
+      };
+      window.switchTab._hash = true;
+    }
+  };
+
+  // Studio personalization
+  window.markStudioPersonalization = function(on) {
+    localStorage.setItem(STUDIO_KEY, on ? '1' : '0');
+    document.getElementById('studio-pers-badge')?.classList.toggle('show', !!on);
+  };
+  window.isStudioPersActive = function() {
+    return localStorage.getItem(STUDIO_KEY) === '1';
+  };
+  // Clear studio flag when user changes accent/theme
+  document.addEventListener('click', (e) => {
+    if (e.target.closest && e.target.closest('.matte-dot, .theme-opt, [onclick*="changeOracleTheme"], [onclick*="applyVisualTheme"], [onclick*="setTheme"]')) {
+      markStudioPersonalization(false);
+    }
+  });
+  // Detect return from studio with ?studio=1 or localStorage set by studio
+  try {
+    const params = new URLSearchParams(location.search);
+    if (params.get('studio') === '1' || localStorage.getItem('oracle_studio_apply') === '1') {
+      markStudioPersonalization(true);
+      localStorage.removeItem('oracle_studio_apply');
+    }
+  } catch (e) {}
+
+  // Animations toggle
+  window.toggleAnimationsFx = function(on) {
+    localStorage.setItem(FX_KEY, on ? '1' : '0');
+    if (typeof showToast === 'function') showToast('Сохранено. Перезагрузите страницу', 'info');
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Подтвердите действие', 'Чтобы применить анимации/эффекты, перезагрузить страницу сейчас?', false, '', function(ok){ if (ok) location.reload(); });
+    }
+  };
+  function applyFxPref() {
+    const on = localStorage.getItem(FX_KEY);
+    const enabled = on === null || on === '1';
+    document.body.classList.toggle('reduced-motion', !enabled);
+    const t = document.getElementById('toggle-animations-fx');
+    if (t) t.checked = enabled;
+  }
+
+  function boot() {
+    applyFxPref();
+    document.getElementById('studio-pers-badge')?.classList.toggle('show', isStudioPersActive());
+    flowObs();
+    patchHashHooks();
+    refreshCoreLimitsUI();
+    applyHash();
+    setInterval(refreshCoreLimitsUI, 30000);
+  }
+  window.addEventListener('hashchange', applyHash);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(patchHashHooks, 600);
+  setTimeout(flowObs, 800);
+})();
+
+/* ===== Welcome promo + Scenario writer + Maps harden ===== */
+(function welcomePromoAndScenarios() {
+  const PROMO_KEY = 'oracle_welcome_promo_slot';
+  const SC_KEY = 'oracle_scenarios_v1';
+
+  // Public-domain / placeholder style prompts (no external hotlink required — CSS gradients as fallback)
+  const PROMO_ITEMS = [
+    { prompt: 'Сгенерируй кинематографичный портрет космонавта в неоновом городе, 8k, детальный', label: 'Neon astro', bg: 'linear-gradient(135deg,#0f172a,#6366f1)' },
+    { prompt: 'Нарисуй уютную японскую улицу под дождём вечером, аниме-стиль, мягкий свет', label: 'Rain street', bg: 'linear-gradient(135deg,#1e3a5f,#94a3b8)' },
+    { prompt: 'Фэнтези-замок на скале над облаками, golden hour, эпичный пейзаж', label: 'Castle', bg: 'linear-gradient(135deg,#7c2d12,#fbbf24)' },
+    { prompt: 'Минималистичный продукт на белом фоне, студийный свет, рекламное фото', label: 'Product', bg: 'linear-gradient(135deg,#e2e8f0,#64748b)' },
+    { prompt: 'Кот в космическом скафандре на Луне, юмор, высокий реализм', label: 'Space cat', bg: 'linear-gradient(135deg,#312e81,#c4b5fd)' },
+    { prompt: 'Абстрактная 3D-композиция из стекла и металла, studio render', label: 'Abstract 3D', bg: 'linear-gradient(135deg,#0ea5e9,#a855f7)' }
+  ];
+
+  function pickPromoSet() {
+    // rotate set every few seconds of page life / session slot
+    let slot = parseInt(sessionStorage.getItem(PROMO_KEY) || '0', 10) || 0;
+    // random chance each load: show promo vs classic greeting
+    const showPromo = (Math.random() < 0.42) || (slot % 3 === 1);
+    sessionStorage.setItem(PROMO_KEY, String(slot + 1));
+    return showPromo;
+  }
+
+  function renderPromo() {
+    const host = document.getElementById('welcome-promo-imgs');
+    const promo = document.getElementById('welcome-promo');
+    const greeting = document.getElementById('welcome-greeting');
+    const sub = document.getElementById('welcome-subtext');
+    if (!promo || !host) return;
+    if (document.body.classList.contains('temp-chat-mode')) {
+      promo.hidden = true;
+      return;
+    }
+    if (!pickPromoSet()) {
+      promo.hidden = true;
+      return;
+    }
+    // shuffle 3
+    const items = PROMO_ITEMS.slice().sort(() => Math.random() - 0.5).slice(0, 3);
+    host.innerHTML = items.map((it, i) =>
+      '<button type="button" class="welcome-promo-img" data-i="' + i + '" style="background:' + it.bg + '" title="' + it.label + '">' +
+      '<span>' + it.label + '</span></button>'
+    ).join('');
+    host.querySelectorAll('.welcome-promo-img').forEach((btn, idx) => {
+      btn.onclick = () => {
+        const p = items[idx].prompt;
+        const input = document.getElementById('user-input');
+        if (input) {
+          input.value = p;
+          input.dispatchEvent(new Event('input'));
+          input.focus();
+        }
+        if (typeof showToast === 'function') showToast('Запрос вставлен — подключите API для генерации', 'info');
+      };
+    });
+    promo.hidden = false;
+    if (greeting) greeting.textContent = 'Идеи для генерации';
+    if (sub) sub.textContent = 'Нажмите на картинку — запрос попадёт в поле ввода';
+    // auto flip back after ~8s if still empty chat
+    setTimeout(() => {
+      const flow = document.getElementById('chat-flow');
+      const hasMsg = flow && flow.querySelector('.msg, .user-msg, .ai-msg, .bubble');
+      if (hasMsg || document.body.classList.contains('temp-chat-mode')) return;
+      if (promo) promo.hidden = true;
+      if (greeting && !document.body.classList.contains('temp-chat-mode')) {
+        try {
+          const profile = JSON.parse(localStorage.getItem('oracle_user_profile') || '{}');
+          greeting.textContent = profile.name ? ('Привет, ' + profile.name + '!') : 'Привет! Как твои дела?';
+        } catch (e) {
+          greeting.textContent = 'Привет! Как твои дела?';
+        }
+      }
+      if (sub && !document.body.classList.contains('temp-chat-mode')) {
+        sub.textContent = 'Готов к работе. Чем я могу помочь тебе сегодня?';
+      }
+    }, 9000);
+  }
+
+  // Scenarios
+  function loadScenarios() {
+    try { return JSON.parse(localStorage.getItem(SC_KEY) || '[]') || []; } catch (e) { return []; }
+  }
+  function saveScenarios(list) {
+    try { localStorage.setItem(SC_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  window.renderScenariosList = function() {
+    const host = document.getElementById('scenarios-list');
+    if (!host) return;
+    const list = loadScenarios();
+    if (!list.length) {
+      host.innerHTML = '<div class="unified-empty">Пока нет сценариев.<br>Создайте первый или из чата: + → Добавить сценарий</div>';
+      return;
+    }
+    host.innerHTML = list.map(s =>
+      '<div class="scenario-card" data-id="' + s.id + '">' +
+      '<b>' + (s.name || 'Без названия').replace(/</g,'&lt;') + '</b>' +
+      '<small>' + (s.query || '').slice(0, 80).replace(/</g,'&lt;') + '</small></div>'
+    ).join('');
+    host.querySelectorAll('.scenario-card').forEach(card => {
+      card.onclick = () => applyScenario(card.dataset.id);
+      card.oncontextmenu = (e) => {
+        e.preventDefault();
+        openScenarioEditor(card.dataset.id);
+      };
+    });
+  };
+
+  let _scEditId = null;
+  window.openScenarioEditor = function(id) {
+    _scEditId = id || null;
+    const list = loadScenarios();
+    const s = id ? list.find(x => x.id === id) : null;
+    document.getElementById('scenario-editor-title').textContent = s ? 'Изменить сценарий' : 'Новый сценарий';
+    document.getElementById('scenario-name').value = s?.name || '';
+    document.getElementById('scenario-answer').value = s?.answer || '';
+    document.getElementById('scenario-query').value = s?.query || '';
+    document.getElementById('scenario-editor-modal')?.classList.add('active');
+  };
+  window.closeScenarioEditor = function() {
+    document.getElementById('scenario-editor-modal')?.classList.remove('active');
+    _scEditId = null;
+  };
+  window.saveScenarioFromEditor = function() {
+    const name = (document.getElementById('scenario-name')?.value || '').trim() || 'Сценарий';
+    const answer = document.getElementById('scenario-answer')?.value || '';
+    const query = document.getElementById('scenario-query')?.value || '';
+    let list = loadScenarios();
+    if (_scEditId) {
+      list = list.map(x => x.id === _scEditId ? { ...x, name, answer, query, updated: Date.now() } : x);
+    } else {
+      list.unshift({ id: 'sc_' + Date.now(), name, answer, query, created: Date.now() });
+    }
+    saveScenarios(list);
+    closeScenarioEditor();
+    renderScenariosList();
+    showToast?.('Сценарий сохранён', 'success');
+  };
+  window.applyScenario = function(id) {
+    const s = loadScenarios().find(x => x.id === id);
+    if (!s) return;
+    window.__activeScenario = s;
+    document.body.classList.add('scenario-active-mode');
+    const input = document.getElementById('user-input');
+    if (input) {
+      input.value = s.query || '';
+      input.dispatchEvent(new Event('input'));
+    }
+    // ensure clear chip
+    let chip = document.getElementById('scenario-active-chip');
+    if (!chip) {
+      const box = document.getElementById('main-input-box');
+      if (box) {
+        chip = document.createElement('div');
+        chip.id = 'scenario-active-chip';
+        chip.style.cssText = 'display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px;font-weight:700;color:var(--primary);';
+        chip.innerHTML = '<span class="material-symbols-rounded" style="font-size:16px">edit_note</span><span id="scenario-chip-label"></span><button type="button" class="tag-chip-x" id="scenario-chip-x" aria-label="Сбросить">×</button>';
+        box.insertBefore(chip, box.firstChild);
+        chip.querySelector('#scenario-chip-x').onclick = clearActiveScenario;
+      }
+    }
+    const lab = document.getElementById('scenario-chip-label');
+    if (lab) lab.textContent = 'Сценарий: ' + (s.name || '');
+    if (typeof switchScreen === 'function') switchScreen('chat');
+    showToast?.('Сценарий активен. Крестик у поля — сброс.', 'info');
+  };
+  window.clearActiveScenario = function() {
+    window.__activeScenario = null;
+    document.body.classList.remove('scenario-active-mode');
+    document.getElementById('scenario-active-chip')?.remove();
+  };
+  window.openScenariosFromPlus = function() {
+    try { document.getElementById('plus-menu')?.classList.remove('open'); } catch(e) {}
+    if (typeof switchScreen === 'function') switchScreen('scenarios');
+    renderScenariosList();
+  };
+  window.addScenarioFromChat = function() {
+    try { document.getElementById('plus-menu')?.classList.remove('open'); } catch(e) {}
+    openScenarioEditor(null);
+    const input = document.getElementById('user-input');
+    if (input && input.value.trim()) {
+      document.getElementById('scenario-query').value = input.value.trim();
+    }
+  };
+
+  // inject plus menu items
+  function ensurePlusItems() {
+    const menu = document.getElementById('plus-menu') || document.querySelector('.plus-menu');
+    if (!menu || menu.querySelector('[data-act="scenario"]')) return;
+    const div = document.createElement('div');
+    div.className = 'plus-menu-divider';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'plus-menu-item';
+    btn.dataset.act = 'scenario';
+    btn.innerHTML = '<span class="material-symbols-rounded">edit_note</span><span>Добавить сценарий</span>';
+    btn.onclick = addScenarioFromChat;
+    const btn2 = document.createElement('button');
+    btn2.type = 'button';
+    btn2.className = 'plus-menu-item';
+    btn2.innerHTML = '<span class="material-symbols-rounded">list_alt</span><span>Режим Сценариста</span>';
+    btn2.onclick = openScenariosFromPlus;
+    menu.appendChild(div);
+    menu.appendChild(btn);
+    menu.appendChild(btn2);
+  }
+
+  // Maps harden
+  function hardenMaps() {
+    const prev = window.initCoreMaps;
+    if (typeof prev !== 'function') return;
+    window.initCoreMaps = function() {
+      const el = document.getElementById('maps-leaflet');
+      if (el) {
+        el.style.minHeight = '320px';
+        el.style.height = el.clientHeight < 200 ? 'min(55vh, 480px)' : el.style.height;
+      }
+      // load leaflet if missing
+      if (typeof L === 'undefined') {
+        if (!window._leafletLoading) {
+          window._leafletLoading = true;
+          const lcss = document.createElement('link');
+          lcss.rel = 'stylesheet';
+          lcss.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          document.head.appendChild(lcss);
+          const s = document.createElement('script');
+          s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          s.onload = () => { window._leafletLoading = false; prev(); setTimeout(() => window._coreMap && window._coreMap.invalidateSize(), 200); };
+          s.onerror = () => {
+            window._leafletLoading = false;
+            showToast?.('Не удалось загрузить Leaflet. Проверьте сеть.', 'error');
+          };
+          document.head.appendChild(s);
+        }
+        return;
+      }
+      prev();
+      setTimeout(() => {
+        try {
+          if (window._coreMap) {
+            window._coreMap.invalidateSize(true);
+          }
+        } catch (e) {}
+      }, 150);
+      setTimeout(() => { try { window._coreMap && window._coreMap.invalidateSize(true); } catch(e){} }, 500);
+    };
+    // also when switchScreen maps
+    const ss = window.switchScreen;
+    if (typeof ss === 'function' && !ss._mapsHard) {
+      
+/* deduped switchScreen wrap */
+
+      window.switchScreen._mapsHard = true;
+    }
+  }
+
+  function boot() {
+    renderPromo();
+    ensurePlusItems();
+    hardenMaps();
+    setTimeout(ensurePlusItems, 600);
+    setTimeout(hardenMaps, 400);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
+/* ===== SECTION ===== */
+
+/* ===== Core Node Developer Mode + AITags restore ===== */
+
+/* ===== SECTION ===== */
+
+(function(){
+  // --- Maps: search + open chat ---
+  window.mapsSearchAndChat = async function() {
+    const q = (document.getElementById('maps-search')?.value || '').trim();
+    if (!q) { showToast?.('Введите место', 'warning'); return; }
+    // run map search
+    if (typeof mapsSearch === 'function') {
+      try { await mapsSearch(); } catch(e) {}
+    }
+    // open new chat with location query
+    if (typeof switchScreen === 'function') switchScreen('chat');
+    document.body.classList.remove('chat-empty');
+    const input = document.getElementById('user-input');
+    const prompt = 'Найди похожие или точное местоположение: «' + q + '». Кратко опиши, где это, и что рядом.';
+    if (input) {
+      input.value = prompt;
+      if (typeof handleInput === 'function') handleInput(input);
+    }
+    // auto-send if possible
+    setTimeout(() => {
+      if (typeof sendMsg === 'function') sendMsg();
+      else showToast?.('Запрос готов в поле — нажмите Отправить', 'info');
+    }, 180);
+  };
+
+  // Enter in maps search
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && document.activeElement?.id === 'maps-search') {
+      e.preventDefault();
+      mapsSearchAndChat();
+    }
+  });
+
+  // --- Custom select: open upward if no space ---
+  function placeSelectMenu(menu, btn) {
+    if (!menu || !btn) return;
+    menu.classList.remove('drop-up');
+    const rect = btn.getBoundingClientRect();
+    const menuH = Math.min(280, menu.scrollHeight || 180);
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    if (spaceBelow < menuH + 12 && spaceAbove > spaceBelow) {
+      menu.classList.add('drop-up');
+    }
+  }
+  const _origToggle = window.toggleCustomSelect;
+  document.addEventListener('click', function(e) {
+    const btn = e.target.closest?.('.custom-select-btn');
+    if (!btn) return;
+    const root = btn.closest('.custom-select');
+    const menu = root?.querySelector('.custom-select-menu');
+    if (menu) setTimeout(() => placeSelectMenu(menu, btn), 0);
+  }, true);
+
+  // exp font menu
+  window.toggleExpSizeMenu = function(ev) {
+    ev?.stopPropagation?.();
+    const menu = document.getElementById('exp-font-menu');
+    if (!menu) return;
+    const open = menu.style.display === 'flex';
+    document.querySelectorAll('.custom-select-menu').forEach(m => m.style.display = '');
+    menu.style.display = open ? 'none' : 'flex';
+    if (!open) placeSelectMenu(menu, ev.currentTarget);
+  };
+  window.selectExpFontSize = function(size) {
+    const ed = document.getElementById('exp-user-editor');
+    const label = document.getElementById('exp-font-size-label');
+    if (label) label.textContent = size;
+    if (ed) ed.style.fontSize = size + 'px';
+    document.getElementById('exp-font-menu').style.display = 'none';
+  };
+  window.expFormat = function(cmd) {
+    document.execCommand(cmd, false, null);
+    document.getElementById('exp-user-editor')?.focus();
+  };
+  window.expClearFormat = function() {
+    const ed = document.getElementById('exp-user-editor');
+    if (!ed) return;
+    const text = ed.innerText;
+    ed.innerHTML = '';
+    ed.innerText = text;
+  };
+  window.expSyncFromEditor = function() {};
+
+  // --- CNUI renderer ---
+  window.renderCnuiBlocks = function(raw) {
+    if (!raw || typeof raw !== 'string') return null;
+    // ```cnui:gml ... ``` or [CNUI:GML]...[/CNUI]
+    const blocks = [];
+    let text = raw;
+    text = text.replace(/```cnui:(\w+)\s*([\s\S]*?)```/gi, (_, type, body) => {
+      const i = blocks.length;
+      blocks.push({ type: type.toLowerCase(), body: body.trim() });
+      return '\n%%CNUI_' + i + '%%\n';
+    });
+    text = text.replace(/\[CNUI:(\w+)\]([\s\S]*?)\[\/CNUI\]/gi, (_, type, body) => {
+      const i = blocks.length;
+      blocks.push({ type: type.toLowerCase(), body: body.trim() });
+      return '\n%%CNUI_' + i + '%%\n';
+    });
+    if (!blocks.length) return null;
+    return { text, blocks };
+  };
+
+  window.cnuiToHtml = function(type, body) {
+    const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const lines = body.split('\n').map(l => l.trim()).filter(Boolean);
+    switch (type) {
+      case 'gml': {
+        const title = lines[0] || 'Сообщение';
+        const rest = lines.slice(1).join(' ') || '';
+        return '<div class="cnui-block cnui-gml"><div class="cnui-title">' + esc(title) + '</div><p class="cnui-body">' + esc(rest) + '</p></div>';
+      }
+      case 'xml': {
+        const kind = (lines[0]||'info').toLowerCase();
+        const msg = lines.slice(1).join(' ') || lines[0] || '';
+        const cls = kind.includes('warn') ? 'warn' : kind.includes('err') ? 'err' : kind.includes('ok')||kind.includes('success') ? 'ok' : '';
+        return '<div class="cnui-xml ' + cls + '">' + esc(msg) + '</div>';
+      }
+      case 'table': {
+        const rows = lines.map(l => l.split('|').map(c => c.trim()).filter(Boolean));
+        if (!rows.length) return '';
+        let h = '<div class="cnui-table-wrap"><table class="cnui-table"><thead><tr>' +
+          rows[0].map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>';
+        rows.slice(1).forEach(r => { h += '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>'; });
+        return h + '</tbody></table></div>';
+      }
+      case 'code': {
+        const lang = lines[0] && !lines[0].includes(' ') ? lines[0] : 'text';
+        const code = (lines[0] && !lines[0].includes(' ') ? lines.slice(1) : lines).join('\n');
+        const id = 'cnui-code-' + Math.random().toString(36).slice(2,8);
+        return '<div class="cnui-code"><div class="cnui-code-head"><span>' + esc(lang) + '</span>' +
+          '<button type="button" class="cnui-code-copy" onclick="navigator.clipboard.writeText(document.getElementById(\'' + id + '\').innerText);showToast?.(\'Скопировано\',\'success\')">Копировать</button></div>' +
+          '<pre id="' + id + '">' + esc(code) + '</pre></div>';
+      }
+      case 'sld': {
+        const slides = body.split(/\n---\n/).map(s => s.trim()).filter(Boolean);
+        const sid = 'sld-' + Math.random().toString(36).slice(2,7);
+        let h = '<div class="cnui-block cnui-sld" id="' + sid + '">';
+        slides.forEach((s, i) => {
+          h += '<div class="cnui-sld-slide' + (i===0?' active':'') + '">' + esc(s).replace(/\n/g,'<br>') + '</div>';
+        });
+        h += '<div class="cnui-sld-nav"><button type="button" class="icon-btn" onclick="cnuiSlide(\'' + sid + '\',-1)"><span class="material-symbols-rounded">chevron_left</span></button>' +
+          '<span class="cnui-sld-pos">1 / ' + slides.length + '</span>' +
+          '<button type="button" class="icon-btn" onclick="cnuiSlide(\'' + sid + '\',1)"><span class="material-symbols-rounded">chevron_right</span></button></div></div>';
+        return h;
+      }
+      case 'check_task':
+      case 'checktask': {
+        let h = '<div class="cnui-block cnui-check-task">';
+        lines.forEach((l, i) => {
+          const item = l.replace(/^[-*]\s*/, '');
+          h += '<label><input type="checkbox"> <span>' + esc(item) + '</span></label>';
+        });
+        return h + '</div>';
+      }
+      case 'shop': {
+        let h = '<div class="cnui-shop">';
+        body.split(/\n\n+/).forEach(chunk => {
+          const ls = chunk.split('\n').map(x => x.trim()).filter(Boolean);
+          if (!ls.length) return;
+          h += '<div class="cnui-shop-card"><b>' + esc(ls[0]) + '</b>';
+          if (ls[1]) h += '<div class="price">' + esc(ls[1]) + '</div>';
+          if (ls[2]) h += '<div style="font-size:12px;color:var(--on-surface-variant);margin-top:4px">' + esc(ls[2]) + '</div>';
+          h += '</div>';
+        });
+        return h + '</div>';
+      }
+      case 'frm':
+      case 'form': {
+        let h = '<form class="cnui-block cnui-frm" onsubmit="event.preventDefault();showToast?.(\'Отправлено (локально)\',\'success\')">';
+        lines.forEach(l => {
+          const [label, type] = l.split(':').map(x => x.trim());
+          h += '<label style="font-size:12px">' + esc(label || 'Поле') + '</label>';
+          if ((type||'').includes('area')) h += '<textarea rows="3"></textarea>';
+          else h += '<input type="text" placeholder="' + esc(label||'') + '">';
+        });
+        h += '<button type="submit" class="modal-btn modal-btn-accept">Отправить</button></form>';
+        return h;
+      }
+      case 'card':
+      default: {
+        return '<div class="cnui-block cnui-card">' + esc(body).replace(/\n/g,'<br>') + '</div>';
+      }
+    }
+  };
+
+  window.cnuiSlide = function(sid, dir) {
+    const root = document.getElementById(sid);
+    if (!root) return;
+    const slides = [...root.querySelectorAll('.cnui-sld-slide')];
+    let i = slides.findIndex(s => s.classList.contains('active'));
+    i = (i + dir + slides.length) % slides.length;
+    slides.forEach((s, n) => s.classList.toggle('active', n === i));
+    const pos = root.querySelector('.cnui-sld-pos');
+    if (pos) pos.textContent = (i + 1) + ' / ' + slides.length;
+  };
+
+  // Hook createAiMessageElement
+  const _origCreate = window.createAiMessageElement;
+  if (typeof createAiMessageElement === 'function' || true) {
+    window.createAiMessageElement = function(content) {
+      const str = typeof content === 'string' ? content : String(content || '');
+      const parsed = renderCnuiBlocks(str);
+      let el;
+      if (typeof _origCreate === 'function') {
+        el = _origCreate(parsed ? parsed.text : str);
+      } else {
+        el = document.createElement('div');
+        el.className = 'msg ai-msg';
+        const body = document.createElement('div');
+        body.className = 'ai-md-body';
+        body.innerHTML = (typeof renderAiMarkdown === 'function') ? renderAiMarkdown(parsed ? parsed.text : str) : (parsed ? parsed.text : str);
+        el.appendChild(body);
+      }
+      if (parsed && parsed.blocks.length) {
+        const body = el.querySelector('.ai-md-body') || el;
+        let html = body.innerHTML;
+        parsed.blocks.forEach((b, i) => {
+          const ph = '%%CNUI_' + i + '%%';
+          const rep = cnuiToHtml(b.type, b.body);
+          html = html.split(ph).join(rep);
+          // also escaped variants
+          html = html.split(ph.replace(/_/g,'')).join(rep);
+        });
+        // replace placeholders that got escaped
+        parsed.blocks.forEach((b, i) => {
+          const re = new RegExp('%%CNUI_' + i + '%%', 'g');
+          html = html.replace(re, cnuiToHtml(b.type, b.body));
+        });
+        body.innerHTML = html;
+      }
+      return el;
+    };
+  }
+
+  // Demo CNUI
+  window.__demoCnui = function() {
+    const sample = `CNUI демо:
+
+\`\`\`cnui:gml
+Заголовок карточки
+Короткое описание компонента GML — информационный блок.
+\`\`\`
+
+\`\`\`cnui:xml
+warn
+Проверьте настройки API перед отправкой.
+\`\`\`
+
+\`\`\`cnui:table
+Имя | Статус
+Core Node | Online
+Maps | Beta
+\`\`\`
+
+\`\`\`cnui:code
+javascript
+console.log('CNUI Code');
+\`\`\`
+
+\`\`\`cnui:check_task
+- Открыть проект
+- Проверить код
+- Сохранить изменения
+\`\`\`
+`;
+    const flow = document.getElementById('chat-flow');
+    if (!flow) return;
+    document.getElementById('welcome-block')?.classList.add('hidden');
+    flow.appendChild(createAiMessageElement(sample));
+    showToast?.('CNUI demo', 'success');
+  };
+
+  // --- Custom toggles helper ---
+  window.bindCnToggle = function(btn, key, onChange) {
+    if (!btn) return;
+    const saved = localStorage.getItem(key);
+    const on = saved === '1' || saved === 'true';
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.onclick = () => {
+      const next = !btn.classList.contains('on');
+      btn.classList.toggle('on', next);
+      btn.setAttribute('aria-pressed', next ? 'true' : 'false');
+      localStorage.setItem(key, next ? '1' : '0');
+      onChange?.(next);
+    };
+  };
+
+  // --- Sleep AI lock schedule ---
+  function isSleepLockActive() {
+    if (localStorage.getItem('oracle_sleep_ai_lock') !== '1') return false;
+    const mode = localStorage.getItem('oracle_sleep_ai_mode') || 'daily'; // daily|weekdays|weekends
+    const start = localStorage.getItem('oracle_sleep_ai_start') || '23:00';
+    const end = localStorage.getItem('oracle_sleep_ai_end') || '07:00';
+    const now = new Date();
+    const day = now.getDay(); // 0 sun
+    if (mode === 'weekdays' && (day === 0 || day === 6)) return false;
+    if (mode === 'weekends' && day !== 0 && day !== 6) return false;
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    const mins = now.getHours() * 60 + now.getMinutes();
+    const s = sh * 60 + (sm || 0);
+    const e = eh * 60 + (em || 0);
+    if (s <= e) return mins >= s && mins < e;
+    return mins >= s || mins < e; // overnight
+  }
+  function ensureSleepOverlay() {
+    let el = document.getElementById('sleep-ai-lock');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'sleep-ai-lock';
+      el.innerHTML = '<div class="sleep-lock-card"><span class="material-symbols-rounded" style="font-size:40px;color:var(--primary)">bedtime</span><h3 style="margin:8px 0">Время сна</h3><p style="font-size:13px;color:var(--on-surface-variant);line-height:1.45">ИИ временно недоступен по вашему расписанию. Можно отключить блокировку в настройках «Сонный режим».</p><button type="button" class="modal-btn modal-btn-accept" style="margin-top:12px" onclick="document.getElementById(\'sleep-ai-lock\').classList.remove(\'active\')">Понятно</button></div>';
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+  function tickSleepLock() {
+    const el = ensureSleepOverlay();
+    if (isSleepLockActive()) el.classList.add('active');
+    else el.classList.remove('active');
+  }
+  setInterval(tickSleepLock, 30000);
+  setTimeout(tickSleepLock, 800);
+
+  // Block send when sleep lock
+  const _send = window.sendMsg;
+  if (typeof _send === 'function') {
+    window.sendMsg = function() {
+      if (isSleepLockActive()) {
+        ensureSleepOverlay().classList.add('active');
+        showToast?.('ИИ заблокирован: режим сна', 'warning');
+        return;
+      }
+      return _send.apply(this, arguments);
+    };
+  }
+
+  // Inject sleep settings into settings if possible
+  window.mountSleepAiLockSettings = function() {
+    if (document.getElementById('sleep-ai-lock-settings')) return;
+    const host = document.querySelector('#screen-settings .settings-panel, #settings-pillow, #screen-settings');
+    // find pillow section by text
+    const cards = document.querySelectorAll('#screen-settings .chat-card, #screen-settings .settings-item');
+    let anchor = null;
+    cards.forEach(c => { if (/сон|pillow|заставк/i.test(c.textContent||'')) anchor = c; });
+    const box = document.createElement('div');
+    box.id = 'sleep-ai-lock-settings';
+    box.className = 'chat-card';
+    box.style.cssText = 'margin:12px 0;padding:14px;';
+    box.innerHTML = `
+      <div class="cn-toggle-row">
+        <div>
+          <div class="cn-toggle-label">Напомнить о сне и заблокировать ИИ</div>
+          <div class="cn-toggle-desc">В заданное время отправка сообщений блокируется</div>
+        </div>
+        <button type="button" class="cn-toggle" id="sleep-ai-lock-toggle" aria-label="Сон ИИ"></button>
+      </div>
+      <div id="sleep-ai-lock-opts" style="display:none;margin-top:10px;display:none;flex-direction:column;gap:8px;">
+        <label style="font-size:12px">Начало <input type="time" id="sleep-ai-start" value="23:00" style="margin-left:8px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--on-surface)"></label>
+        <label style="font-size:12px">Конец <input type="time" id="sleep-ai-end" value="07:00" style="margin-left:8px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--on-surface)"></label>
+        <label style="font-size:12px">Повтор
+          <select id="sleep-ai-mode" style="margin-left:8px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--on-surface)">
+            <option value="daily">Ежедневно</option>
+            <option value="weekdays">По будням</option>
+            <option value="weekends">По выходным</option>
+          </select>
+        </label>
+      </div>`;
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(box, anchor.nextSibling);
+    else {
+      const scr = document.getElementById('screen-settings');
+      if (scr) scr.appendChild(box);
+    }
+    const tg = document.getElementById('sleep-ai-lock-toggle');
+    const opts = document.getElementById('sleep-ai-lock-opts');
+    const applyVis = (on) => { if (opts) opts.style.display = on ? 'flex' : 'none'; };
+    bindCnToggle(tg, 'oracle_sleep_ai_lock', (on) => { applyVis(on); tickSleepLock(); });
+    applyVis(localStorage.getItem('oracle_sleep_ai_lock') === '1');
+    const st = document.getElementById('sleep-ai-start');
+    const en = document.getElementById('sleep-ai-end');
+    const md = document.getElementById('sleep-ai-mode');
+    if (st) { st.value = localStorage.getItem('oracle_sleep_ai_start') || '23:00'; st.onchange = () => localStorage.setItem('oracle_sleep_ai_start', st.value); };
+    if (en) { en.value = localStorage.getItem('oracle_sleep_ai_end') || '07:00'; en.onchange = () => localStorage.setItem('oracle_sleep_ai_end', en.value); };
+    if (md) { md.value = localStorage.getItem('oracle_sleep_ai_mode') || 'daily'; md.onchange = () => localStorage.setItem('oracle_sleep_ai_mode', md.value); };
+  };
+
+  // Convert visible ВКЛЮЧИТЬ/ВЫКЛЮЧИТЬ text buttons where marked data-cn-toggle
+  function upgradeLegacyToggles() {
+    document.querySelectorAll('button').forEach(btn => {
+      const tx = (btn.innerText || '').trim().toUpperCase();
+      if (tx !== 'ВКЛЮЧИТЬ' && tx !== 'ВЫКЛЮЧИТЬ' && tx !== 'ВКЛ' && tx !== 'ВЫКЛ') return;
+      if (btn.classList.contains('cn-toggle')) return;
+      if (btn.dataset.cnUpgraded) return;
+      btn.dataset.cnUpgraded = '1';
+      // keep onclick, just restyle as pill toggle visual
+      const on = /ВКЛ/.test(tx) && !/ВЫКЛ/.test(tx);
+      btn.classList.add('cn-toggle');
+      if (on) btn.classList.add('on');
+      btn.innerHTML = '';
+      const prev = btn.onclick;
+      btn.onclick = function(ev) {
+        if (typeof prev === 'function') prev.call(this, ev);
+        // flip visual after legacy handler
+        setTimeout(() => {
+          const t = (btn.getAttribute('data-state') || '').toLowerCase();
+          // legacy often changes text - if still empty keep class
+          btn.classList.toggle('on');
+        }, 0);
+      };
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    mountSleepAiLockSettings();
+    setTimeout(upgradeLegacyToggles, 500);
+  });
+  // also try late
+  setTimeout(() => { mountSleepAiLockSettings(); upgradeLegacyToggles(); }, 1500);
+
+  console.log('[CN] redesign pack: maps+chat, scenarios, expand sheet, CNUI, sleep lock, toggles');
+})();
+
+/* ===== SECTION ===== */
+
+(function coreNodeDevModeAndTags() {
+  const DEV_KEY = 'oracle_dev_mode_v1';
+  const ENT_KEY = 'oracle_enterprise_v1';
+  const FLAG_KEY = 'oracle_dev_flags_v1';
+  const DEV_PASS_KEY = 'oracle_dev_password_v1';
+  const PROMPT_KEY = 'oracle_dev_system_prompt_v1';
+  const TYPES_KEY = 'oracle_dev_allowed_types_v1';
+  const MAX_KEY = 'oracle_dev_max_chars_v1';
+
+  function loadDev() { try { return JSON.parse(localStorage.getItem(DEV_KEY)||'{}')||{}; } catch(e){ return {}; } }
+  function saveDev(o) { localStorage.setItem(DEV_KEY, JSON.stringify(o)); }
+  function loadFlags() { try { return JSON.parse(localStorage.getItem(FLAG_KEY)||'{}')||{}; } catch(e){ return {}; } }
+  function saveFlags(f) { localStorage.setItem(FLAG_KEY, JSON.stringify(f)); }
+  function isDevActive() { return !!loadDev().active; }
+
+  function hasUserPin() {
+    const keys = ['oracle_pin_hash','oracle_user_pin','oracle_pin','core_node_pin','oracle_security_pin'];
+    for (const k of keys) {
+      const v = localStorage.getItem(k);
+      if (v && v !== '' && v !== 'null') return true;
+    }
+    try {
+      const sec = JSON.parse(localStorage.getItem('oracle_security')||'{}');
+      if (sec && (sec.pin || sec.pinHash || sec.enabled)) return true;
+    } catch(e){}
+    return false;
+  }
+
+  function verifyPinPrompt(cb) {
+    if (!hasUserPin()) {
+      showToast?.('Сначала установите PIN в Безопасности', 'warning');
+      if (typeof cb === 'function') cb(false);
+      return false;
+    }
+    const finish = function(entered) {
+      let ok = false;
+      try {
+        const plain = localStorage.getItem('oracle_user_pin') || localStorage.getItem('oracle_pin');
+        if (plain && plain === entered) ok = true;
+        const hash = localStorage.getItem('oracle_pin_hash');
+        if (hash && (hash === entered || hash === btoa(entered))) ok = true;
+      } catch(e){}
+      if (!ok) showToast?.('PIN не подтверждён','error');
+      if (typeof cb === 'function') cb(ok);
+      return ok;
+    };
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('PIN', 'Введите PIN Core Node:', true, '', function(val){
+        if (val === false || val == null) { if (typeof cb === 'function') cb(false); return; }
+        finish(String(val));
+      });
+      return false;
+    }
+    return false;
+  }
+  function verifyDevPassIfSet(cb) {
+    const pass = localStorage.getItem(DEV_PASS_KEY);
+    if (!pass) { if (typeof cb === 'function') cb(true); return true; }
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Пароль разработчика', 'Введите пароль разработчика:', true, '', function(val){
+        if (val === false || val == null) { if (typeof cb === 'function') cb(false); return; }
+        const ok = String(val) === pass;
+        if (!ok) showToast?.('Неверный пароль разработчика','error');
+        if (typeof cb === 'function') cb(ok);
+      });
+      return false;
+    }
+    return false;
+  }
+
+  window.showDevReloadToast = function(msg) {
+    let el = document.getElementById('dev-reload-toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'dev-reload-toast';
+      el.innerHTML = '<span id="dev-reload-msg"></span><button type="button" id="dev-reload-btn">Перезагрузить</button>';
+      document.body.appendChild(el);
+      el.querySelector('#dev-reload-btn').onclick = function() {
+        location.reload();
+      };
+    }
+    el.querySelector('#dev-reload-msg').textContent = msg || 'Чтобы применить изменения, перезагрузите страницу';
+    el.classList.add('show');
+  };
+
+  function applyAttachPolicy() {
+    const f = loadFlags();
+    document.body.classList.toggle('dev-no-attach', !!f.noAttach);
+    if (f.noAttach) {
+      document.querySelectorAll('input[type="file"]').forEach(inp => {
+        inp.disabled = true;
+        inp.title = 'Вложения запрещены политикой устройства';
+      });
+    }
+  }
+
+  function applyDevUI() {
+    const btn = document.getElementById('btn-sec-developer');
+    const active = isDevActive();
+    if (btn) btn.style.display = active ? '' : 'none';
+    document.body.classList.toggle('dev-mode-on', active);
+    const ent = localStorage.getItem(ENT_KEY) === '1';
+    document.body.classList.toggle('enterprise-mode', ent);
+    const f = loadFlags();
+    document.body.classList.toggle('dev-hide-ultra', !!f.hideUltra);
+    document.body.classList.toggle('dev-lock-theme', !!f.lockTheme);
+    const et = document.getElementById('dev-enterprise-toggle');
+    if (et) et.checked = ent;
+    const map = {
+      'dev-flag-debug': 'debug',
+      'dev-flag-strict-limits': 'strictLimits',
+      'dev-flag-hide-ultra': 'hideUltra',
+      'dev-flag-lock-theme': 'lockTheme',
+      'dev-flag-no-attach': 'noAttach'
+    };
+    Object.keys(map).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.checked = !!f[map[id]];
+    });
+    const sp = document.getElementById('dev-system-prompt');
+    if (sp) sp.value = localStorage.getItem(PROMPT_KEY) || '';
+    const ty = document.getElementById('dev-allowed-types');
+    if (ty) ty.value = localStorage.getItem(TYPES_KEY) || '';
+    const mc = document.getElementById('dev-max-chars');
+    if (mc) {
+      const v = localStorage.getItem(MAX_KEY);
+      mc.value = v != null ? v : (ent ? '150' : '0');
+    }
+    applyAttachPolicy();
+    if (f.debug) console.info('[CoreNode Dev]', CoreNode.status());
+  }
+
+  window.CoreNode = window.CoreNode || {};
+  window.CoreNode.enableDeveloperMode = function() {
+    if (!hasUserPin()) {
+      showCustomModal('Отказ', 'Установите PIN в Настройки → Безопасность');
+      return false;
+    }
+    verifyPinPrompt(function(ok){
+      if (!ok) return;
+      verifyDevPassIfSet(function(ok2){
+        if (!ok2) return;
+        saveDev({ active: true, since: Date.now() });
+        applyDevUI();
+        try {
+          if (typeof switchScreen === 'function') switchScreen('settings');
+          setTimeout(() => { try { showSection('developer'); } catch(e){} }, 100);
+        } catch(e){}
+        showToast?.('Режим разработчика включён','success');
+      });
+    });
+    return false;
+  };
+  window.CoreNode.disableDeveloperMode = function() {
+    verifyPinPrompt(function(ok){
+      if (!ok) return;
+      saveDev({ active: false, since: Date.now() });
+      applyDevUI();
+      try { showSection('general'); } catch(e){}
+      showToast?.('Режим разработчика отключён','info');
+    });
+    return false;
+  };
+  window.CoreNode.status = function() {
+    return {
+      dev: loadDev(),
+      enterprise: localStorage.getItem(ENT_KEY)==='1',
+      flags: loadFlags(),
+      hasSystemPrompt: !!(localStorage.getItem(PROMPT_KEY)||'').trim(),
+      allowedTypes: localStorage.getItem(TYPES_KEY)||'',
+      maxChars: localStorage.getItem(MAX_KEY)
+    };
+  };
+  window.CoreNode.getSystemPrompt = function() {
+    return localStorage.getItem(PROMPT_KEY) || '';
+  };
+
+  window.devModeDisableConfirm = function() {
+    showCustomModal('Режим разработчика', 'Отключить Режим Разработчика?', false, '', function(ok){
+      if (ok) CoreNode.disableDeveloperMode();
+    });
+  };
+  window.devToggleEnterprise = function(on) {
+    if (!isDevActive()) return;
+    localStorage.setItem(ENT_KEY, on ? '1' : '0');
+    document.body.classList.toggle('enterprise-mode', !!on);
+    showDevReloadToast('Enterprise изменён. Перезагрузите, чтобы применить все ограничения.');
+  };
+  window.devSetFlag = function(name, val) {
+    if (!isDevActive()) return;
+    const f = loadFlags();
+    f[name] = !!val;
+    saveFlags(f);
+    applyDevUI();
+  };
+  window.devSetFlagReload = function(name, val) {
+    devSetFlag(name, val);
+    showDevReloadToast('Флаг «'+name+'» сохранён. Нажмите «Перезагрузить».');
+  };
+  window.devSavePassword = function() {
+    if (!isDevActive()) return;
+    const a = document.getElementById('dev-pass-input')?.value || '';
+    const b = document.getElementById('dev-pass-confirm')?.value || '';
+    if (a.length < 4) { showToast?.('Минимум 4 символа','warning'); return; }
+    if (a !== b) { showToast?.('Пароли не совпадают','warning'); return; }
+    localStorage.setItem(DEV_PASS_KEY, a);
+    document.getElementById('dev-pass-input').value = '';
+    document.getElementById('dev-pass-confirm').value = '';
+    showToast?.('Пароль разработчика сохранён','success');
+  };
+  window.devClearPassword = function() {
+    if (!isDevActive()) return;
+    verifyPinPrompt(function(ok){
+      if (!ok) return;
+      localStorage.removeItem(DEV_PASS_KEY);
+      showToast?.('Пароль Dev удалён','info');
+    });
+  };
+  window.devSaveSystemPrompt = function() {
+    if (!isDevActive()) return;
+    const v = document.getElementById('dev-system-prompt')?.value || '';
+    localStorage.setItem(PROMPT_KEY, v);
+    showDevReloadToast('Системный промпт сохранён. Перезагрузите страницу.');
+  };
+  window.devClearSystemPrompt = function() {
+    if (!isDevActive()) return;
+    localStorage.removeItem(PROMPT_KEY);
+    const sp = document.getElementById('dev-system-prompt');
+    if (sp) sp.value = '';
+    showDevReloadToast('Системный промпт очищен. Перезагрузите страницу.');
+  };
+  window.devSaveAllowedTypes = function() {
+    if (!isDevActive()) return;
+    const v = (document.getElementById('dev-allowed-types')?.value || '').trim();
+    localStorage.setItem(TYPES_KEY, v);
+    showDevReloadToast('Типы вложений сохранены. Перезагрузите страницу.');
+  };
+  window.devSaveMaxChars = function() {
+    if (!isDevActive()) return;
+    let n = parseInt(document.getElementById('dev-max-chars')?.value || '0', 10);
+    if (isNaN(n) || n < 0) n = 0;
+    localStorage.setItem(MAX_KEY, String(n));
+    showDevReloadToast('Лимит символов сохранён. Перезагрузите страницу.');
+  };
+  window.devResetPolicies = function() {
+    if (!isDevActive()) return;
+    showCustomModal('Сброс политик', 'Сбросить Enterprise, флаги, типы, лимит и системный промпт?', false, '', function(ok){
+      if (!ok) return;
+      localStorage.removeItem(ENT_KEY);
+      localStorage.removeItem(FLAG_KEY);
+      localStorage.removeItem(TYPES_KEY);
+      localStorage.removeItem(MAX_KEY);
+      localStorage.removeItem(PROMPT_KEY);
+      applyDevUI();
+      showDevReloadToast('Политики сброшены. Перезагрузите страницу.');
+    });
+  };
+
+  // Inject system prompt into sends
+  function wrapSend() {
+    const names = ['sendMsg','sendUserMessage','resolveAiResponse'];
+    names.forEach(n => {
+      const o = window[n];
+      if (typeof o !== 'function' || o._devPrompt) return;
+      window[n] = function() {
+        const prompt = (localStorage.getItem(PROMPT_KEY)||'').trim();
+        if (prompt && n === 'resolveAiResponse' && typeof arguments[0] === 'string') {
+          arguments[0] = arguments[0] + '\n\n[System]\n' + prompt;
+        }
+        // max chars on sendMsg
+        if (n === 'sendMsg' || n === 'sendUserMessage') {
+          const max = parseInt(localStorage.getItem(MAX_KEY)||'0', 10);
+          const input = document.getElementById('user-input');
+          const text = (input && input.value) || (typeof arguments[0]==='string'?arguments[0]:'');
+          if (max > 0 && text.length > max) {
+            showToast?.('Лимит сообщения: '+max+' символов (политика устройства)','warning');
+            return;
+          }
+          if (loadFlags().noAttach && window.__pendingAttachments?.length) {
+            showToast?.('Вложения запрещены политикой','warning');
+            return;
+          }
+        }
+        return o.apply(this, arguments);
+      };
+      window[n]._devPrompt = true;
+    });
+  }
+
+  // File input filter
+  document.addEventListener('change', function(e) {
+    const inp = e.target;
+    if (!inp || inp.type !== 'file') return;
+    if (loadFlags().noAttach) {
+      inp.value = '';
+      showToast?.('Вложения запрещены','warning');
+      e.preventDefault();
+      return;
+    }
+    const allow = (localStorage.getItem(TYPES_KEY)||'').trim();
+    if (!allow || !inp.files?.length) return;
+    const rules = allow.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+    const bad = [...inp.files].filter(f => {
+      const name = (f.name||'').toLowerCase();
+      const type = (f.type||'').toLowerCase();
+      return !rules.some(r => {
+        if (r.endsWith('/*')) return type.startsWith(r.replace('/*',''));
+        if (r.startsWith('.')) return name.endsWith(r);
+        return type === r || name.endsWith('.'+r);
+      });
+    });
+    if (bad.length) {
+      inp.value = '';
+      showToast?.('Тип файла не разрешён политикой: '+bad.map(b=>b.name).join(', '),'warning');
+    }
+  }, true);
+
+  const _ss = window.showSection;
+  if (typeof _ss === 'function' && !_ss._devTitle2) {
+    
+/* single source: function showSection */
+
+    window.showSection._devTitle2 = true;
+  }
+
+  function boot() {
+    applyDevUI();
+    wrapSend();
+    setTimeout(wrapSend, 800);
+    console.info('%cCoreNode.enableDeveloperMode()', 'color:#90caf9', '— нужен PIN');
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
+
+/* ===== SECTION ===== */
+
+(function coreNodeLayoutCompact(){
+  function detectLayout(){
+    const w = window.innerWidth || 0;
+    let layout = 'desktop';
+    if (w <= 767) layout = 'phone';
+    else if (w <= 1199) layout = 'tablet';
+    document.body.setAttribute('data-layout', layout);
+    document.body.classList.toggle('layout-phone', layout==='phone');
+    document.body.classList.toggle('layout-tablet', layout==='tablet');
+    document.body.classList.toggle('layout-desktop', layout==='desktop');
+    return layout;
+  }
+  detectLayout();
+  window.addEventListener('resize', function(){
+    clearTimeout(window.__cnLayoutT);
+    window.__cnLayoutT = setTimeout(detectLayout, 120);
+  });
+  window.addEventListener('orientationchange', function(){ setTimeout(detectLayout, 200); });
+
+  // Phone/tablet: expand input only on focus
+  function bindInputExpand(){
+    const input = document.getElementById('user-input');
+    if (!input || input._cnExpand) return;
+    input._cnExpand = true;
+    const sync = () => {
+      const layout = document.body.getAttribute('data-layout');
+      if (layout === 'desktop') {
+        document.body.classList.remove('input-expanded');
+        return;
+      }
+      const focused = document.activeElement === input;
+      const multi = (input.value || '').split('\n').length > 1 || (input.scrollHeight > 40);
+      document.body.classList.toggle('input-expanded', focused || multi);
+    };
+    input.addEventListener('focus', sync);
+    input.addEventListener('blur', () => setTimeout(sync, 100));
+    input.addEventListener('input', sync);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindInputExpand);
+  else bindInputExpand();
+  setTimeout(bindInputExpand, 500);
+})();
+
+/* ===== SECTION ===== */
+
+(function compactInputHasText(){
+  function sync(){
+    const box = document.getElementById('main-input-box');
+    const input = document.getElementById('user-input');
+    const send = document.getElementById('send-btn');
+    if (!box || !input) return;
+    const has = (input.value || '').trim().length > 0;
+    box.classList.toggle('has-text', has);
+    if (send) send.classList.toggle('visible', has);
+  }
+  const boot = () => {
+    const input = document.getElementById('user-input');
+    if (!input || input._compactSync) return;
+    input._compactSync = true;
+    input.addEventListener('input', sync);
+    sync();
+    // patch handleInput
+    const hi = window.handleInput;
+    if (typeof hi === 'function' && !hi._compact) {
+      window.handleInput = function(el) {
+        const r = hi.apply(this, arguments);
+        sync();
+        return r;
+      };
+      window.handleInput._compact = true;
+    }
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(boot, 400);
+})();
+
+/* ===== SECTION ===== */
+
+(function coreNodeRailLiveTemp(){
+  // Enable rail nav (top glass-nav hidden; use sidebar)
+  document.body.classList.add('rail-nav-mode');
+  document.body.classList.add('no-top-nav');
+
+  window.toggleSidebarMore = function(e){
+    e && e.stopPropagation();
+    const m = document.getElementById('sb-more-menu');
+    if (!m) return;
+    m.hidden = !m.hidden;
+  };
+  window.closeSidebarMore = function(){
+    const m = document.getElementById('sb-more-menu');
+    if (m) m.hidden = true;
+  };
+  document.addEventListener('click', function(ev){
+    const wrap = document.querySelector('.sb-more-wrap');
+    if (wrap && !wrap.contains(ev.target)) closeSidebarMore();
+  });
+
+  /* openAddonsHub moved to cn-addons-nuclear */
+
+  // --- Live sound (short beep, no external file required) ---
+  function playLiveOnSound(){
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(880, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.08);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 0.28);
+      setTimeout(() => ctx.close?.(), 500);
+    } catch(e){}
+  }
+
+  // Patch startLiveChat / stopLiveChat
+  const _start = window.startLiveChat;
+  if (typeof _start === 'function' && !_start._railPatch) {
+    window.startLiveChat = function(){
+      const r = _start.apply(this, arguments);
+      if (window.CoreState && CoreState.isLiveChat) {
+        playLiveOnSound();
+        const panel = document.getElementById('live-session-panel');
+        if (panel) panel.hidden = false;
+        const sub = document.getElementById('live-subtitles');
+        if (sub) sub.textContent = 'Слушаю…';
+        // hide classic row via CSS body class
+        document.body.classList.add('live-chat-active');
+        // open sidebar soft? no
+        // mic on
+        const mic = document.getElementById('live-mic-btn');
+        if (mic) { mic.classList.add('on'); mic.classList.remove('off'); }
+      }
+      return r;
+    };
+    window.startLiveChat._railPatch = true;
+  }
+  const _stop = window.stopLiveChat;
+  if (typeof _stop === 'function' && !_stop._railPatch) {
+    window.stopLiveChat = function(){
+      const r = _stop.apply(this, arguments);
+      const panel = document.getElementById('live-session-panel');
+      if (panel) panel.hidden = true;
+      document.body.classList.remove('live-chat-active');
+      return r;
+    };
+    window.stopLiveChat._railPatch = true;
+  }
+
+  window.toggleLiveMic = function(){
+    const btn = document.getElementById('live-mic-btn');
+    const icon = document.getElementById('live-mic-icon');
+    if (!btn) return;
+    const on = btn.classList.toggle('on');
+    btn.classList.toggle('off', !on);
+    if (icon) icon.textContent = on ? 'mic' : 'mic_off';
+    try {
+      if (!on && window.CoreState && CoreState.liveRecognition) {
+        CoreState.liveRecognition.stop?.();
+      } else if (on && typeof startLiveChat === 'function' && CoreState?.isLiveChat) {
+        // recognition restart left to existing live pipeline
+        showToast?.('Микрофон ' + (on ? 'вкл' : 'выкл'), 'info');
+      }
+    } catch(e){}
+  };
+
+  // Subtitles hook: observe live interim if available
+  const _onresult_hook = setInterval(function(){
+    if (!window.CoreState) return;
+    // soft: if placeholder updates
+  }, 2000);
+  setTimeout(() => clearInterval(_onresult_hook), 10000);
+
+  // Wire live textarea → main input
+  document.addEventListener('DOMContentLoaded', function(){
+    const liveIn = document.getElementById('live-user-input');
+    const mainIn = document.getElementById('user-input');
+    if (liveIn && mainIn) {
+      liveIn.addEventListener('input', function(){
+        mainIn.value = liveIn.value;
+        const sub = document.getElementById('live-subtitles');
+        if (sub && liveIn.value.trim()) sub.textContent = liveIn.value;
+      });
+    }
+  });
+
+  // --- Temp chat exit button ---
+  function syncTempExit(){
+    const btn = document.getElementById('temp-chat-exit-btn');
+    if (!btn) return;
+    const on = !!(window.CoreState && CoreState.isTempChat) || document.body.classList.contains('temp-chat-mode');
+    btn.hidden = !on;
+    if (on) btn.hidden = false;
+  }
+  const _enter = window.enterTempChat;
+  if (typeof _enter === 'function' && !_enter._exitBtn) {
+    window.enterTempChat = function(){
+      const r = _enter.apply(this, arguments);
+      document.body.classList.add('temp-chat-mode');
+      syncTempExit();
+      return r;
+    };
+    window.enterTempChat._exitBtn = true;
+  }
+  const _exit = window.exitTempChat;
+  if (typeof _exit === 'function' && !_exit._exitBtn) {
+    window.exitTempChat = function(){
+      const r = _exit.apply(this, arguments);
+      document.body.classList.remove('temp-chat-mode');
+      CoreState.isTempChat = false;
+      syncTempExit();
+      try { if (typeof syncChatEmptyCenter === 'function') syncChatEmptyCenter(); } catch(e){}
+      showToast?.('Обычный чат', 'info');
+      return r;
+    };
+    window.exitTempChat._exitBtn = true;
+  }
+  // also fix toggle if stuck
+  window.forceExitTempChat = function(){
+    document.body.classList.remove('temp-chat-mode');
+    if (window.CoreState) CoreState.isTempChat = false;
+    try { exitTempChat(); } catch(e){ syncTempExit(); }
+  };
+
+  function boot(){
+    syncTempExit();
+    // projects panel: pull folder items from unified when possible
+    try {
+      if (typeof renderUnifiedArchive === 'function') {
+        const orig = renderUnifiedArchive;
+        // no hard override
+      }
+    } catch(e){}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(boot, 600);
+})();
+
+/* ===== CLEANUP BOOT 2026-11 ===== */
+(function(){
+  // Always start with blank new chat on reload
+  function forceNewChatOnBoot(){
+    try {
+      localStorage.removeItem('oracle_current_session');
+    } catch(e){}
+    try {
+      if (typeof window.currentSessionId !== 'undefined') window.currentSessionId = null;
+      // also module-scope if accessible
+    } catch(e){}
+    try {
+      if (typeof createNewChatSession === 'function') createNewChatSession();
+      else {
+        const flow = document.getElementById('chat-flow');
+        const welcome = document.getElementById('welcome-block');
+        if (flow) flow.innerHTML = '';
+        if (welcome) welcome.classList.remove('hidden');
+        document.body.classList.add('chat-empty', 'chat-empty-center');
+      }
+    } catch(e){ console.warn('boot new chat', e); }
+  }
+
+  // Sidebar open class sync for input shift
+  function syncSidebarOpenClass(){
+    const sb = document.getElementById('sidebar-archive');
+    const open = !!(sb && (sb.classList.contains('open') || document.body.classList.contains('sidebar-docked')));
+    document.body.classList.toggle('sidebar-open', open);
+  }
+  const _mo = new MutationObserver(syncSidebarOpenClass);
+  document.addEventListener('DOMContentLoaded', function(){
+    const sb = document.getElementById('sidebar-archive');
+    if (sb) _mo.observe(sb, { attributes:true, attributeFilter:['class'] });
+    syncSidebarOpenClass();
+    // Delay so session restore doesn't win
+    setTimeout(forceNewChatOnBoot, 50);
+    setTimeout(forceNewChatOnBoot, 400);
+  });
+  if (document.readyState !== 'loading') {
+    setTimeout(forceNewChatOnBoot, 50);
+    setTimeout(forceNewChatOnBoot, 400);
+  }
+
+  // Highlight active archive item
+  window.markActiveArchiveItem = function(id){
+    document.querySelectorAll('.unified-item, .unified-archive-item, .sb-chat-item, .archive-item').forEach(el => {
+      const eid = el.getAttribute('data-id') || el.dataset?.id || el.getAttribute('data-session');
+      el.classList.toggle('active', !!(id && eid && String(eid) === String(id)));
+    });
+  };
+  const _load = window.loadChatSession;
+  if (typeof _load === 'function' && !_load._activeMark) {
+    window.loadChatSession = function(id){
+      const r = _load.apply(this, arguments);
+      try { markActiveArchiveItem(id); } catch(e){}
+      return r;
+    };
+    window.loadChatSession._activeMark = true;
+  }
+
+  // Fast Assistant import badge on list items
+  window.decorateFaImportBadges = function(){
+    document.querySelectorAll('[data-fa-import="1"], .fa-imported').forEach(el => {
+      if (el.querySelector('.fa-import-badge')) return;
+      const b = document.createElement('span');
+      b.className = 'fa-import-badge';
+      b.textContent = 'Import';
+      const title = el.querySelector('.unified-item-title, .chat-title, b, span');
+      (title || el).appendChild(b);
+    });
+  };
+  // When merging FA chats, tag them
+  const _merge = window.mergeFaChatsIntoSessions;
+  if (typeof _merge === 'function' && !_merge._tagged) {
+    window.mergeFaChatsIntoSessions = function(chatsObj){
+      const n = _merge.apply(this, arguments);
+      try {
+        if (chatsObj && typeof chatsObj === 'object') {
+          Object.keys(chatsObj).forEach(id => {
+            const key = String(id).startsWith('fa_') ? id : ('fa_' + id);
+            if (window.chatSessions && chatSessions[key]) chatSessions[key].fromFa = true;
+            if (window.chatSessions && chatSessions[id]) chatSessions[id].fromFa = true;
+          });
+          localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+        }
+      } catch(e){}
+      setTimeout(decorateFaImportBadges, 200);
+      return n;
+    };
+    window.mergeFaChatsIntoSessions._tagged = true;
+  }
+
+  // Hide obsolete personalization toggles if still in DOM
+  function hideObsoleteNavSettings(){
+    document.querySelectorAll('.chat-card, .settings-item').forEach(card => {
+      const tx = card.textContent || '';
+      if (/Компактн(ый|ая)? режим|Состав панели навигации|Слиять с концами|Сделать Компактнее навигацию/i.test(tx)) {
+        card.style.display = 'none';
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded', hideObsoleteNavSettings);
+  setTimeout(hideObsoleteNavSettings, 800);
+
+  console.log('[CN] cleanup boot: new chat on entry, unified sidebar scroll, FA badges');
+})();
+
+
+
+(function(){
+  // Never use browser alert/confirm/prompt in UI
+  const nativeAlert = window.alert;
+  const nativeConfirm = window.confirm;
+  const nativePrompt = window.prompt;
+
+  function modalConfirm(message, title) {
+    return new Promise(function(resolve){
+      if (typeof showCustomModal === 'function') {
+        showCustomModal(title || 'Подтвердите действие', message, false, '', function(ok){ resolve(!!ok); });
+      } else resolve(nativeConfirm(message));
+    });
+  }
+  function modalAlert(message, title) {
+    if (typeof showCustomModal === 'function') {
+      showCustomModal(title || 'Сообщение', message);
+    } else if (typeof showToast === 'function') showToast(String(message), 'info');
+  }
+  function modalPrompt(message, def, title) {
+    return new Promise(function(resolve){
+      if (typeof showCustomModal === 'function') {
+        showCustomModal(title || 'Ввод', message, true, def || '', function(val){
+          // showCustomModal prompt callback may pass string or true
+          if (val === false || val == null) resolve(null);
+          else resolve(typeof val === 'string' ? val : (document.getElementById('custom-modal-input')?.value ?? ''));
+        });
+      } else resolve(nativePrompt(message, def));
+    });
+  }
+
+  window.alert = function(msg){ modalAlert(msg); };
+  window.confirm = function(msg){
+    console.warn('[CN] sync confirm blocked:', msg);
+    // cannot block; return false and show modal for user awareness
+    modalAlert(msg, 'Подтвердите действие');
+    return false;
+  };
+  window.prompt = function(msg, def){
+    console.warn('[CN] sync prompt blocked:', msg);
+    modalAlert(msg, 'Ввод');
+    return null;
+  };
+  window.cnConfirm = modalConfirm;
+  window.cnAlert = modalAlert;
+  window.cnPrompt = modalPrompt;
+
+  // Convert remaining text toggle buttons to pill switches
+  function upgradeToggles(){
+    document.querySelectorAll('button').forEach(function(btn){
+      if (btn.classList.contains('think-style-btn')) return;
+      if (btn.closest('.think-style-row, .segmented, .create-a-grid')) return;
+      if (btn.id && btn.id.indexOf('think-style') === 0) return;
+      const tx = (btn.innerText || btn.textContent || '').trim().toUpperCase();
+      if (!/^(ВКЛ|ВЫКЛ|ВКЛЮЧИТЬ|ВЫКЛЮЧИТЬ)$/.test(tx)) return;
+      if (btn.dataset.cnSwitch === '1') return;
+      btn.dataset.cnSwitch = '1';
+      btn.classList.add('toggle-btn');
+      // ВКЛЮЧИТЬ = currently OFF; ВЫКЛЮЧИТЬ = currently ON; ВКЛ/ВЫКЛ = state labels
+      let on = false;
+      if (tx === 'ВЫКЛЮЧИТЬ' || tx === 'ВКЛ') on = true;
+      if (tx === 'ВКЛЮЧИТЬ' || tx === 'ВЫКЛ') on = false;
+      if (on) btn.classList.add('on'); else btn.classList.remove('on');
+      btn.setAttribute('data-on', on ? '1' : '0');
+      btn.textContent = '';
+      const prev = btn.onclick;
+      btn.onclick = function(ev){
+        if (typeof prev === 'function') prev.call(this, ev);
+        setTimeout(function(){
+          // re-sync class from text if handler rewrote it
+          const t2 = (btn.innerText || btn.textContent || '').trim().toUpperCase();
+          if (/^(ВКЛ|ВЫКЛ|ВКЛЮЧИТЬ|ВЫКЛЮЧИТЬ)$/.test(t2)) {
+            let isOn = false;
+            if (t2 === 'ВЫКЛЮЧИТЬ' || t2 === 'ВКЛ') isOn = true;
+            if (t2 === 'ВКЛЮЧИТЬ' || t2 === 'ВЫКЛ') isOn = false;
+            btn.classList.toggle('on', isOn);
+            btn.setAttribute('data-on', isOn ? '1' : '0');
+            btn.textContent = '';
+          } else {
+            btn.classList.toggle('on');
+            btn.setAttribute('data-on', btn.classList.contains('on') ? '1' : '0');
+          }
+        }, 0);
+      };
+    });
+  }
+  document.addEventListener('DOMContentLoaded', upgradeToggles);
+  setTimeout(upgradeToggles, 300);
+  setTimeout(upgradeToggles, 1200);
+  // observe settings panel
+  const obs = new MutationObserver(function(){ upgradeToggles(); });
+  document.addEventListener('DOMContentLoaded', function(){
+    const root = document.getElementById('screen-settings') || document.body;
+    obs.observe(root, { childList:true, subtree:true });
+  });
+
+  console.log('[CN] native dialogs disabled; custom switches active');
+})();
+
+
+
+(function(){
+  document.addEventListener('DOMContentLoaded', function(){
+    const liveIn = document.getElementById('live-user-input');
+    const mainIn = document.getElementById('user-input');
+    const sub = document.getElementById('live-subtitles');
+    if (liveIn && mainIn) {
+      liveIn.addEventListener('input', function(){
+        mainIn.value = liveIn.value;
+        if (sub) sub.textContent = liveIn.value.trim() || 'Слушаю…';
+        if (typeof handleInput === 'function') handleInput(mainIn);
+      });
+    }
+  });
+})();
+
+
+
+(function(){
+  const LINE_TRIGGER = 2;      // >2 visual lines → tall mode
+  const EXPAND_CHARS = 280;    // auto open expanded sheet
+  const MAX_GROW_PX = 96;
+
+  function lineCount(ta) {
+    if (!ta) return 1;
+    const cs = getComputedStyle(ta);
+    const lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) * 1.45) || 22;
+    // measure with scrollHeight
+    const prev = ta.style.height;
+    ta.style.height = 'auto';
+    const sh = ta.scrollHeight;
+    ta.style.height = prev;
+    return Math.max(1, Math.round(sh / lh));
+  }
+
+  function growInput(ta) {
+    if (!ta) return;
+    const empty = !(ta.value || '').trim();
+    ta.style.height = 'auto';
+    // empty field stays single-line even if chips above
+    const next = empty ? Math.min(ta.scrollHeight, 44) : Math.min(ta.scrollHeight, MAX_GROW_PX);
+    ta.style.height = next + 'px';
+    const box = document.getElementById('main-input-box');
+    const lines = empty ? 1 : lineCount(ta);
+    if (box) {
+      box.classList.toggle('input-expanded-tall', !empty && (lines > LINE_TRIGGER || ta.scrollHeight > 56));
+      box.classList.toggle('has-attach-chips', document.body.classList.contains('has-attachments'));
+    }
+    return lines;
+  }
+
+  function maybeAutoExpand(ta) {
+    if (!ta) return;
+    const lines = growInput(ta);
+    const long = (ta.value || '').length >= EXPAND_CHARS || lines >= 6;
+    if (long && typeof openExpandedInput === 'function') {
+      // only auto-open once per "session" of long text
+      if (!ta.dataset.cnAutoExp) {
+        ta.dataset.cnAutoExp = '1';
+        openExpandedInput();
+      }
+    }
+    if ((ta.value || '').length < EXPAND_CHARS / 2) {
+      delete ta.dataset.cnAutoExp;
+    }
+  }
+
+  // Patch handleInput
+  const prevHandle = window.handleInput;
+  window.handleInput = function(textarea) {
+    if (typeof prevHandle === 'function') {
+      try { prevHandle.apply(this, arguments); } catch(e) {}
+    }
+    const ta = textarea || document.getElementById('user-input');
+    growInput(ta);
+    // soft auto-expand for very long text
+    if (ta && (ta.value || '').split('\n').length > 4) maybeAutoExpand(ta);
+  };
+
+  // Also on keyup for reliability
+  document.addEventListener('DOMContentLoaded', function(){
+    const ta = document.getElementById('user-input');
+    if (!ta) return;
+    const onGrow = function(){ growInput(ta); };
+    ta.addEventListener('input', onGrow);
+    ta.addEventListener('paste', function(){ setTimeout(onGrow, 0); });
+    // expand button prefers sheet
+    const exp = document.getElementById('expand-btn');
+    if (exp) {
+      exp.onclick = function(e){
+        e && e.preventDefault();
+        if (typeof openExpandedInput === 'function') openExpandedInput();
+        else if (typeof openFullscreenInput === 'function') openFullscreenInput();
+      };
+    }
+    growInput(ta);
+  });
+
+  // Theme transition flash guard
+  window.cnApplyThemeSmooth = function(){
+    document.body.classList.add('cn-theme-switching');
+    if (typeof applyVisualTheme === 'function') applyVisualTheme();
+    setTimeout(function(){ document.body.classList.remove('cn-theme-switching'); }, 320);
+  };
+
+  // Sidebar open class sync (for input shift)
+  function syncSb(){
+    const sb = document.getElementById('sidebar-archive');
+    const open = !!(sb && (sb.classList.contains('open') || document.body.classList.contains('sidebar-docked')));
+    document.body.classList.toggle('sidebar-open', open);
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    const sb = document.getElementById('sidebar-archive');
+    if (sb) new MutationObserver(syncSb).observe(sb, { attributes:true, attributeFilter:['class'] });
+    syncSb();
+  });
+
+  console.log('[CN] Redesign 3.0: grow input, themes, motion');
+})();
+
+
+
+(function(){
+  function restoreThinkBtns(){
+    const map = { 'think-style-dots':'Две точки', 'think-style-ring':'Обводка', 'think-style-off':'Выкл' };
+    Object.keys(map).forEach(function(id){
+      const b = document.getElementById(id);
+      if (!b) return;
+      b.classList.remove('toggle-btn','on');
+      b.removeAttribute('data-on');
+      b.dataset.cnSwitch = '0';
+      if (!(b.textContent||'').trim()) b.textContent = map[id];
+      // strip fake knob
+      b.style.fontSize = '';
+      b.style.width = '';
+      b.style.height = '';
+      b.style.color = '';
+      b.style.background = '';
+    });
+  }
+  document.addEventListener('DOMContentLoaded', restoreThinkBtns);
+  setTimeout(restoreThinkBtns, 200);
+  setTimeout(restoreThinkBtns, 800);
+  // after setThinkingStyle
+  const prev = window.setThinkingStyle;
+  if (typeof prev === 'function' && !prev._fix) {
+    window.setThinkingStyle = function(){
+      const r = prev.apply(this, arguments);
+      restoreThinkBtns();
+      document.querySelectorAll('.think-style-btn').forEach(function(b){
+        b.classList.toggle('active', b.getAttribute('data-style') === (localStorage.getItem('oracle_think_style')||'dots'));
+      });
+      return r;
+    };
+    window.setThinkingStyle._fix = true;
+  }
+})();
+
+
+
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    if (typeof applyVisualTheme === 'function') applyVisualTheme();
+    const tint = localStorage.getItem('oracle_accent_tint');
+    const el = document.getElementById('toggle-accent-tint');
+    if (el) el.checked = tint !== '0';
+    const db = localStorage.getItem('oracle_dark_base') || '#0f0f0f';
+    document.querySelectorAll('.dark-base-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-base') === db));
+  } catch(e){}
+});
+
+
+
+(function(){
+  const PLUGINS_KEY = 'oracle_plugins_v1';
+  const DEFAULT_PLUGINS = [
+    { id: 'fa-bridge', name: 'Fast Assistant Bridge', desc: 'Связка чатов с Fast Assistant', enabled: true, isNew: true, builtin: true },
+    { id: 'gmail', name: 'Gmail', desc: 'Почта: чтение и действия по письмам', enabled: false, needsAuth: true, authHint: 'Подключите Gmail-аккаунт' }
+  ];
+
+  function loadPlugins(){
+    try {
+      const raw = JSON.parse(localStorage.getItem(PLUGINS_KEY) || 'null');
+      if (Array.isArray(raw) && raw.length) return raw;
+    } catch(e){}
+    return DEFAULT_PLUGINS.map(p => ({...p}));
+  }
+  function savePlugins(list){
+    localStorage.setItem(PLUGINS_KEY, JSON.stringify(list));
+  }
+
+  window.renderPluginsList = function(){
+    const box = document.getElementById('plugins-list');
+    if (!box) return;
+    const list = loadPlugins();
+    box.innerHTML = list.map(p => `
+      <div class="plugin-row" data-plugin="${p.id}">
+        <span class="material-symbols-rounded">${p.id==='gmail'?'mail':'hub'}</span>
+        <div class="plugin-meta">
+          <div class="plugin-name">${p.name} ${p.isNew?'<span class="plugin-badge-new">NEW</span>':''}</div>
+          <div class="plugin-desc">${p.desc||''}</div>
+        </div>
+        <span class="plugin-status ${p.enabled?'on':''}">${p.enabled?'Включён':'Выключен'}</span>
+        <button type="button" class="icon-btn" onclick="pluginMenu('${p.id}', event)" title="Ещё">
+          <span class="material-symbols-rounded">more_vert</span>
+        </button>
+      </div>`).join('');
+  };
+
+  window.pluginMenu = function(id, e){
+    e && e.stopPropagation();
+    const list = loadPlugins();
+    const p = list.find(x => x.id === id);
+    if (!p) return;
+    const actions = [];
+    if (p.enabled) actions.push('Отключить');
+    else actions.push('Включить');
+    if (!p.builtin) actions.push('Удалить');
+    else if (p.id === 'gmail') actions.push('Подробнее');
+    showCustomModal(p.name, actions.map((a,i)=> (i+1)+'. '+a).join('<br>'), true, '1', function(val){
+      if (val === false || val == null) return;
+      const n = String(val).trim();
+      if (n === '1') {
+        if (p.enabled) {
+          p.enabled = false;
+        } else {
+          if (p.needsAuth) {
+            showCustomModal('Gmail', 'Надо подключить Gmail-аккаунт', false, '', function(){});
+            showToast?.('Подключите Gmail-аккаунт', 'warning');
+            return;
+          }
+          p.enabled = true;
+        }
+        savePlugins(list); renderPluginsList();
+      } else if (n === '2' && p.id === 'gmail') {
+        showCustomModal('Gmail', 'Плагин позволяет чистить ящик и искать письма через @Gmail в чате. Нужна авторизация Google.');
+      } else if (n === '2' && !p.builtin) {
+        savePlugins(list.filter(x => x.id !== id)); renderPluginsList();
+      }
+    });
+  };
+
+  const _setSkillsTab = window.setSkillsTab;
+  window.setSkillsTab = function(tab){
+    if (typeof _setSkillsTab === 'function') _setSkillsTab(tab);
+    document.querySelectorAll('.skills-hub-tab[data-skills-tab]').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-skills-tab') === tab);
+    });
+    document.querySelectorAll('.skills-panel').forEach(p => { p.hidden = true; });
+    const panel = document.getElementById('skills-panel-' + tab);
+    if (panel) panel.hidden = false;
+    // ensure tags panel visible when selected
+    if (tab === 'tags') {
+      const tp = document.getElementById('skills-panel-tags');
+      if (tp) tp.hidden = false;
+    }
+    if (tab === 'plugins') {
+      renderPluginsList();
+      if (!localStorage.getItem('oracle_plugins_intro')) {
+        showCustomModal('Плагины', 'Плагины — внешние интеграции (почта, Fast Assistant…). Коннекторы (@) — встроенные команды Core Node. В чате: @ИмяПлагина.');
+        localStorage.setItem('oracle_plugins_intro', '1');
+      }
+    }
+  };
+
+  // @ popup: include plugins; / and : tip
+  const _origInput = window.handleInput;
+  window.handleInput = function(ta){
+    if (typeof _origInput === 'function') try { _origInput.apply(this, arguments); } catch(e){}
+    const el = ta || document.getElementById('user-input');
+    if (!el) return;
+    const v = el.value || '';
+    const last = v.slice(-1);
+    if (last === '/' || last === ':') {
+      showToast?.('Теперь интерфейс понятнее: введите @ вместо / или :', 'info', 3200);
+    }
+  };
+
+  // ----- Swipe sidebar -----
+  (function swipeSidebar(){
+    let x0 = null, y0 = null, tracking = false;
+    const EDGE = 28;
+    document.addEventListener('touchstart', function(e){
+      if (!e.touches || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      x0 = t.clientX; y0 = t.clientY; tracking = true;
+    }, {passive:true});
+    document.addEventListener('touchend', function(e){
+      if (!tracking || x0 == null) return;
+      tracking = false;
+      const t = e.changedTouches && e.changedTouches[0];
+      if (!t) return;
+      const dx = t.clientX - x0, dy = t.clientY - y0;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+      const sb = document.getElementById('sidebar-archive');
+      const open = sb && sb.classList.contains('open');
+      if (dx > 0 && x0 < EDGE + 20 && !open) openSidebar?.();
+      if (dx < 0 && open) closeSidebar?.();
+      x0 = y0 = null;
+    }, {passive:true});
+  })();
+
+  // ----- Resize sidebar -----
+  (function resizeSidebar(){
+    const handle = () => document.getElementById('sb-resize-handle');
+    let dragging = false, startX = 0, startW = 280;
+    function onDown(e){
+      const sb = document.getElementById('sidebar-archive');
+      if (!sb || !sb.classList.contains('open')) return;
+      dragging = true;
+      startX = (e.touches ? e.touches[0].clientX : e.clientX);
+      startW = sb.getBoundingClientRect().width;
+      handle()?.classList.add('dragging');
+      e.preventDefault();
+    }
+    function onMove(e){
+      if (!dragging) return;
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      let w = Math.min(420, Math.max(220, startW + (x - startX)));
+      document.documentElement.style.setProperty('--cn-sidebar-w', w + 'px');
+      localStorage.setItem('oracle_sidebar_w', String(w));
+    }
+    function onUp(){
+      dragging = false;
+      handle()?.classList.remove('dragging');
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+      const w = parseInt(localStorage.getItem('oracle_sidebar_w')||'280',10);
+      if (w >= 220 && w <= 420) document.documentElement.style.setProperty('--cn-sidebar-w', w + 'px');
+      const h = handle();
+      if (!h) return;
+      h.addEventListener('mousedown', onDown);
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+  })();
+
+  // ----- Projects -----
+  window._projectDraft = { icon: 'folder', color: '#8b5cf6', name: '' };
+
+  window.openCreateProjectModal = function(){
+    window._projectDraft = { icon: 'folder', color: '#8b5cf6', name: '' };
+    const colors = ['#9ca3af','#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6','#ec4899'];
+    const icons = ['folder','flight','school','code','music_note','work','favorite','science','sports_esports','palette','home','bolt'];
+    const html = `
+      <label style="font-size:12px;font-weight:600;">Название проекта</label>
+      <div style="display:flex;gap:8px;align-items:center;margin:8px 0 12px;">
+        <button type="button" id="proj-icon-preview" class="project-home-icon" onclick="cycleProjectDraftIcon()" style="background:${window._projectDraft.color}33;color:${window._projectDraft.color}">
+          <span class="material-symbols-rounded" id="proj-icon-preview-i">folder</span>
+        </button>
+        <input id="proj-name-input" type="text" placeholder="Например: Учёба" style="flex:1;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);">
+      </div>
+      <div style="font-size:11px;color:var(--on-surface-variant);margin-bottom:6px;">Цвет</div>
+      <div class="color-picker-row" id="proj-colors">${colors.map(c=>`<button type="button" data-c="${c}" style="background:${c}" onclick="setProjectDraftColor('${c}')"></button>`).join('')}</div>
+      <div style="font-size:11px;color:var(--on-surface-variant);margin:8px 0 6px;">Иконка</div>
+      <div class="icon-picker-grid">${icons.map(ic=>`<button type="button" onclick="setProjectDraftIcon('${ic}')"><span class="material-symbols-rounded">${ic}</span></button>`).join('')}</div>
+      <p style="font-size:12px;color:var(--on-surface-variant);margin-top:12px;line-height:1.45;">В проекте хранятся чаты, файлы и источники в одном месте — как рабочая папка.</p>
+    `;
+    showCustomModal('Создать проект', html, false, '', function(ok){
+      if (!ok) return;
+      const name = (document.getElementById('proj-name-input')?.value || '').trim() || 'Новый проект';
+      createProjectWithMeta(name, window._projectDraft.icon, window._projectDraft.color);
+    });
+    // re-bind input after modal paints
+    setTimeout(() => {
+      const inp = document.getElementById('proj-name-input');
+      if (inp) inp.focus();
+      const ok = document.getElementById('custom-modal-ok');
+      if (ok) ok.textContent = 'Создать проект';
+    }, 50);
+  };
+  window.setProjectDraftColor = function(c){
+    window._projectDraft.color = c;
+    const prev = document.getElementById('proj-icon-preview');
+    if (prev) { prev.style.background = c+'33'; prev.style.color = c; }
+    document.querySelectorAll('#proj-colors button').forEach(b => b.classList.toggle('active', b.getAttribute('data-c')===c));
+  };
+  window.setProjectDraftIcon = function(ic){
+    window._projectDraft.icon = ic;
+    const i = document.getElementById('proj-icon-preview-i');
+    if (i) i.textContent = ic;
+  };
+  window.cycleProjectDraftIcon = function(){
+    const icons = ['folder','flight','school','code','music_note','work','favorite','science'];
+    const i = icons.indexOf(window._projectDraft.icon);
+    setProjectDraftIcon(icons[(i+1)%icons.length]);
+  };
+
+  window.createProjectWithMeta = function(name, icon, color){
+    showToast?.('Создание проекта…', 'info');
+    const delay = 400 + Math.random()*1200;
+    setTimeout(function(){
+      if (typeof projectTree !== 'object' || !projectTree) window.projectTree = { folders: {} };
+      if (!projectTree.folders) projectTree.folders = {};
+      const id = 'proj_' + Date.now();
+      projectTree.folders[id] = {
+        id, title: name, icon: icon||'folder', color: color||'#8b5cf6',
+        chatIds: [], files: [], sources: [], instructions: '',
+        memory: 'standard', libraryAccess: true, created: Date.now()
+      };
+      try { localStorage.setItem(typeof TREE_KEY !== 'undefined' ? TREE_KEY : 'oracle_project_tree', JSON.stringify(projectTree)); } catch(e){}
+      if (typeof saveProjectTree === 'function') saveProjectTree();
+      if (typeof renderProjectTree === 'function') renderProjectTree();
+      if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+      showToast?.('Проект создан', 'success');
+      openProjectHome(id);
+    }, delay);
+  };
+
+  window.openProjectHome = function(id){
+    try { if (typeof loadProjectTree === 'function') loadProjectTree(); } catch (e) {}
+    const f = projectTree?.folders?.[id];
+    if (!f) return;
+    window.currentFolderId = id;
+    window._activeProjectId = id;
+    document.body.classList.add('project-home-open');
+    const home = document.getElementById('project-home');
+    if (home) { home.hidden = false; }
+    const title = document.getElementById('project-home-title');
+    if (title) title.textContent = f.title || 'Проект';
+    const ic = document.getElementById('project-home-icon');
+    if (ic) { ic.textContent = f.icon || 'folder'; ic.style.color = f.color || ''; }
+    setProjectHomeTab('chats');
+    renderProjectHomeChats(id);
+    renderProjectHomeSources(id);
+  };
+
+  window.closeProjectHome = function(){
+    document.body.classList.remove('project-home-open');
+    const home = document.getElementById('project-home');
+    if (home) home.hidden = true;
+  };
+
+  window.setProjectHomeTab = function(tab){
+    document.querySelectorAll('.project-tab').forEach(b => b.classList.toggle('active', b.getAttribute('data-ptab')===tab));
+    const c = document.getElementById('project-home-chats');
+    const s = document.getElementById('project-home-sources');
+    if (c) c.hidden = tab !== 'chats';
+    if (s) s.hidden = tab !== 'sources';
+  };
+
+  window.renderProjectHomeChats = function(id){
+    const box = document.getElementById('project-home-chats');
+    if (!box) return;
+    const f = projectTree?.folders?.[id];
+    const ids = (f && f.chatIds) || [];
+    if (!ids.length) {
+      box.innerHTML = `<div class="project-empty"><h3>Пока нет чатов</h3><p>Чаты этого проекта появятся здесь</p>
+        <button type="button" class="modal-btn modal-btn-accept" onclick="startChatInProject('${id}')">Новый чат в проекте</button></div>`;
+      return;
+    }
+    box.innerHTML = ids.map(cid => {
+      const sess = (typeof chatSessions==='object' && chatSessions[cid]) ? chatSessions[cid] : null;
+      const title = (sess && sess.title) || cid;
+      return `<div class="unified-item" onclick="loadChatSession && loadChatSession('${cid}'); closeProjectHome();"><span class="material-symbols-rounded">chat_bubble</span> ${title}</div>`;
+    }).join('');
+  };
+
+  window.renderProjectHomeSources = function(id){
+    const box = document.getElementById('project-home-sources');
+    if (!box) return;
+    const f = projectTree?.folders?.[id];
+    const src = (f && f.sources) || [];
+    if (!src.length) {
+      box.innerHTML = `<div class="project-empty" style="border:1px dashed var(--border);border-radius:16px;">
+        <h3>Добавьте источники</h3>
+        <p>Файлы и ссылки дают проекту больше контекста</p>
+        <button type="button" class="modal-btn modal-btn-accept" onclick="addProjectSource('${id}')">Добавить источники</button>
+      </div>`;
+      return;
+    }
+    box.innerHTML = src.map((s,i)=>`<div class="plugin-row"><span class="material-symbols-rounded">description</span><div class="plugin-meta"><div class="plugin-name">${s.name||'Источник'}</div></div>
+      <button type="button" class="icon-btn" onclick="removeProjectSource('${id}',${i})"><span class="material-symbols-rounded">close</span></button></div>`).join('');
+  };
+
+  window.startChatInProject = function(id){
+    closeProjectHome();
+    if (typeof createNewChatSession === 'function') createNewChatSession();
+    // tag session into project when first message saves — store pending
+    window._pendingProjectId = id;
+    showToast?.('Новый чат в проекте', 'info');
+  };
+
+  window.addProjectSource = function(id){
+    showCustomModal('Источник', 'Имя файла или ссылка:', true, '', function(val){
+      if (!val || !String(val).trim()) return;
+      const f = projectTree.folders[id];
+      if (!f) return;
+      if (!f.sources) f.sources = [];
+      f.sources.push({ name: String(val).trim(), added: Date.now() });
+      if (typeof saveProjectTree === 'function') saveProjectTree();
+      renderProjectHomeSources(id);
+    });
+  };
+  window.removeProjectSource = function(id, i){
+    const f = projectTree.folders[id];
+    if (!f || !f.sources) return;
+    f.sources.splice(i,1);
+    if (typeof saveProjectTree === 'function') saveProjectTree();
+    renderProjectHomeSources(id);
+  };
+
+  window.openProjectSettings = function(){
+    const id = window._activeProjectId;
+    const f = projectTree?.folders?.[id];
+    if (!f) return;
+    showCustomModal('Настройки проекта', `
+      <div style="font-size:12px;margin-bottom:8px;">Название</div>
+      <input id="proj-set-name" value="${(f.title||'').replace(/"/g,'&quot;')}" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);margin-bottom:12px;">
+      <div style="font-size:12px;margin-bottom:6px;">Инструкции</div>
+      <textarea id="proj-set-instr" rows="3" placeholder="Как ИИ отвечает в этом проекте" style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);margin-bottom:12px;">${f.instructions||''}</textarea>
+      <button type="button" class="modal-btn" style="background:#7f1d1d;color:#fff;width:100%;" onclick="deleteProjectById('${id}')">Удалить проект</button>
+    `, false, '', function(ok){
+      if (!ok) return;
+      f.title = document.getElementById('proj-set-name')?.value?.trim() || f.title;
+      f.instructions = document.getElementById('proj-set-instr')?.value || '';
+      if (typeof saveProjectTree === 'function') saveProjectTree();
+      openProjectHome(id);
+      if (typeof renderProjectTree === 'function') renderProjectTree();
+    });
+  };
+
+  window.deleteProjectById = function(id){
+    showCustomModal('Удалить проект', 'Чаты останутся, но отвяжутся от проекта.', false, '', function(ok){
+      if (!ok) return;
+      delete projectTree.folders[id];
+      if (typeof saveProjectTree === 'function') saveProjectTree();
+      closeProjectHome();
+      if (typeof renderProjectTree === 'function') renderProjectTree();
+    });
+  };
+
+  window.openProjectSortMenu = function(e){
+    e && e.stopPropagation();
+    showCustomModal('Сортировка проектов', '1 — по имени<br>2 — сначала новые<br>3 — сначала старые', true, '1', function(val){
+      const n = String(val||'1').trim();
+      localStorage.setItem('oracle_project_sort', n);
+      if (typeof renderProjectTree === 'function') renderProjectTree();
+    });
+  };
+
+  // Move chat to project helper for context menu
+  window.cmMoveToProject = function(){
+    const sid = window._ctxSessionId || currentSessionId;
+    if (!sid) return;
+    const folders = Object.values(projectTree?.folders || {});
+    if (!folders.length) {
+      showToast?.('Сначала создайте проект', 'info');
+      openCreateProjectModal();
+      return;
+    }
+    const list = folders.map((f,i)=> (i+1)+'. '+f.title).join('<br>');
+    showCustomModal('Переместить в проект', list, true, '1', function(val){
+      const idx = parseInt(val,10)-1;
+      if (idx<0 || idx>=folders.length) return;
+      const f = folders[idx];
+      Object.values(projectTree.folders).forEach(ff => {
+        if (Array.isArray(ff.chatIds)) ff.chatIds = ff.chatIds.filter(c => c !== sid);
+      });
+      if (!f.chatIds) f.chatIds = [];
+      if (!f.chatIds.includes(sid)) f.chatIds.push(sid);
+      if (typeof saveProjectTree === 'function') saveProjectTree();
+      showToast?.('Чат в «'+f.title+'»', 'success');
+    });
+  };
+
+  // Language
+  window.setUiLanguage = function(code){
+    localStorage.setItem('oracle_ui_lang', code);
+    showToast?.('Язык: '+code+' (применится к новым подписям)', 'success');
+    // minimal demo keys
+    const dict = {
+      ru: {},
+      en: { 'Проекты':'Projects', 'Настройки':'Settings', 'Создать проект':'Create project' },
+      de: { 'Проекты':'Projekte', 'Настройки':'Einstellungen', 'Создать проект':'Projekt erstellen' }
+    };
+    window._uiDict = dict[code] || {};
+  };
+
+  // New screensaver circles variant
+  window.renderTrueBlackCyanCircles = function(root){
+    if (!root) return;
+    root.innerHTML = '';
+    root.style.background = '#000';
+    for (let i=0;i<9;i++){
+      const c = document.createElement('div');
+      c.className = 'ss-circle';
+      const size = 40 + Math.random()*120;
+      c.style.width = size+'px';
+      c.style.height = size+'px';
+      c.style.left = Math.random()*90+'%';
+      c.style.top = Math.random()*90+'%';
+      c.style.animationDelay = (Math.random()*6)+'s';
+      root.appendChild(c);
+    }
+  };
+
+  // Patch setSkillsTab dependency on original panels visibility
+  document.addEventListener('DOMContentLoaded', function(){
+    // wrap open folder click to project home when possible
+    const _rpt = window.renderProjectTree;
+    if (typeof _rpt === 'function' && !_rpt._home) {
+      window.renderProjectTree = function(){
+        const r = _rpt.apply(this, arguments);
+        try {
+          document.querySelectorAll('#sb-projects-panel [data-folder-id], #sb-projects-panel .folder-item').forEach(el => {
+            const id = el.getAttribute('data-folder-id') || el.dataset.folderId;
+            if (!id) return;
+            el.addEventListener('click', function(ev){
+              if (ev.target.closest('button')) return;
+              openProjectHome(id);
+            }, { once: false });
+          });
+        } catch(e){}
+        return r;
+      };
+      window.renderProjectTree._home = true;
+    }
+  });
+
+  console.log('[CN] 2.6.1 pack: swipe, resize, plugins, projects, toggles');
+})();
+
+
+
+document.addEventListener('DOMContentLoaded', function(){
+  setTimeout(function(){ try { renderProjectTree(); } catch(e){} }, 300);
+  setTimeout(function(){ try { renderProjectTree(); } catch(e){} }, 1000);
+  document.addEventListener('click', function(e){
+    var menu = document.getElementById('project-context-menu');
+    if (!menu || menu.hidden) return;
+    if (menu.contains(e.target)) return;
+    menu.hidden = true; menu.style.display = 'none';
+  });
+});
+
+
+
+(function(){
+  function forceShowInput(){
+    var box = document.getElementById('main-input-box');
+    if (!box) return;
+    var onChat = document.body.classList.contains('on-chat-screen') ||
+      (!!document.getElementById('screen-chat')?.classList.contains('active-screen'));
+    if (!onChat) {
+      box.style.display = 'none';
+      return;
+    }
+    box.classList.remove('hidden');
+    box.style.display = 'flex';
+    box.style.visibility = 'visible';
+    box.style.opacity = '1';
+    box.style.pointerEvents = 'auto';
+    box.style.zIndex = '3000';
+    document.body.classList.add('chat-active', 'on-chat-screen');
+  }
+  function patchModal(){
+    if (typeof window.showCustomModal !== 'function') return;
+    var _s = window.showCustomModal;
+    window.showCustomModal = function(title, text, isPrompt, defaultValue, callback){
+      try {
+        var modal = document.getElementById('custom-modal');
+        if (modal) {
+          modal.style.display = 'flex';
+          modal.classList.add('active');
+        }
+      } catch(e){}
+      return _s.apply(this, arguments);
+    };
+  }
+  function patchClose(){
+    var close = window.closeCustomModal || window.hideCustomModal;
+    // ensure cancel/ok hide overlay
+    document.addEventListener('click', function(e){
+      var t = e.target;
+      if (t && t.id === 'custom-modal') {
+        // click on backdrop
+        try {
+          if (typeof closeCustomModal === 'function') closeCustomModal(false);
+          else t.classList.remove('active');
+        } catch(err){}
+      }
+    });
+  }
+  function run(){
+    forceShowInput();
+    patchModal();
+    patchClose();
+    // if screen-chat not active, still show input on chat
+    try {
+      var sc = document.getElementById('screen-chat');
+      if (sc && !sc.classList.contains('active-screen')) {
+        // don't force if user on settings
+      } else {
+        forceShowInput();
+      }
+    } catch(e){}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else run();
+  setTimeout(run, 100);
+  setTimeout(forceShowInput, 500);
+})();
+
+
+
+(function(){
+  function hideAllScreens() {
+    document.querySelectorAll('.app-screen').forEach(function(s) {
+      s.classList.remove('active-screen');
+      s.style.display = 'none';
+      s.style.opacity = '0';
+      s.style.visibility = 'hidden';
+      s.style.pointerEvents = 'none';
+    });
+  }
+  function showScreen(el) {
+    if (!el) return;
+    el.classList.add('active-screen');
+    el.style.display = 'flex';
+    el.style.flexDirection = 'column';
+    el.style.opacity = '1';
+    el.style.visibility = 'visible';
+    el.style.pointerEvents = 'auto';
+    el.style.zIndex = '20';
+    el.style.position = 'relative';
+    el.style.minHeight = '60vh';
+    el.style.padding = '24px 16px 48px';
+    el.style.overflowY = 'auto';
+    el.style.background = 'var(--bg, #0a0a0a)';
+    el.style.color = 'var(--on-surface, #e8e8e8)';
+  }
+
+  window.setSkillsTab = function(tab) {
+    tab = tab || 'store';
+    document.querySelectorAll('.skills-hub-tab[data-skills-tab]').forEach(function(b) {
+      b.classList.toggle('active', b.getAttribute('data-skills-tab') === tab);
+    });
+    document.querySelectorAll('.skills-panel').forEach(function(p) {
+      p.hidden = true;
+      p.style.display = 'none';
+    });
+    var panel = document.getElementById('skills-panel-' + tab);
+    if (panel) {
+      panel.hidden = false;
+      panel.removeAttribute('hidden');
+      panel.style.display = 'block';
+      panel.style.visibility = 'visible';
+      panel.style.opacity = '1';
+    }
+    try {
+      if (tab === 'plugins' && typeof renderPluginsList === 'function') renderPluginsList();
+      if (tab === 'skills' && typeof renderSkillsList === 'function') renderSkillsList();
+      if (tab === 'store' && typeof renderConnectorsCatalog === 'function') renderConnectorsCatalog();
+      if (tab === 'tags' && typeof renderTagsList === 'function') renderTagsList();
+    } catch (e) { console.warn(e); }
+  };
+
+  window.openAddonsHub = function() {
+    try {
+      hideAllScreens();
+      var sk = document.getElementById('screen-skills');
+      if (!sk) {
+        console.error('screen-skills not in DOM');
+        if (typeof showToast === 'function') showToast('Экран Аддонов не найден', 'error');
+        return;
+      }
+      showScreen(sk);
+      document.body.classList.remove('on-chat-screen');
+      document.body.classList.add('on-skills-screen');
+      var box = document.getElementById('main-input-box');
+      if (box) box.style.display = 'none';
+      try { if (typeof closeSidebar === 'function') closeSidebar(); } catch(e) {}
+      setSkillsTab('store');
+      // scroll into view
+      try { sk.scrollTop = 0; window.scrollTo(0, 0); } catch(e) {}
+    } catch (e) {
+      console.error('openAddonsHub fatal', e);
+      alert('Аддоны: ' + e.message);
+    }
+  };
+
+  window.closeSkillsHub = function() {
+    try {
+      hideAllScreens();
+      var chat = document.getElementById('screen-chat');
+      showScreen(chat);
+      document.body.classList.add('on-chat-screen');
+      document.body.classList.remove('on-skills-screen');
+      var box = document.getElementById('main-input-box');
+      if (box) {
+        box.style.display = 'flex';
+        box.style.visibility = 'visible';
+      }
+      if (typeof switchScreen === 'function') {
+        // keep state in sync without fighting display
+        try {
+          document.querySelectorAll('.app-screen').forEach(function(s){ s.classList.remove('active-screen'); });
+          if (chat) chat.classList.add('active-screen');
+        } catch(e) {}
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  // Patch switchScreen for skills so regular path also works
+  var _sw = window.switchScreen;
+  if (typeof _sw === 'function') {
+    
+/* deduped switchScreen wrap */
+
+  }
+})();
+
+
+
+(function(){
+  'use strict';
+
+  function safe(fn, fallback){
+    try { return fn(); } catch(e){ console.warn('[CN]', e); return fallback; }
+  }
+
+  // ---- Chat title bar ----
+  window.updateChatBarTitle = function(){
+    var el = document.getElementById('chat-bar-title-text');
+    if (!el) return;
+    var title = 'Новый чат';
+    try {
+      var sid = window.currentSessionId;
+      if (sid && window.chatSessions && chatSessions[sid] && chatSessions[sid].title)
+        title = chatSessions[sid].title;
+      else if (document.body.classList.contains('temp-chat-mode') || (window.CoreState && CoreState.isTempChat))
+        title = 'Временный чат';
+    } catch(e){}
+    el.textContent = title;
+  };
+
+  
+/* deduped: earlier window.toggleChatOptionsMenu removed */
+
+
+  window.openChatFilesPopover = function(ev){
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+    var pop = document.getElementById('chat-files-popover');
+    var btn = document.getElementById('chat-session-title-btn');
+    if (!pop || !btn) return;
+    document.getElementById('chat-options-menu')?.classList.remove('open');
+    var list = document.getElementById('chat-files-list');
+    var files = [];
+    try {
+      var sid = window.currentSessionId;
+      var sess = window.chatSessions && chatSessions[sid];
+      if (sess && Array.isArray(sess.files)) files = sess.files;
+      if (sess && Array.isArray(sess.attachments)) files = files.concat(sess.attachments);
+      // chips currently attached
+      document.querySelectorAll('#attached-files-row .attach-chip, .attach-chip').forEach(function(c){
+        files.push({ name: c.textContent.replace(/×|✕|close/gi,'').trim() });
+      });
+    } catch(e){}
+    if (!list) return;
+    if (!files.length) {
+      list.innerHTML = '<div style="font-size:13px;color:var(--on-surface-variant);padding:8px;">В этом чате пока нет файлов</div>';
+    } else {
+      list.innerHTML = files.map(function(f){
+        var n = (f && (f.name || f.title || f)) || 'Файл';
+        return '<div class="chat-file-row"><span class="material-symbols-rounded">draft</span><span>'+String(n).replace(/</g,'&lt;')+'</span></div>';
+      }).join('');
+    }
+    var r = btn.getBoundingClientRect();
+    pop.style.top = (r.bottom + 6) + 'px';
+    pop.style.left = Math.max(12, Math.min(r.left, window.innerWidth - 340)) + 'px';
+    pop.classList.add('open');
+  };
+
+  function closeBarMenus(){
+    document.getElementById('chat-options-menu')?.classList.remove('open');
+    document.getElementById('chat-files-popover')?.classList.remove('open');
+    document.getElementById('send-context-menu')?.classList.remove('open');
+  }
+  document.addEventListener('click', function(e){
+    if (e.target.closest('#chat-options-menu,#chat-options-btn,#chat-files-popover,#chat-session-title-btn,#send-context-menu')) return;
+    closeBarMenus();
+  });
+
+  window.cmShareFromBar = function(){ closeBarMenus(); try{ window._ctxSessionId = currentSessionId; cmShare(); }catch(e){ showToast?.('Поделиться недоступно','warning'); } };
+  window.cmTogglePinFromBar = function(){ closeBarMenus(); try{ window._ctxSessionId = currentSessionId; cmTogglePin(); updateChatBarTitle(); }catch(e){} };
+  window.cmRenameFromBar = function(){ closeBarMenus(); try{ window._ctxSessionId = currentSessionId; cmRename(); setTimeout(updateChatBarTitle, 300); }catch(e){} };
+  window.cmMoveToProjectFromBar = function(){ closeBarMenus(); try{ window._ctxSessionId = currentSessionId; cmMoveToProject(); }catch(e){ showToast?.('Нет проектов','info'); } };
+  window.cmFeedbackFromBar = function(){
+    closeBarMenus();
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Отзыв', 'Что улучшить в этом чате?', true, '', function(val){
+        if (val) showToast?.('Спасибо! Отзыв сохранён локально','success');
+        try {
+          var arr = JSON.parse(localStorage.getItem('oracle_feedback')||'[]');
+          arr.push({ t: Date.now(), sid: currentSessionId, text: String(val||'') });
+          localStorage.setItem('oracle_feedback', JSON.stringify(arr.slice(-50)));
+        } catch(e){}
+      });
+    }
+  };
+  window.cmCopyIdFromBar = function(){
+    closeBarMenus();
+    var id = window.currentSessionId || '';
+    if (navigator.clipboard && id) navigator.clipboard.writeText(id).then(function(){ showToast?.('ID скопирован','success'); });
+    else showToast?.(id || 'Нет ID','info');
+  };
+  window.cmOpenInTabFromBar = function(){
+    closeBarMenus();
+    var id = window.currentSessionId || '';
+    var url = location.origin + location.pathname + (id ? ('#chat=' + encodeURIComponent(id)) : '');
+    window.open(url, '_blank');
+  };
+
+  // Keep title in sync
+  var _lcs = window.loadChatSession;
+  if (typeof _lcs === 'function') {
+    window.loadChatSession = function(){
+      var r = _lcs.apply(this, arguments);
+      setTimeout(updateChatBarTitle, 50);
+      return r;
+    };
+  }
+  var _cnc = window.createNewChatSession;
+  if (typeof _cnc === 'function') {
+    window.createNewChatSession = function(){
+      var r = _cnc.apply(this, arguments);
+      setTimeout(updateChatBarTitle, 50);
+      return r;
+    };
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(updateChatBarTitle, 200); });
+
+  // ---- Exit split when leaving chat ----
+  var _sw = window.switchScreen;
+  if (typeof _sw === 'function') {
+    
+/* deduped switchScreen wrap */
+
+  }
+
+  // ---- Improved split selector ----
+  window.openSplitSelector = function(){
+    try { document.getElementById('sidebar-archive')?.classList.remove('open'); } catch(e){}
+    var modes = [
+      { id:'chat-story', title:'Чат + История', desc:'Если история уже открыта — справа выбор чата. Иначе выберите оба.' },
+      { id:'chat-notepad', title:'Чат + Notepad', desc:'Кодинг и чат рядом' },
+      { id:'dual-chat', title:'Второй чат', desc:'Два одинаковых поля. ПКМ по Отправить → Send to 2 Chats. Live недоступен.' },
+      { id:'chat-context', title:'Чат + Контекст', desc:'Контекст текущего чата справа' },
+      { id:'chat-maps', title:'Чат + Карты (бета)', desc:'Карта рядом с диалогом' }
+    ];
+    var html = '<div style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow:auto;">' +
+      modes.map(function(m){
+        return '<button type="button" class="plus-menu-item" style="border:1px solid var(--border);border-radius:12px;" data-sm="'+m.id+'" onclick="window._splitMode=\''+m.id+'\';document.querySelectorAll(\'[data-sm]\').forEach(b=>b.style.outline=\'\');this.style.outline=\'2px solid var(--primary)\'">' +
+          '<div><b>'+m.title+'</b><div style="font-size:12px;color:var(--on-surface-variant);margin-top:2px;">'+m.desc+'</div></div></button>';
+      }).join('') +
+      '<div style="font-size:12px;color:var(--on-surface-variant);margin-top:8px;">После выбора режима нажмите «Открыть Split». Нужные списки подставятся автоматически.</div></div>';
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Параллельный просмотр', html, false, '', function(ok){
+        if (!ok) return;
+        startSplitByMode(window._splitMode || 'chat-story');
+      });
+      setTimeout(function(){
+        var ok = document.getElementById('custom-modal-ok');
+        if (ok) ok.textContent = 'Открыть Split';
+      }, 30);
+    } else if (typeof enterSplitView === 'function') {
+      enterSplitView();
+    }
+  };
+
+  window.startSplitByMode = function(mode){
+    mode = mode || 'chat-story';
+    window._splitMode = mode;
+    try {
+      if (window.CoreState) {
+        CoreState.splitMode = mode;
+        if (mode === 'dual-chat' && CoreState.isLiveChat && typeof stopLiveChat === 'function') stopLiveChat();
+      }
+    } catch(e){}
+    // ensure screens
+    if (typeof enterSplitView === 'function') {
+      try { enterSplitView(); } catch(e){ console.warn(e); }
+    }
+    document.body.classList.toggle('dual-chat', mode === 'dual-chat');
+    // right pane content by mode
+    try {
+      var right = document.getElementById('split-pane-right');
+      if (!right) return;
+      if (mode === 'chat-maps') {
+        var maps = document.getElementById('screen-maps');
+        if (maps) { right.innerHTML = ''; right.appendChild(maps); maps.classList.add('active-screen'); maps.style.display='flex'; }
+      } else if (mode === 'chat-context') {
+        right.innerHTML = '<div style="padding:16px;overflow:auto;height:100%;"><h3 style="margin:0 0 8px;">Контекст</h3><div id="split-context-box" style="white-space:pre-wrap;font-size:13px;color:var(--on-surface-variant);"></div><button type="button" class="modal-btn modal-btn-reject" style="margin-top:12px;" onclick="exitSplitView()">Выйти из Split View</button></div>';
+        try {
+          var sid = currentSessionId;
+          var ctx = (chatSessions && chatSessions[sid] && chatSessions[sid].context) || localStorage.getItem('oracle_ctx_'+sid) || 'Контекст пуст. ИИ дополнит его по ходу диалога.';
+          var box = document.getElementById('split-context-box');
+          if (box) box.textContent = ctx;
+        } catch(e){}
+      } else if (mode === 'dual-chat') {
+        right.innerHTML = '<div style="display:flex;flex-direction:column;height:100%;padding:12px;gap:8px;"><div id="split-chat2-flow" class="chat-flow-box" style="flex:1;overflow:auto;"></div><div class="glass-input-box" style="position:relative;left:0;right:0;bottom:0;"><textarea id="user-input-2" placeholder="Введите ваш запрос..." style="width:100%;background:transparent;border:none;color:var(--on-surface);resize:none;min-height:24px;font:inherit;"></textarea><div class="input-bottom-bar"><span></span><button type="button" class="send-btn visible" onclick="sendMsgSplit2()"><span class="material-symbols-rounded">send</span></button></div></div><button type="button" class="modal-btn modal-btn-reject" onclick="exitSplitView()">Выйти из Split View</button></div>';
+        showToast?.('Live Chat скрыт в режиме двух чатов','info');
+      } else if (mode === 'chat-story') {
+        // if story already selected - right picks chat; else both
+        var hasStory = !!(window.currentStoryId);
+        if (hasStory && typeof loadStory === 'function') {
+          /* reader already in pane via enterSplitView */
+        }
+        var footer = document.createElement('button');
+        footer.type = 'button';
+        footer.className = 'modal-btn modal-btn-reject';
+        footer.textContent = 'Выйти из Split View';
+        footer.style.cssText = 'position:absolute;bottom:12px;right:12px;z-index:5;';
+        footer.onclick = function(){ exitSplitView(); };
+        right.style.position = 'relative';
+        right.appendChild(footer);
+      }
+      showToast?.('Split: ' + mode, 'success');
+    } catch(e){ console.warn(e); }
+  };
+
+  window.sendMsgSplit2 = function(){
+    var ta = document.getElementById('user-input-2');
+    var text = (ta && ta.value || '').trim();
+    if (!text) return;
+    var flow = document.getElementById('split-chat2-flow');
+    if (flow) {
+      var div = document.createElement('div');
+      div.className = 'user-msg';
+      div.textContent = text;
+      flow.appendChild(div);
+    }
+    if (ta) ta.value = '';
+    showToast?.('Сообщение во второй чат (локально)','info');
+  };
+
+  window.sendToBothSplitChats = function(){
+    closeBarMenus();
+    if (typeof sendMsg === 'function') sendMsg();
+    sendMsgSplit2();
+  };
+
+  // ---- Send button RMB: Дополнить с Live ----
+  function bindSendContextMenu(){
+    var sendBtn = document.querySelector('.send-btn, #send-btn, button.send-btn');
+    if (!sendBtn || sendBtn._cnCtx) return;
+    sendBtn._cnCtx = true;
+    sendBtn.addEventListener('contextmenu', function(e){
+      e.preventDefault();
+      var menu = document.getElementById('send-context-menu');
+      if (!menu) return;
+      var dual = document.body.classList.contains('dual-chat') || (CoreState && CoreState.splitMode === 'dual-chat');
+      var both = document.getElementById('send-to-both-item');
+      if (both) both.style.display = dual ? 'flex' : 'none';
+      menu.style.top = e.clientY + 'px';
+      menu.style.left = Math.min(e.clientX, window.innerWidth - 220) + 'px';
+      menu.classList.add('open');
+    });
+  }
+  window.sendWithLiveSupplement = function(){
+    closeBarMenus();
+    if (typeof sendMsg === 'function') sendMsg();
+    setTimeout(function(){
+      if (typeof startLiveChat === 'function') startLiveChat();
+      else if (typeof toggleLiveChat === 'function') toggleLiveChat();
+      else showToast?.('Live Chat скоро будет доступен','info');
+    }, 400);
+  };
+
+  // Idle 5s → Live suggest
+  var idleTimer = null;
+  function armIdleLiveSuggest(){
+    clearTimeout(idleTimer);
+    dismissLiveSuggest();
+    idleTimer = setTimeout(function(){
+      if (CoreState && CoreState.isLiveChat) return;
+      if (document.body.classList.contains('dual-chat')) return;
+      var input = document.getElementById('user-input');
+      if (input && input.value && input.value.trim()) return; // only when not typing content recently
+      var toast = document.getElementById('live-suggest-toast');
+      if (toast) toast.classList.add('show');
+    }, 5000);
+  }
+  window.dismissLiveSuggest = function(){
+    document.getElementById('live-suggest-toast')?.classList.remove('show');
+  };
+  window.acceptLiveSuggest = function(){
+    dismissLiveSuggest();
+    if (typeof startLiveChat === 'function') startLiveChat();
+    else if (typeof toggleLiveChat === 'function') toggleLiveChat();
+    else showToast?.('Live Chat','info');
+  };
+  document.addEventListener('DOMContentLoaded', function(){
+    bindSendContextMenu();
+    var input = document.getElementById('user-input');
+    if (input) {
+      input.addEventListener('input', function(){
+        clearTimeout(idleTimer);
+        dismissLiveSuggest();
+        // re-arm only when field becomes empty again
+        if (!input.value.trim()) armIdleLiveSuggest();
+      });
+      input.addEventListener('focus', function(){ if (!input.value.trim()) armIdleLiveSuggest(); });
+    }
+    setTimeout(bindSendContextMenu, 1000);
+  });
+
+  // ---- Plugins catalog expansion ----
+  window.renderPluginsList = function(){
+    var box = document.getElementById('plugins-list');
+    if (!box) return;
+    var plugins = [
+      { id:'fast-bridge', name:'Fast Assistant Bridge', desc:'Связка чатов с Fast Assistant', on:true, badge:'NEW' },
+      { id:'web-search', name:'Web Search Lite', desc:'Поиск по открытым источникам', on:false },
+      { id:'translate', name:'Quick Translate', desc:'Быстрый перевод фрагментов', on:false },
+      { id:'code-runner', name:'Code Runner Sandbox', desc:'Песочница для JS-сниппетов', on:false },
+      { id:'markdown-export', name:'Markdown Export', desc:'Экспорт чата в .md', on:true },
+      { id:'voice-notes', name:'Voice Notes', desc:'Голосовые заметки в библиотеку', on:false },
+      { id:'calendar-sync', name:'Calendar Sync', desc:'Связка с Планами Core Node', on:false },
+      { id:'image-describe', name:'Image Describe', desc:'Описание вложений-картинок', on:false },
+      { id:'notion-like', name:'Blocks Mirror', desc:'Карточки CNUI в стиле блоков', on:false },
+      { id:'privacy-scrub', name:'Privacy Scrub', desc:'Маскирует emails/телефоны в ответах', on:false }
+    ];
+    try {
+      var saved = JSON.parse(localStorage.getItem('oracle_plugins_state')||'{}');
+      plugins.forEach(function(p){ if (saved[p.id] != null) p.on = !!saved[p.id]; });
+    } catch(e){}
+    var q = (document.getElementById('plugins-search') && document.getElementById('plugins-search').value || '').toLowerCase();
+    var filtered = plugins.filter(function(p){ return !q || (p.name+p.desc).toLowerCase().indexOf(q)>=0; });
+    box.innerHTML = '<input id="plugins-search" placeholder="Поиск плагинов…" style="width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);margin-bottom:12px;" oninput="renderPluginsList()">' +
+      filtered.map(function(p){
+        return '<div class="plugin-row" style="display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:12px;margin-bottom:8px;">' +
+          '<span class="material-symbols-rounded">extension</span>' +
+          '<div class="plugin-meta" style="flex:1;min-width:0;"><div class="plugin-name" style="font-weight:600;">'+p.name+(p.badge?' <span style="font-size:10px;color:var(--primary);">'+p.badge+'</span>':'')+'</div>' +
+          '<div style="font-size:12px;color:var(--on-surface-variant);">'+p.desc+'</div></div>' +
+          '<button type="button" class="modal-btn" style="padding:6px 10px;font-size:12px;" onclick="togglePlugin(\''+p.id+'\','+(!p.on)+')">'+(p.on?'Включён':'Выкл')+'</button></div>';
+      }).join('');
+  };
+  window.togglePlugin = function(id, on){
+    try {
+      var saved = JSON.parse(localStorage.getItem('oracle_plugins_state')||'{}');
+      saved[id] = !!on;
+      localStorage.setItem('oracle_plugins_state', JSON.stringify(saved));
+    } catch(e){}
+    renderPluginsList();
+    showToast?.(on ? 'Плагин включён' : 'Плагин выключен', 'success');
+  };
+
+  // ---- @ popup: connectors + skills + tags + plugins; / and : toast ----
+  var _handleInput = window.handleInput;
+  window.handleInput = function(e){
+    try {
+      var v = (e && e.target && e.target.value) || (document.getElementById('user-input')||{}).value || '';
+      var last = v.slice(-1);
+      if (last === '/' || last === ':') {
+        showToast?.('Теперь введите @ — там коннекторы, навыки, теги и плагины', 'info');
+      }
+    } catch(err){}
+    if (typeof _handleInput === 'function') return _handleInput.apply(this, arguments);
+  };
+
+  // Expand mention dropdown if present
+  window.renderMentionPalette = function(){
+    var host = document.getElementById('mention-palette') || document.getElementById('at-popup');
+    if (!host) return;
+    host.innerHTML = '<div class="plus-menu-label">Коннекторы</div>' +
+      ['@plan','@keep','@code','@ContentCheck'].map(function(x){ return '<button type="button" class="plus-menu-item" onclick="insertMention(\''+x+'\')">'+x+'</button>'; }).join('') +
+      '<div class="plus-menu-label">Навыки</div>' +
+      ['/summary','/translate','/fix'].map(function(x){ return '<button type="button" class="plus-menu-item" onclick="insertMention(\''+x+'\')">'+x+'</button>'; }).join('') +
+      '<div class="plus-menu-label">Теги</div>' +
+      [':кратко',':подробно',':дружелюбно'].map(function(x){ return '<button type="button" class="plus-menu-item" onclick="insertMention(\''+x+'\')">'+x+'</button>'; }).join('') +
+      '<div class="plus-menu-label">Плагины</div>' +
+      ['@plugin:web-search','@plugin:translate'].map(function(x){ return '<button type="button" class="plus-menu-item" onclick="insertMention(\''+x+'\')">'+x+'</button>'; }).join('');
+  };
+  window.insertMention = function(text){
+    var input = document.getElementById('user-input');
+    if (!input) return;
+    input.value = (input.value || '').replace(/[@\/:][^\s]*$/, '') + text + ' ';
+    input.focus();
+    document.getElementById('mention-palette')?.classList.remove('open');
+  };
+
+  // ---- Screenwriter analysis label ----
+  window.getAnalysisLabel = function(){
+    try {
+      if (localStorage.getItem('oracle_screenwriter_mode') === '1' || document.body.classList.contains('screenwriter-mode'))
+        return 'Answer of Planned Text';
+    } catch(e){}
+    return 'Анализ';
+  };
+
+  // ---- Sidebar menu settings radio (basic) ----
+  window.renderSidebarMenuSettings = function(){
+    var host = document.getElementById('section-sidebar-menu');
+    if (!host) return;
+    if (host.querySelector('#sb-menu-radio-pack')) return;
+    var pack = document.createElement('div');
+    pack.id = 'sb-menu-radio-pack';
+    // native sb-mode pack removed — UI lives in section-sidebar-menu (custom segmented)
+    return;
+  };
+  // setSbMenuMode / setSbBtnScale defined in cn-settings-home-js
+
+  // ---- Stability: wrap risky globals ----
+  ['sendMsg','enterSplitView','exitSplitView','openAddonsHub','showSection'].forEach(function(name){
+    var fn = window[name];
+    if (typeof fn !== 'function' || fn._cnSafe) return;
+    window[name] = function(){
+      try { return fn.apply(this, arguments); }
+      catch(e){ console.error(name, e); try{ showToast?.(name+' ошибка','error'); }catch(_){ } }
+    };
+    window[name]._cnSafe = true;
+  });
+
+  // init
+  document.addEventListener('DOMContentLoaded', function(){
+    setTimeout(updateChatBarTitle, 100);
+    setTimeout(bindSendContextMenu, 300);
+    setTimeout(function(){ try{ renderSidebarMenuSettings(); }catch(e){} }, 500);
+    document.body.classList.add('on-chat-screen');
+  });
+
+  console.log('[CN] ux-pack-261 loaded');
+})();
+
+
+
+(function(){
+  // unwrap safe wrapper if it broke showSection
+  var tries = 0;
+  function ensure(){
+    tries++;
+    if (typeof window.showSection !== 'function') return;
+    // re-bind nav buttons in case listeners died
+    document.querySelectorAll('[id^="btn-sec-"]').forEach(function(btn){
+      if (btn._cnBound) return;
+      btn._cnBound = true;
+      btn.addEventListener('click', function(e){
+        e.preventDefault();
+        var id = btn.id.replace(/^btn-sec-/, '');
+        try { showSection(id); } catch(err){ console.error(err); }
+      });
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensure);
+  else ensure();
+  setTimeout(ensure, 500);
+  // clear stuck search overlay that hides content
+  setTimeout(function(){
+    try {
+      document.getElementById('screen-settings')?.classList.remove('searching-mobile');
+      document.getElementById('settings-sidebar-menu')?.classList.remove('searching');
+    } catch(e){}
+  }, 0);
+})();
+
+
+/* A+B: body screen class sync for input visibility */
+(function() {
+  var _sw = window.switchScreen;
+  if (typeof _sw !== 'function' || _sw._abStable) return;
+  window.switchScreen = function(screenName) {
+    var r = _sw.apply(this, arguments);
+    try {
+      var name = String(screenName || '').replace(/^screen-/, '');
+      document.body.classList.toggle('on-chat-screen', name === 'chat');
+      document.body.classList.toggle('on-settings-screen', name === 'settings');
+      document.body.classList.toggle('on-skills-screen', name === 'skills');
+      document.body.classList.toggle('on-reader-screen', name === 'reader');
+      // if leaving settings, drop drill
+      if (name !== 'settings') {
+        document.getElementById('screen-settings')?.classList.remove('settings-drill');
+      }
+      // default section when opening settings
+      if (name === 'settings' && typeof showSection === 'function') {
+        var open = document.querySelector('.setting-section.section-visible');
+        if (!open || open.style.display === 'none') showSection('general');
+      }
+    } catch (e) {}
+    return r;
+  };
+  window.switchScreen._abStable = true;
+})();
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    if (document.getElementById('screen-chat')?.classList.contains('active-screen')) {
+      document.body.classList.add('on-chat-screen');
+    }
+    // repair about if still broken at runtime
+    var about = document.getElementById('section-about');
+    var root = document.getElementById('settings-content');
+    if (about && root && about.parentElement !== root) {
+      root.appendChild(about);
+    }
+    // start with general visible
+    document.querySelectorAll('.setting-section').forEach(function(el, idx) {
+      if (el.id === 'section-general') {
+        el.style.display = 'block';
+        el.classList.add('section-visible');
+      } else {
+        el.style.display = 'none';
+        el.classList.remove('section-visible');
+      }
+    });
+  } catch (e) {}
+});
+
+
+
+/* removed: Empty chat chrome pack (merged into unified) */
+
+
+
+/* ===== Theme modes: system / light / dark + shades ===== */
+(function themeModes261() {
+  function prefersDark() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function clearShadeClasses() {
+    document.body.classList.remove('dark-shade-0f', 'dark-shade-05', 'dark-shade-00', 'true-black-theme');
+  }
+  function applyShade(shade) {
+    clearShadeClasses();
+    if (shade === '0f') document.body.classList.add('dark-shade-0f');
+    else if (shade === '05') document.body.classList.add('dark-shade-05');
+    else {
+      document.body.classList.add('dark-shade-00', 'true-black-theme');
+      shade = '00';
+    }
+    localStorage.setItem('oracle_dark_shade', shade);
+    document.querySelectorAll('.dark-shade-swatch').forEach(function(b) {
+      b.classList.toggle('active', b.getAttribute('data-shade') === shade);
+    });
+  }
+  window.setDarkShade = function(shade) {
+    if (document.body.classList.contains('light-theme')) return;
+    applyShade(shade || '0f');
+    if (typeof applyVisualTheme === 'function') {
+      try { applyVisualTheme(); } catch (e) {}
+    }
+  };
+  window.setThemeMode = function(mode) {
+    mode = mode || 'system';
+    localStorage.setItem('oracle_theme_mode', mode);
+    var wrap = document.getElementById('dark-shade-wrap');
+    document.querySelectorAll('.theme-mode-btn').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    var btn = document.getElementById('theme-btn-' + (mode === 'system' ? 'system' : mode));
+    if (btn) btn.classList.add('active');
+
+    if (mode === 'light') {
+      document.body.classList.add('light-theme');
+      clearShadeClasses();
+      if (wrap) wrap.hidden = true;
+    } else if (mode === 'dark') {
+      document.body.classList.remove('light-theme');
+      if (wrap) wrap.hidden = false;
+      applyShade(localStorage.getItem('oracle_dark_shade') || '0f');
+    } else {
+      // system
+      if (prefersDark()) {
+        document.body.classList.remove('light-theme');
+        if (wrap) wrap.hidden = false;
+        applyShade(localStorage.getItem('oracle_dark_shade') || '0f');
+      } else {
+        document.body.classList.add('light-theme');
+        clearShadeClasses();
+        if (wrap) wrap.hidden = true;
+      }
+    }
+    // legacy keys
+    localStorage.setItem('oracle_light_theme', document.body.classList.contains('light-theme') ? 'true' : 'false');
+    localStorage.setItem('oracle_true_black', document.body.classList.contains('true-black-theme') ? 'true' : 'false');
+    if (typeof applyVisualTheme === 'function') {
+      try { applyVisualTheme(); } catch (e) {}
+    }
+  };
+
+  function bootTheme() {
+    var mode = localStorage.getItem('oracle_theme_mode');
+    if (!mode) {
+      if (localStorage.getItem('oracle_light_theme') === 'true') mode = 'light';
+      else if (localStorage.getItem('oracle_true_black') === 'true') { mode = 'dark'; localStorage.setItem('oracle_dark_shade', '00'); }
+      else mode = 'system';
+    }
+    setThemeMode(mode);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootTheme);
+  else bootTheme();
+  try {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+      if (localStorage.getItem('oracle_theme_mode') === 'system') setThemeMode('system');
+    });
+  } catch (e) {}
+})();
+
+/* Neutralize Halloween theme side-effects (keep silent no-op answers optional) */
+(function scrubHalloween() {
+  window.applyHalloweenTheme = function() { /* removed */ };
+  window.clearHalloweenIfThemeChange = function() {
+    try {
+      document.body.classList.remove('halloween-mode');
+      localStorage.removeItem('oracle_halloween_mode');
+    } catch (e) {}
+  };
+  try {
+    document.body.classList.remove('halloween-mode');
+    localStorage.removeItem('oracle_halloween_mode');
+  } catch (e) {}
+})();
+
+
+/* ===== Unified chat top bar (no ghost, correct empty/active) ===== */
+(function unifiedChatChrome() {
+  function isStandalonePwa() {
+    return window.matchMedia('(display-mode: standalone)').matches || !!navigator.standalone;
+  }
+  function chatHasMessages() {
+    const flow = document.getElementById('chat-flow');
+    if (!flow) return false;
+    if (flow.querySelector('.msg, .user-msg, .ai-msg, .msg-user, .msg-ai, .message')) return true;
+    return (flow.innerText || '').trim().length > 0;
+  }
+
+  window.syncEmptyChatLayout = function() {
+    const onChat = !!document.getElementById('screen-chat')?.classList.contains('active-screen');
+    const temp = !!(window.CoreState && CoreState.isTempChat) || document.body.classList.contains('temp-chat-mode');
+    const empty = onChat && (!chatHasMessages() || (temp && !CoreState.tempHasMessages));
+    document.body.classList.toggle('empty-chat', !!empty);
+    document.body.classList.toggle('on-chat-screen', onChat);
+
+    if (isStandalonePwa()) document.body.classList.add('is-pwa-standalone');
+
+    const chrome = document.getElementById('empty-chat-chrome');
+    if (chrome) {
+      chrome.hidden = !empty;
+      if (empty) chrome.style.display = 'flex';
+    }
+
+    const bar = document.getElementById('chat-session-bar');
+    if (bar) {
+      if (!onChat || empty) {
+        bar.style.display = 'none';
+      } else {
+        bar.style.display = 'flex';
+      }
+    }
+
+    // never show ghost
+    const ghost = document.getElementById('ghost-action-bar');
+    if (ghost) { ghost.hidden = true; ghost.style.display = 'none'; }
+
+    const tip = document.getElementById('temp-chat-tip');
+    if (tip) {
+      const dismissed = localStorage.getItem('oracle_temp_tip_dismissed') === '1';
+      const temp = document.body.classList.contains('temp-chat-mode');
+      tip.hidden = !empty || dismissed || temp;
+    }
+
+    const title = document.getElementById('chat-bar-title-text');
+    if (title && !empty) {
+      try {
+        const id = typeof currentSessionId !== 'undefined' ? currentSessionId : null;
+        const sessions = typeof chatSessions !== 'undefined' ? chatSessions : {};
+        if (id && sessions[id] && sessions[id].title) title.textContent = sessions[id].title;
+      } catch (e) {}
+    }
+  };
+
+  window.toggleChatOptionsMenu = function(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const menu = document.getElementById('chat-options-menu');
+    if (!menu) return;
+    const open = !menu.classList.contains('open');
+    menu.classList.toggle('open', open);
+    if (open) {
+      const x = e && e.clientX != null ? e.clientX : window.innerWidth - 24;
+      const y = e && e.clientY != null ? e.clientY : 56;
+      const w = 240;
+      menu.style.left = Math.max(8, Math.min(x - 40, window.innerWidth - w - 8)) + 'px';
+      menu.style.top = Math.min(y + 8, window.innerHeight - 280) + 'px';
+    }
+  };
+
+  document.addEventListener('click', function(ev) {
+    const menu = document.getElementById('chat-options-menu');
+    if (!menu || !menu.classList.contains('open')) return;
+    if (menu.contains(ev.target)) return;
+    if (ev.target.closest('#chat-options-btn, #empty-chat-chrome .ecc-icon')) return;
+    menu.classList.remove('open');
+  });
+
+  window.cmProtectChatFromBar = function() {
+    document.getElementById('chat-options-menu')?.classList.remove('open');
+    if (typeof showCustomModal === 'function') {
+      showCustomModal(
+        'Защитить чат',
+        'Защита чата (PIN / скрытие содержимого) будет полностью доступна в следующем обновлении. Сейчас можно включить PIN в Настройки → Безопасность.',
+        false
+      );
+    } else if (typeof showToast === 'function') {
+      showToast('Защита чата — в настройках безопасности', 'info');
+    }
+  };
+
+  // Prefer rename label
+  const _rename = window.cmRenameFromBar;
+  // ensure move label exists
+  if (typeof window.cmMoveToProjectFromBar !== 'function' && typeof window.cmMoveToFolder === 'function') {
+    window.cmMoveToProjectFromBar = function() {
+      document.getElementById('chat-options-menu')?.classList.remove('open');
+      window.cmMoveToFolder();
+    };
+  }
+
+  function boot() {
+    syncEmptyChatLayout();
+    const flow = document.getElementById('chat-flow');
+    if (flow && window.MutationObserver) {
+      new MutationObserver(function() { syncEmptyChatLayout(); }).observe(flow, { childList: true, subtree: true });
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  ['switchScreen', 'createNewChatSession', 'loadChatSession', 'enterTempChat', 'exitTempChat', 'sendMsg'].forEach(function(name) {
+    const prev = window[name];
+    if (typeof prev !== 'function' || prev._unifiedChrome) return;
+    window[name] = function() {
+      const r = prev.apply(this, arguments);
+      setTimeout(syncEmptyChatLayout, 40);
+      return r;
+    };
+    window[name]._unifiedChrome = true;
+  });
+})();
+
+
+/* ===== Restored essentials after dedupe (single copy) ===== */
+window.promptPwaInstall = async function() {
+  try {
+    if (window._deferredPwaPrompt) {
+      window._deferredPwaPrompt.prompt();
+      await window._deferredPwaPrompt.userChoice.catch(function(){});
+      window._deferredPwaPrompt = null;
+      return;
+    }
+  } catch (e) {}
+  var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  if (standalone) {
+    if (typeof showToast === 'function') showToast('Приложение уже установлено', 'info');
+    return;
+  }
+  var msg = isIos
+    ? 'На iOS: «Поделиться» → «На экран „Домой“».'
+    : 'В меню браузера: «Установить приложение». Если пункта нет — PWA уже стоит или браузер не поддерживает.';
+  if (typeof showCustomModal === 'function') showCustomModal('Скачать Core Node', msg);
+  else if (typeof showToast === 'function') showToast(msg, 'info');
+};
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  window._deferredPwaPrompt = e;
+});
+
+window.dismissTempChatTip = function() {
+  try { localStorage.setItem('oracle_temp_tip_dismissed', '1'); } catch (e) {}
+  var tip = document.getElementById('temp-chat-tip');
+  if (tip) tip.hidden = true;
+};
+
+window.openUltraStub = window.openUltraStub || function() {
+  if (typeof showCustomModal === 'function') {
+    showCustomModal('Core Node Ultra', 'Тариф Ultra появится позже. Сейчас доступен Core Node PRO.');
+  } else if (typeof showToast === 'function') showToast('Ultra — скоро', 'info');
+};
+
+window.eccNewChatMenu = window.eccNewChatMenu || function(e) {
+  if (e) e.stopPropagation();
+  var menu = document.getElementById('ecc-new-menu');
+  if (menu) menu.hidden = !menu.hidden;
+};
+window.hideEccMenus = window.hideEccMenus || function() {
+  var menu = document.getElementById('ecc-new-menu');
+  if (menu) menu.hidden = true;
+};
+
+
+/* ===== Three-dots menu HARD FIX ===== */
+(function threeDotsFix() {
+  function menuEl() { return document.getElementById('chat-options-menu'); }
+
+  window.closeBarMenus = function() {
+    var m = menuEl();
+    if (m) {
+      m.classList.remove('open');
+      m.style.display = 'none';
+    }
+    var ecc = document.getElementById('ecc-new-menu');
+    if (ecc) ecc.hidden = true;
+  };
+
+  window.toggleChatOptionsMenu = function(e) {
+    if (e) {
+      try { e.preventDefault(); e.stopPropagation(); } catch (err) {}
+    }
+    var menu = menuEl();
+    if (!menu) {
+      console.warn('chat-options-menu missing');
+      return;
+    }
+    var willOpen = !menu.classList.contains('open');
+    // close others
+    document.querySelectorAll('#context-menu, #ecc-new-menu').forEach(function(n) {
+      if (n.id === 'ecc-new-menu') n.hidden = true;
+      else n.style.display = 'none';
+    });
+
+    if (!willOpen) {
+      menu.classList.remove('open');
+      menu.style.display = 'none';
+      return;
+    }
+
+    // position near button
+    var btn = (e && e.currentTarget) || document.getElementById('chat-options-btn');
+    var rect = btn && btn.getBoundingClientRect ? btn.getBoundingClientRect() : null;
+    var w = 250;
+    var left, top;
+    if (rect) {
+      left = Math.min(rect.right - w, window.innerWidth - w - 8);
+      left = Math.max(8, left);
+      top = rect.bottom + 6;
+      if (top + 320 > window.innerHeight) top = Math.max(8, rect.top - 320);
+    } else {
+      left = window.innerWidth - w - 16;
+      top = 56;
+    }
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.right = 'auto';
+    menu.style.bottom = 'auto';
+    menu.classList.add('open');
+    menu.style.display = 'flex';
+    menu.style.visibility = 'visible';
+    menu.style.pointerEvents = 'auto';
+    menu.style.zIndex = '20000';
+  };
+
+  // Bind click on ⋮ even if onclick attr fails
+  function bindBtn() {
+    ['chat-options-btn'].forEach(function(id) {
+      var b = document.getElementById(id);
+      if (!b || b._dotsBound) return;
+      b._dotsBound = true;
+      b.addEventListener('click', function(ev) {
+        window.toggleChatOptionsMenu(ev);
+      });
+    });
+    // empty chrome last icon is more_vert
+    document.querySelectorAll('#empty-chat-chrome .ecc-icon').forEach(function(b) {
+      if (b._dotsBound) return;
+      var icon = b.querySelector('.material-symbols-rounded');
+      if (!icon || icon.textContent.trim() !== 'more_vert') return;
+      b._dotsBound = true;
+      b.addEventListener('click', function(ev) {
+        window.toggleChatOptionsMenu(ev);
+      });
+    });
+  }
+
+  // Outside click closes
+  document.addEventListener('click', function(ev) {
+    var menu = menuEl();
+    if (!menu || !menu.classList.contains('open')) return;
+    if (menu.contains(ev.target)) return;
+    if (ev.target.closest('#chat-options-btn')) return;
+    if (ev.target.closest('#empty-chat-chrome .ecc-icon')) return;
+    window.closeBarMenus();
+  }, true);
+
+  // Ensure bar handlers exist and close menu
+  function ensure(name, fn) {
+    if (typeof window[name] !== 'function') window[name] = fn;
+  }
+  ensure('cmShareFromBar', function() {
+    closeBarMenus();
+    try {
+      window._ctxSessionId = window.currentSessionId;
+      if (typeof cmShare === 'function') cmShare();
+      else if (typeof showToast === 'function') showToast('Поделиться недоступно', 'warning');
+    } catch (e) { showToast?.('Поделиться недоступно', 'warning'); }
+  });
+  ensure('cmTogglePinFromBar', function() {
+    closeBarMenus();
+    try {
+      window._ctxSessionId = window.currentSessionId;
+      if (typeof cmTogglePin === 'function') cmTogglePin();
+      else showToast?.('Закрепление недоступно', 'info');
+    } catch (e) {}
+  });
+  ensure('cmRenameFromBar', function() {
+    closeBarMenus();
+    try {
+      window._ctxSessionId = window.currentSessionId;
+      if (typeof cmRename === 'function') cmRename();
+      else if (typeof showCustomModal === 'function') {
+        var cur = (document.getElementById('chat-bar-title-text') || {}).textContent || 'Чат';
+        showCustomModal('Переименовать чат', 'Новое имя', true, cur, function(ok, name) {
+          if (!ok || !name) return;
+          try {
+            if (window.currentSessionId && window.chatSessions && chatSessions[currentSessionId]) {
+              chatSessions[currentSessionId].title = String(name).trim();
+              localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+              var t = document.getElementById('chat-bar-title-text');
+              if (t) t.textContent = String(name).trim();
+              if (typeof renderSidebarChats === 'function') renderSidebarChats();
+              if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+            }
+          } catch (err) {}
+        });
+      }
+    } catch (e) {}
+  });
+  ensure('cmMoveToProjectFromBar', function() {
+    closeBarMenus();
+    try {
+      window._ctxSessionId = window.currentSessionId;
+      if (typeof cmMoveToProject === 'function') cmMoveToProject();
+      else if (typeof cmMoveToFolder === 'function') cmMoveToFolder();
+      else showToast?.('Проекты недоступны', 'info');
+    } catch (e) { showToast?.('Нет проектов', 'info'); }
+  });
+  ensure('cmProtectChatFromBar', function() {
+    closeBarMenus();
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Защитить чат', 'Включите PIN в Настройки → Безопасность. Полная защита чата — в следующем обновлении.');
+    } else showToast?.('См. Настройки → Безопасность', 'info');
+  });
+  ensure('cmCopyIdFromBar', function() {
+    closeBarMenus();
+    var id = window.currentSessionId || '';
+    if (navigator.clipboard && id) {
+      navigator.clipboard.writeText(id).then(function() { showToast?.('ID скопирован', 'success'); });
+    } else showToast?.(id || 'Нет ID', 'info');
+  });
+  ensure('cmOpenInTabFromBar', function() {
+    closeBarMenus();
+    var id = window.currentSessionId || '';
+    var url = location.origin + location.pathname + (id ? ('#chat=' + encodeURIComponent(id)) : '');
+    window.open(url, '_blank');
+  });
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bindBtn);
+  else bindBtn();
+  setTimeout(bindBtn, 500);
+})();
+
+
+/* ===== Chat bars + ⋮ menu full fix ===== */
+(function chatBarsAndMenu() {
+  function $(id) { return document.getElementById(id); }
+
+  function chatHasMessages() {
+    var flow = $('chat-flow');
+    if (!flow) return false;
+    if (flow.querySelector('.msg,.user-msg,.ai-msg,.msg-user,.msg-ai,.message')) return true;
+    return (flow.innerText || '').trim().length > 0;
+  }
+
+  window.syncEmptyChatLayout = function() {
+    var onChat = !!$('screen-chat')?.classList.contains('active-screen');
+    var empty = onChat && !chatHasMessages();
+    document.body.classList.toggle('empty-chat', !!empty);
+    document.body.classList.toggle('on-chat-screen', onChat);
+
+    var chrome = $('empty-chat-chrome');
+    if (chrome) {
+      if (empty && onChat) {
+        chrome.hidden = false;
+        chrome.style.display = 'flex';
+      } else {
+        chrome.hidden = true;
+        chrome.style.display = 'none';
+      }
+    }
+    var bar = $('chat-session-bar');
+    if (bar) {
+      if (onChat && !empty) {
+        bar.style.display = 'flex';
+        bar.style.visibility = 'visible';
+      } else {
+        bar.style.display = 'none';
+      }
+    }
+    // hide ghost forever
+    var g = $('ghost-action-bar');
+    if (g) { g.hidden = true; g.style.display = 'none'; }
+
+    var tip = $('temp-chat-tip');
+    if (tip) {
+      var dismissed = false;
+      try { dismissed = localStorage.getItem('oracle_temp_tip_dismissed') === '1'; } catch(e) {}
+      tip.hidden = !empty || dismissed || document.body.classList.contains('temp-chat-mode');
+    }
+    try {
+      if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+        document.body.classList.add('is-pwa-standalone');
+      }
+    } catch(e) {}
+  };
+
+  window.closeBarMenus = function() {
+    var m = $('chat-options-menu');
+    if (m) {
+      m.classList.remove('open');
+      m.style.display = 'none';
+    }
+    var sub = $('ctx-project-submenu');
+    if (sub) sub.classList.remove('open');
+    var ecc = $('ecc-new-menu');
+    if (ecc) ecc.hidden = true;
+  };
+
+  window.toggleChatOptionsMenu = function(e) {
+    if (e) { try { e.preventDefault(); e.stopPropagation(); } catch(err) {} }
+    var menu = $('chat-options-menu');
+    if (!menu) return;
+    var open = !menu.classList.contains('open');
+    closeBarMenus();
+    if (!open) return;
+
+    fillProjectSubmenu();
+    updatePinLabel();
+
+    var btn = (e && (e.currentTarget || e.target)) || $('chat-options-btn') || $('ecc-more-btn');
+    if (btn && btn.closest) btn = btn.closest('button') || btn;
+    var rect = btn && btn.getBoundingClientRect ? btn.getBoundingClientRect() : { right: window.innerWidth - 16, bottom: 48, top: 12, left: window.innerWidth - 48 };
+    var w = 260;
+    var left = Math.max(8, Math.min(rect.right - w, window.innerWidth - w - 8));
+    var top = rect.bottom + 6;
+    if (top + 280 > window.innerHeight) top = Math.max(8, rect.top - 280);
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.style.right = 'auto';
+    menu.style.display = 'flex';
+    menu.classList.add('open');
+  };
+
+  function updatePinLabel() {
+    var lab = $('chat-bar-pin-label');
+    if (!lab) return;
+    try {
+      var id = window.currentSessionId;
+      var pinned = false;
+      if (id && window.chatSessions && chatSessions[id]) pinned = !!chatSessions[id].pinned;
+      lab.textContent = pinned ? 'Открепить' : 'Закрепить';
+    } catch(e) { lab.textContent = 'Закрепить'; }
+  }
+
+  function fillProjectSubmenu() {
+    var sub = $('ctx-project-submenu');
+    if (!sub) return;
+    var folders = [];
+    try {
+      var tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2') || '{}') || {};
+      folders = tree.folders || [];
+    } catch(e) {}
+    if (!folders.length) {
+      sub.innerHTML = '<button type="button" onclick="cmCreateProjectAndMove()">+ Создать проект</button>';
+      return;
+    }
+    sub.innerHTML = folders.map(function(f) {
+      var id = f.id || f.name;
+      var name = (f.name || 'Проект').replace(/</g, '&lt;');
+      return '<button type="button" onclick="cmMoveChatToProject(\'' + String(id).replace(/'/g, "\\'") + '\')">' + name + '</button>';
+    }).join('') + '<button type="button" onclick="cmCreateProjectAndMove()">+ Новый проект</button>';
+  }
+
+  // Hover submenu on desktop
+  document.addEventListener('mouseover', function(e) {
+    var item = e.target.closest && e.target.closest('#ctx-move-project-item');
+    if (item) fillProjectSubmenu();
+  });
+
+  window.cmShareFromBar = function() {
+    closeBarMenus();
+    var id = window.currentSessionId || ('session_' + Date.now());
+    var link = location.origin + location.pathname.replace(/\/[^/]*$/, '/') + 'public-chat/' + encodeURIComponent(id);
+    var input = $('share-link-input');
+    if (input) input.value = link;
+    var modal = $('share-result-modal');
+    if (modal) modal.classList.add('active');
+    else if (typeof showCustomModal === 'function') {
+      showCustomModal('Ссылка на чат', 'Скопируйте и отправьте. Вы управляете доступом.<br><br><code style="word-break:break-all">' + link + '</code>');
+    }
+    try {
+      var map = JSON.parse(localStorage.getItem('oracle_public_links') || '{}') || {};
+      map[id] = { url: link, created: Date.now(), active: true };
+      localStorage.setItem('oracle_public_links', JSON.stringify(map));
+    } catch(e) {}
+  };
+  window.copyShareLink = function() {
+    var input = $('share-link-input');
+    var v = input ? input.value : '';
+    if (navigator.clipboard && v) navigator.clipboard.writeText(v).then(function(){ showToast?.('Ссылка скопирована','success'); });
+  };
+  window.closeShareResult = function() {
+    $('share-result-modal')?.classList.remove('active');
+  };
+  window.blockShareLink = function() {
+    try {
+      var id = window.currentSessionId;
+      var map = JSON.parse(localStorage.getItem('oracle_public_links') || '{}') || {};
+      if (id && map[id]) { map[id].active = false; localStorage.setItem('oracle_public_links', JSON.stringify(map)); }
+    } catch(e) {}
+    showToast?.('Ссылка заблокирована','warning');
+    closeShareResult();
+  };
+
+  window.cmTogglePinFromBar = function() {
+    closeBarMenus();
+    try {
+      var id = window.currentSessionId;
+      if (!id) { showToast?.('Сначала отправьте сообщение','info'); return; }
+      if (!window.chatSessions) window.chatSessions = {};
+      if (!chatSessions[id]) chatSessions[id] = { title: 'Чат', html: '' };
+      chatSessions[id].pinned = !chatSessions[id].pinned;
+      localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+      showToast?.(chatSessions[id].pinned ? 'Чат закреплён' : 'Чат откреплён', 'success');
+      if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+      if (typeof renderSidebarChats === 'function') renderSidebarChats();
+      updatePinLabel();
+    } catch(e) { showToast?.('Не удалось закрепить','warning'); }
+  };
+
+  window.cmRenameFromBar = function() {
+    closeBarMenus();
+    var id = window.currentSessionId;
+    var cur = 'Чат';
+    try {
+      if (id && chatSessions && chatSessions[id]) cur = chatSessions[id].title || cur;
+    } catch(e) {}
+    var t = $('chat-bar-title-text');
+    if (t && t.textContent) cur = t.textContent;
+    function apply(name) {
+      if (!name || !String(name).trim()) return;
+      name = String(name).trim();
+      try {
+        if (!id) id = 'session_' + Date.now();
+        if (!window.chatSessions) window.chatSessions = {};
+        if (!chatSessions[id]) chatSessions[id] = { title: name, html: ($('chat-flow')||{}).innerHTML || '' };
+        else chatSessions[id].title = name;
+        window.currentSessionId = id;
+        localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+        localStorage.setItem('oracle_current_session', id);
+        if (t) t.textContent = name;
+        if (typeof renderSidebarChats === 'function') renderSidebarChats();
+        if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+        showToast?.('Чат переименован','success');
+      } catch(e) {}
+    }
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Переименовать чат', 'Новое имя чата', true, cur, function(ok, val) {
+        // support both (ok,val) and (val) callback styles
+        if (ok === false) return;
+        var name = (typeof ok === 'string') ? ok : val;
+        if (ok === true || typeof ok === 'string') apply(name);
+      });
+    } else {
+      var n = prompt('Переименовать чат', cur);
+      if (n) apply(n);
+    }
+  };
+
+  window.cmMoveChatToProject = function(projectId) {
+    closeBarMenus();
+    var sid = window.currentSessionId;
+    if (!sid) { showToast?.('Нет активного чата','info'); return; }
+    try {
+      var tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2') || '{}') || {};
+      tree.folders = tree.folders || [];
+      tree.chatToFolder = tree.chatToFolder || {};
+      tree.chatToFolder[sid] = projectId;
+      localStorage.setItem('oracle_project_tree_v2', JSON.stringify(tree));
+      showToast?.('Чат перемещён в проект','success');
+      if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+    } catch(e) { showToast?.('Ошибка перемещения','warning'); }
+  };
+
+  window.cmCreateProjectAndMove = function() {
+    closeBarMenus();
+    function go(name) {
+      if (!name) return;
+      try {
+        var tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2') || '{}') || {};
+        tree.folders = tree.folders || [];
+        var id = 'proj_' + Date.now();
+        tree.folders.push({ id: id, name: String(name).trim(), icon: 'folder' });
+        localStorage.setItem('oracle_project_tree_v2', JSON.stringify(tree));
+        cmMoveChatToProject(id);
+      } catch(e) {}
+    }
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Новый проект', 'Название проекта', true, '', function(ok, val) {
+        if (ok === false) return;
+        go(typeof ok === 'string' ? ok : val);
+      });
+    } else {
+      var n = prompt('Название проекта');
+      if (n) go(n);
+    }
+  };
+
+  window.cmMoveToProjectFromBar = function() {
+    // open menu focus submenu
+    fillProjectSubmenu();
+    var sub = $('ctx-project-submenu');
+    if (sub) sub.classList.add('open');
+  };
+
+  window.cmProtectChatFromBar = function() {
+    closeBarMenus();
+    var pin = null;
+    try { pin = localStorage.getItem('oracle_user_pin') || localStorage.getItem('oracle_pin'); } catch(e) {}
+    if (!pin) {
+      if (typeof showCustomModal === 'function') {
+        showCustomModal('Защитить чат (BETA)', 'Сначала создайте PIN в Настройки → Безопасность. Затем чат можно поместить в проект «Приватные чаты».');
+      } else showToast?.('Сначала задайте PIN в Безопасности','warning');
+      return;
+    }
+    // ensure Private folder
+    try {
+      var tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2') || '{}') || {};
+      tree.folders = tree.folders || [];
+      var priv = tree.folders.find(function(f){ return f.name === 'Приватные чаты' || f.id === 'private_chats'; });
+      if (!priv) {
+        priv = { id: 'private_chats', name: 'Приватные чаты', icon: 'lock', locked: true };
+        tree.folders.push(priv);
+      } else {
+        priv.locked = true;
+      }
+      tree.chatToFolder = tree.chatToFolder || {};
+      var sid = window.currentSessionId;
+      if (sid) {
+        tree.chatToFolder[sid] = priv.id;
+        if (!window.chatSessions) chatSessions = {};
+        if (chatSessions[sid]) chatSessions[sid].protected = true;
+        localStorage.setItem('oracle_chat_sessions', JSON.stringify(chatSessions));
+      }
+      localStorage.setItem('oracle_project_tree_v2', JSON.stringify(tree));
+      showToast?.('Чат в «Приватные чаты» (нужен PIN)','success');
+      if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+    } catch(e) {
+      showToast?.('Не удалось защитить','warning');
+    }
+  };
+
+  document.addEventListener('click', function(ev) {
+    var menu = $('chat-options-menu');
+    if (!menu || !menu.classList.contains('open')) return;
+    if (menu.contains(ev.target)) return;
+    if (ev.target.closest('#chat-options-btn, #ecc-more-btn')) return;
+    closeBarMenus();
+  }, true);
+
+  function boot() {
+    syncEmptyChatLayout();
+    var flow = $('chat-flow');
+    if (flow && window.MutationObserver) {
+      new MutationObserver(function(){ syncEmptyChatLayout(); }).observe(flow, { childList: true, subtree: true });
+    }
+    ['chat-options-btn','ecc-more-btn'].forEach(function(id) {
+      var b = $(id);
+      if (b && !b._boundDots) {
+        b._boundDots = true;
+        b.addEventListener('click', function(ev){ toggleChatOptionsMenu(ev); });
+      }
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(boot, 300);
+
+  ['switchScreen','createNewChatSession','loadChatSession','sendMsg','enterTempChat','exitTempChat'].forEach(function(n) {
+    var p = window[n];
+    if (typeof p !== 'function' || p._barsFix) return;
+    window[n] = function() {
+      var r = p.apply(this, arguments);
+      setTimeout(syncEmptyChatLayout, 30);
+      return r;
+    };
+    window[n]._barsFix = true;
+  });
+})();
+
+
+/* ===== Boot splash + PWA flag + settings ensure ===== */
+(function bootSplashAndSettings() {
+  function markPwa() {
+    var pwa = false;
+    try {
+      pwa = window.matchMedia('(display-mode: standalone)').matches
+        || window.matchMedia('(display-mode: window-controls-overlay)').matches
+        || navigator.standalone === true;
+    } catch (e) {}
+    document.body.classList.toggle('is-pwa', !!pwa);
+    document.body.classList.toggle('is-pwa-standalone', !!pwa);
+  }
+
+  function hideSplash() {
+    var el = document.getElementById('boot-splash');
+    if (!el) return;
+    el.classList.add('boot-done');
+    setTimeout(function() {
+      try { el.remove(); } catch (e) { el.style.display = 'none'; }
+    }, 500);
+  }
+
+  function ensureSettingsVisible() {
+    // If on settings screen and no section visible, show general
+    var screen = document.getElementById('screen-settings');
+    if (!screen || !screen.classList.contains('active-screen')) return;
+    var vis = document.querySelector('#settings-content .setting-section.section-visible');
+    if (!vis) {
+      if (typeof showSection === 'function') showSection('general');
+    }
+  }
+
+  // Hash #settings_xxx
+  function applySettingsHash() {
+    var h = (location.hash || '').replace(/^#/, '');
+    if (h.indexOf('settings_') === 0) {
+      var sec = h.slice('settings_'.length) || 'general';
+      if (typeof switchScreen === 'function') switchScreen('settings');
+      else if (typeof switchTab === 'function') switchTab('settings');
+      setTimeout(function() {
+        if (typeof showSection === 'function') showSection(sec);
+      }, 40);
+    } else if (h === 'settings') {
+      if (typeof switchScreen === 'function') switchScreen('settings');
+      setTimeout(function() { showSection('general'); }, 40);
+    }
+  }
+
+  markPwa();
+
+  var minMs = 2000;
+  var maxMs = 5000;
+  var start = Date.now();
+  function finish() {
+    var waited = Date.now() - start;
+    var left = Math.max(0, minMs - waited);
+    // cap total ~ maxMs
+    if (waited + left > maxMs) left = Math.max(0, maxMs - waited);
+    setTimeout(function() {
+      hideSplash();
+      markPwa();
+      applySettingsHash();
+      ensureSettingsVisible();
+      if (typeof syncEmptyChatLayout === 'function') syncEmptyChatLayout();
+    }, left);
+  }
+
+  if (document.readyState === 'complete') finish();
+  else window.addEventListener('load', finish);
+  // safety max
+  setTimeout(finish, maxMs + 50);
+
+  // When opening settings, always show a section
+  var _sw = window.switchScreen;
+  if (typeof _sw === 'function' && !_sw._settingsEnsure) {
+    window.switchScreen = function(name) {
+      var r = _sw.apply(this, arguments);
+      if (name === 'settings' || name === 'screen-settings') {
+        setTimeout(function() {
+          var vis = document.querySelector('#settings-content .setting-section.section-visible');
+          if (!vis && typeof showSection === 'function') showSection('general');
+        }, 20);
+      }
+      return r;
+    };
+    window.switchScreen._settingsEnsure = true;
+  }
+})();
+
+
+/* ===== Local chat.json model (single integration) ===== */
+(function localChatModel() {
+  var STORE = null;
+  var LOADING = null;
+
+  function loadChatJson() {
+    if (STORE) return Promise.resolve(STORE);
+    if (LOADING) return LOADING;
+    LOADING = fetch('./chat.json', { cache: 'no-cache' })
+      .then(function(r) { return r.ok ? r.json() : null; })
+      .then(function(data) {
+        STORE = data || { entries: [], fallback: '' };
+        return STORE;
+      })
+      .catch(function() {
+        STORE = { entries: [], fallback: '' };
+        return STORE;
+      })
+      .finally(function() { LOADING = null; });
+    return LOADING;
+  }
+
+  function normalize(s) {
+    return String(s || '')
+      .toLowerCase()
+      .replace(/[ё]/g, 'е')
+      .replace(/[^\S\r\n]+/g, ' ')
+      .trim();
+  }
+
+  function scoreEntry(text, entry) {
+    var keys = entry.keys || [];
+    var best = 0;
+    for (var i = 0; i < keys.length; i++) {
+      var k = normalize(keys[i]);
+      if (!k) continue;
+      if (text === k) best = Math.max(best, 100);
+      else if (text.indexOf(k) !== -1) best = Math.max(best, 50 + Math.min(40, k.length));
+      else if (k.indexOf(text) !== -1 && text.length >= 4) best = Math.max(best, 30);
+    }
+    return best;
+  }
+
+  window.matchLocalChatAnswer = function(userText) {
+    if (!STORE || !STORE.entries || !STORE.entries.length) return null;
+    var text = normalize(userText);
+    if (!text || text.length < 2) return null;
+    var best = null, bestScore = 0;
+    for (var i = 0; i < STORE.entries.length; i++) {
+      var sc = scoreEntry(text, STORE.entries[i]);
+      if (sc > bestScore) {
+        bestScore = sc;
+        best = STORE.entries[i];
+      }
+    }
+    if (bestScore >= 50) return best.answer;
+    return null;
+  };
+
+  window.getLocalChatFallback = function() {
+    return (STORE && STORE.fallback) || '';
+  };
+
+  window.tryLocalChatReply = function(userText, opts) {
+    opts = opts || {};
+    var forceLocal = opts.forceLocal || !navigator.onLine || opts.preferLocal;
+    var answer = window.matchLocalChatAnswer(userText);
+    if (answer) return Promise.resolve({ ok: true, text: answer, source: 'local' });
+    if (forceLocal) {
+      var fb = window.getLocalChatFallback();
+      if (fb) return Promise.resolve({ ok: true, text: fb, source: 'local-fallback' });
+    }
+    return Promise.resolve({ ok: false, text: null, source: null });
+  };
+
+  // preload
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { loadChatJson(); });
+  } else {
+    loadChatJson();
+  }
+  window.reloadLocalChatModel = function() {
+    STORE = null;
+    return loadChatJson();
+  };
+
+  // Wrap sendMsg once: try local first when offline or before remote
+  function installSendHook() {
+    var prev = window.sendMsg;
+    if (typeof prev !== 'function' || prev._localChat) return;
+    window.sendMsg = function() {
+      var args = arguments;
+      var self = this;
+      var input = document.getElementById('user-input');
+      var text = '';
+      if (input) text = (input.innerText || input.value || '').trim();
+      // also try argument
+      if (!text && typeof args[0] === 'string') text = args[0];
+
+      var offline = (typeof navigator !== 'undefined' && navigator.onLine === false);
+      var prefer = offline || document.body.classList.contains('force-local-model');
+
+      if (!text) return prev.apply(self, args);
+
+      return loadChatJson().then(function() {
+        return window.tryLocalChatReply(text, { forceLocal: offline, preferLocal: prefer });
+      }).then(function(local) {
+        if (local && local.ok && local.text && (offline || prefer)) {
+          // Minimal local path: append user+ai if helpers exist
+          try {
+            if (typeof appendUserMessage === 'function') appendUserMessage(text);
+            else if (typeof pushUserBubble === 'function') pushUserBubble(text);
+            if (input) {
+              if (input.value !== undefined) input.value = '';
+              if (input.innerHTML !== undefined && input.isContentEditable) input.innerHTML = '';
+            }
+            if (typeof appendAIMessage === 'function') appendAIMessage(local.text);
+            else if (typeof pushAiBubble === 'function') pushAiBubble(local.text);
+            else if (typeof addMessage === 'function') addMessage('ai', local.text);
+            else {
+              var flow = document.getElementById('chat-flow');
+              if (flow) {
+                flow.insertAdjacentHTML('beforeend',
+                  '<div class="msg user-msg">' + text.replace(/</g,'&lt;') + '</div>' +
+                  '<div class="msg ai-msg">' + local.text + '</div>');
+              }
+            }
+            if (typeof syncEmptyChatLayout === 'function') syncEmptyChatLayout();
+            return;
+          } catch (e) {
+            console.warn('local reply render failed', e);
+          }
+        }
+        // Online / no local match → original pipeline
+        return prev.apply(self, args);
+      });
+    };
+    window.sendMsg._localChat = true;
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { setTimeout(installSendHook, 0); });
+  } else {
+    setTimeout(installSendHook, 0);
+  }
+  // late bind if sendMsg defined later
+  setTimeout(installSendHook, 1500);
+})();
+
+/* ===== script block ===== */
+
+/* ===== Core Node UX Hotfix: maps, settings, plans AI, copy toast, sidebar ===== */
+(function CNUxHotfix(){
+  'use strict';
+
+  /* ---- showSection: single reliable implementation ---- */
+  window.showSection = function(sectionId){
+    sectionId = String(sectionId||'general').trim().replace(/^section-/,'');
+    var map = {personalization:'general',appearance:'general',theme:'general','o-vas':'user',you:'user',profile:'user',safety:'security',protect:'security',apikeys:'api-keys',api:'api-keys',links:'public-links',public:'public-links',sidebar:'sidebar-menu',menu:'sidebar-menu',dev:'developer',lang:'language'};
+    if(map[sectionId]) sectionId = map[sectionId];
+    var root = document.getElementById('settings-content');
+    var nodes = root ? root.querySelectorAll('.setting-section') : document.querySelectorAll('.setting-section');
+    nodes.forEach(function(el){
+      el.classList.remove('section-visible');
+      el.style.setProperty('display','none','important');
+    });
+    var target = document.getElementById('section-'+sectionId) || document.getElementById('section-general');
+    if(target){
+      // ensure inside settings-content
+      if(root && target.parentElement !== root) try{ root.appendChild(target); }catch(e){}
+      target.classList.add('section-visible');
+      target.style.setProperty('display','block','important');
+      target.style.setProperty('visibility','visible','important');
+      target.style.setProperty('height','auto','important');
+      target.style.setProperty('overflow','visible','important');
+    }
+    document.querySelectorAll('[id^="btn-sec-"]').forEach(function(b){ b.classList.remove('active'); });
+    var btn = document.getElementById('btn-sec-'+sectionId);
+    if(btn) btn.classList.add('active');
+    try{
+      if(location.hash.indexOf('#settings')===0 || document.getElementById('screen-settings')?.classList.contains('active-screen'))
+        history.replaceState(null,'','#settings_'+sectionId);
+    }catch(e){}
+  };
+
+  /* ---- switchScreen: ensure maps + calendar work ---- */
+  var _prevSwitch = typeof window.switchScreen === 'function' ? window.switchScreen : null;
+  window.switchScreen = function(screenName){
+    screenName = String(screenName||'chat').replace(/^screen-/,'');
+    // hide all screens
+    document.querySelectorAll('.app-screen').forEach(function(s){ s.classList.remove('active-screen'); });
+    document.querySelectorAll('.glass-nav .nav-item').forEach(function(t){ t.classList.remove('active'); });
+    var target = document.getElementById('screen-'+screenName);
+    if(target) target.classList.add('active-screen');
+    var tab = document.getElementById('btn-tab-'+screenName);
+    if(tab) tab.classList.add('active');
+    document.body.classList.toggle('on-chat-screen', screenName==='chat');
+    document.body.classList.toggle('on-settings-screen', screenName==='settings');
+    var box = document.getElementById('main-input-box');
+    if(box){
+      if(screenName==='chat'){ box.style.display='flex'; box.classList.remove('hidden'); }
+      else { box.style.display='none'; }
+    }
+    var sub = document.getElementById('sub-nav-chat');
+    if(sub) sub.style.display = screenName==='chat' ? 'flex' : 'none';
+    document.getElementById('sidebar-archive')?.classList.remove('open');
+
+    if(screenName==='calendar'){
+      try{ if(typeof window.renderCalendar==='function') window.renderCalendar(); }catch(e){}
+    }
+    if(screenName==='maps'){
+      setTimeout(function(){ try{ window.initCoreMaps && window.initCoreMaps(); }catch(e){ console.error(e);} }, 60);
+      setTimeout(function(){ try{ window._coreMap && window._coreMap.invalidateSize(true); }catch(e){} }, 200);
+      setTimeout(function(){ try{ window._coreMap && window._coreMap.invalidateSize(true); }catch(e){} }, 600);
+    }
+    if(screenName==='settings'){
+      setTimeout(function(){
+        var vis = document.querySelector('#settings-content .setting-section.section-visible');
+        if(!vis) window.showSection('general');
+      }, 20);
+    }
+    // call previous extras if any (without infinite loop)
+    if(_prevSwitch && _prevSwitch !== window.switchScreen && !_prevSwitch._cnUx){
+      try{ /* already did core; skip re-entry */ }catch(e){}
+    }
+  };
+  window.switchScreen._cnUx = true;
+
+  /* ---- Calendar view mode ---- */
+  window._calView = localStorage.getItem('oracle_cal_view') || 'week';
+  window.setCalendarView = function(v){
+    if(['day','week','month'].indexOf(v)<0) v='week';
+    window._calView = v;
+    localStorage.setItem('oracle_cal_view', v);
+    document.querySelectorAll('.cal-view-btn').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-view')===v);
+    });
+    if(typeof window.renderCalendar==='function') window.renderCalendar();
+  };
+
+  // Enhance renderCalendar if present: week default, past gray
+  (function patchRenderCal(){
+    var tries=0;
+    function attempt(){
+      tries++;
+      var orig = window.renderCalendar;
+      // also expose nested if needed
+      if(typeof orig !== 'function'){
+        // try to bind from changeMonth sibling by defining fallback
+        if(tries<20) return setTimeout(attempt, 200);
+        // minimal fallback
+        window.renderCalendar = function(){
+          var grid = document.getElementById('calendar-days-grid');
+          if(!grid) return;
+          // use existing month logic light
+        };
+        return;
+      }
+      if(orig._cnView) return;
+      window.renderCalendar = function(){
+        var r = orig.apply(this, arguments);
+        try{
+          var grid = document.getElementById('calendar-days-grid');
+          var weekdays = document.getElementById('cal-weekdays');
+          var view = window._calView || 'week';
+          if(weekdays) weekdays.style.display = (view==='day') ? 'none' : 'grid';
+          if(!grid) return r;
+          // mark past days
+          grid.querySelectorAll('.calendar-day').forEach(function(cell){
+            if(cell.classList.contains('past-day') || cell.disabled){
+              cell.style.opacity = '0.4';
+              cell.style.filter = 'grayscale(0.65)';
+              cell.style.pointerEvents = 'none';
+            }
+          });
+          // week view: show only current week rows roughly by hiding non-week if data attrs exist
+          if(view==='week' && grid.children.length){
+            // keep full month grid but highlight current week - OK for UX
+            grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+          } else if(view==='day'){
+            grid.style.gridTemplateColumns = '1fr';
+          } else {
+            grid.style.gridTemplateColumns = 'repeat(7, 1fr)';
+          }
+        }catch(e){}
+        return r;
+      };
+      window.renderCalendar._cnView = true;
+      // ensure changeMonth global
+      if(typeof window.changeMonth !== 'function'){
+        window.changeMonth = function(dir){
+          try{
+            if(typeof currentCalDate !== 'undefined'){
+              currentCalDate = new Date(currentCalDate.getFullYear(), currentCalDate.getMonth()+Number(dir), 1);
+            }
+          }catch(e){}
+          if(window.renderCalendar) window.renderCalendar();
+        };
+      }
+    }
+    attempt();
+  })();
+
+  /* ---- AI Plan Creator (natural language) ---- */
+  function nextWeekday(from, targetDow){
+    // targetDow: 0=Sun ... 6=Sat; we use Mon=1..Sun=0 in JS getDay
+    var d = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    var day = d.getDay();
+    var diff = (targetDow - day + 7) % 7;
+    if(diff===0) diff = 7; // next occurrence
+    d.setDate(d.getDate()+diff);
+    return d;
+  }
+  function parseRuPlan(text){
+    var raw = String(text||'').trim();
+    if(!raw) return null;
+    var now = new Date();
+    var title = raw;
+    var hours = 9, minutes = 0;
+    var year = now.getFullYear(), month = now.getMonth(), day = now.getDate();
+    var hasDate = false;
+
+    // time HH:MM or H:MM
+    var tm = raw.match(/\b([01]?\d|2[0-3])[:\.]([0-5]\d)\b/);
+    if(tm){ hours = +tm[1]; minutes = +tm[2]; title = title.replace(tm[0], '').trim(); }
+
+    // dd.mm.yyyy or dd.mm.yy or dd.mm
+    var dm = raw.match(/\b(\d{1,2})[.\-\/](\d{1,2})(?:[.\-\/](\d{2,4}))?\b/);
+    if(dm){
+      hasDate = true;
+      day = +dm[1]; month = +dm[2]-1;
+      if(dm[3]){ year = +dm[3]; if(year<100) year += 2000; }
+      title = title.replace(dm[0], '').trim();
+    }
+
+    // 1 января 2027 / 1 января
+    var months = {января:0,февраля:1,марта:2,апреля:3,мая:4,июня:5,июля:6,августа:7,сентября:8,октября:9,ноября:10,декабря:11,
+      январь:0,февраль:1,март:2,апрель:3,май:4,июнь:5,июль:6,август:7,сентябрь:8,октябрь:9,ноябрь:10,декабрь:11};
+    var md = raw.toLowerCase().match(/\b(\d{1,2})\s+(января|февраля|марта|апреля|мая|июня|июля|августа|сентября|октября|ноября|декабря)(?:\s+(\d{4}))?\b/);
+    if(md){
+      hasDate = true;
+      day = +md[1]; month = months[md[2]]; if(md[3]) year = +md[3];
+      title = title.replace(new RegExp(md[0],'i'), '').trim();
+    }
+
+    // weekdays
+    var wdMap = {воскресенье:0,вс:0,понедельник:1,пн:1,вторник:2,вт:2,среда:3,ср:3,среду:3,четверг:4,чт:4,пятница:5,пт:5,пятницу:5,суббота:6,сб:6,субботу:6};
+    if(!hasDate){
+      var low = raw.toLowerCase();
+      if(/\bсегодня\b/.test(low)){ hasDate = true; }
+      else if(/\bзавтра\b/.test(low)){ hasDate = true; day = now.getDate()+1; var t=new Date(year,month,day); year=t.getFullYear();month=t.getMonth();day=t.getDate(); title=title.replace(/завтра/ig,'').trim(); }
+      else {
+        for(var k in wdMap){
+          if(low.indexOf(k)!==-1){
+            var nd = nextWeekday(now, wdMap[k]);
+            year=nd.getFullYear(); month=nd.getMonth(); day=nd.getDate(); hasDate=true;
+            title = title.replace(new RegExp(k,'ig'),'').trim();
+            break;
+          }
+        }
+      }
+    }
+
+    // cleanup title
+    title = title.replace(/\bв\s*$/i,'').replace(/\s{2,}/g,' ').replace(/^[\s,.\-—]+|[\s,.\-—]+$/g,'').trim();
+    if(!title) title = 'План';
+
+    if(!hasDate){
+      // default: tomorrow
+      var tom = new Date(now.getFullYear(), now.getMonth(), now.getDate()+1);
+      year=tom.getFullYear(); month=tom.getMonth(); day=tom.getDate();
+    }
+
+    var when = new Date(year, month, day, hours, minutes, 0, 0);
+    // if in the past today with time, push +7 days for weekday-only? if past, next day
+    if(when.getTime() < Date.now()-60000){
+      when = new Date(when.getTime() + 24*3600*1000);
+    }
+    return { title: title, when: when };
+  }
+
+  window.createPlanFromNaturalLanguage = function(){
+    var input = document.getElementById('ai-plan-input');
+    var text = (input && input.value || '').trim();
+    if(!text){
+      if(typeof showToast==='function') showToast('Введите текст плана','warning');
+      return;
+    }
+    var parsed = parseRuPlan(text);
+    if(!parsed){ showToast?.('Не удалось разобрать','error'); return; }
+    var key = parsed.when.getFullYear()+'-'+String(parsed.when.getMonth()+1).padStart(2,'0')+'-'+String(parsed.when.getDate()).padStart(2,'0');
+    var timeStr = String(parsed.when.getHours()).padStart(2,'0')+':'+String(parsed.when.getMinutes()).padStart(2,'0');
+    try{
+      var list = [];
+      try{ list = JSON.parse(localStorage.getItem('oracle_reminders')||'[]')||[]; }catch(e){ list=[]; }
+      if(!Array.isArray(list)) list=[];
+      var item = {
+        id: 'rem_'+Date.now(),
+        date: key,
+        time: timeStr,
+        text: parsed.title,
+        title: parsed.title,
+        notifyBefore: 10,
+        color: '',
+        created: Date.now()
+      };
+      list.push(item);
+      localStorage.setItem('oracle_reminders', JSON.stringify(list));
+      // sync in-memory if exists
+      try{ if(typeof reminders!=='undefined' && Array.isArray(reminders)){ reminders.length=0; list.forEach(function(x){reminders.push(x);}); } }catch(e){}
+      if(typeof window.renderCalendar==='function') window.renderCalendar();
+      if(typeof window.renderReminders==='function') window.renderReminders();
+      if(input) input.value='';
+      var prev = document.getElementById('ai-plan-preview');
+      if(prev){
+        prev.style.display='block';
+        prev.textContent = 'Создано: «'+parsed.title+'» · '+key+' '+timeStr;
+      }
+      showToast?.('План создан: '+parsed.title,'success');
+    }catch(e){
+      console.error(e);
+      showToast?.('Ошибка сохранения плана','error');
+    }
+  };
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Enter' && e.target && e.target.id==='ai-plan-input'){
+      e.preventDefault();
+      window.createPlanFromNaturalLanguage();
+    }
+  });
+
+  /* ---- Copy toast with actions ---- */
+  window.showCopyFragmentToast = function(text){
+    text = String(text||'').trim();
+    var frag = text.slice(0,15) + (text.length>15 ? '…' : '');
+    var container = document.getElementById('toast-container');
+    if(!container){
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100000;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none';
+      document.body.appendChild(container);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'core-toast success copy-action-toast';
+    toast.style.pointerEvents = 'auto';
+    toast.innerHTML = '<div class="cat-text"><b>Скопирован фрагмент:</b> '+frag.replace(/</g,'&lt;')+'</div>'+
+      '<div class="cat-actions">'+
+      '<button type="button" class="primary" data-act="new">Новый чат</button>'+
+      '<button type="button" data-act="edit">Отредактировать</button>'+
+      '</div>';
+    toast.querySelector('[data-act="new"]').onclick = function(){
+      toast.remove();
+      try{
+        if(typeof createNewChatSession==='function') createNewChatSession();
+        else if(typeof window.eccNewChatMenu==='function'){ /* noop */ }
+        window.switchScreen && window.switchScreen('chat');
+      }catch(e){}
+    };
+    toast.querySelector('[data-act="edit"]').onclick = function(){
+      toast.remove();
+      openCopyEditModal(text);
+    };
+    container.appendChild(toast);
+    setTimeout(function(){ try{ toast.classList.add('out'); setTimeout(function(){ toast.remove(); }, 250);}catch(e){} }, 8000);
+  };
+
+  function openCopyEditModal(text){
+    var existing = document.getElementById('copy-edit-modal');
+    if(existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = 'copy-edit-modal';
+    ov.className = 'modal-overlay active';
+    ov.innerHTML = '<div class="modal-card" style="max-width:480px">'+
+      '<div class="modal-header"><span class="material-symbols-rounded">edit</span><h3 class="modal-title">Редактировать фрагмент</h3></div>'+
+      '<textarea id="copy-edit-area" style="width:100%;min-height:120px;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:14px;resize:vertical"></textarea>'+
+      '<div class="modal-actions">'+
+      '<button type="button" class="modal-btn modal-btn-reject" id="copy-edit-cancel">Отмена</button>'+
+      '<button type="button" class="modal-btn modal-btn-accept" id="copy-edit-copy">Скопировать снова</button>'+
+      '</div></div>';
+    document.body.appendChild(ov);
+    var area = ov.querySelector('#copy-edit-area');
+    area.value = text;
+    ov.querySelector('#copy-edit-cancel').onclick = function(){ ov.remove(); };
+    ov.querySelector('#copy-edit-copy').onclick = function(){
+      var v = area.value;
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(v).then(function(){
+          ov.remove();
+          window.showCopyFragmentToast(v);
+        }).catch(function(){ showToast?.('Не удалось скопировать','error'); });
+      }
+    };
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+  }
+
+  // Patch common copy helpers
+  window.copyMessageText = function(text){
+    text = String(text||'');
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ window.showCopyFragmentToast(text); })
+        .catch(function(){ showToast?.('Не удалось скопировать','error'); });
+    } else {
+      showToast?.('Буфер обмена недоступен','warning');
+    }
+  };
+  // Hook buttons with data-copy or onclick patterns via event delegation
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest && e.target.closest('[data-copy-text], .msg-copy-btn, .copy-msg-btn, button[title="Копировать"]');
+    if(!btn) return;
+    // if already handled by inline, still enhance after short delay via monkeypatch below
+  }, true);
+
+  // Override showToast success "Скопировано" paths by wrapping clipboard writes is hard; wrap showToast for copy keywords
+  var _st = window.showToast;
+  // Don't break showToast; use explicit copyMessageText in UI.
+
+  /* ---- Maps hard init ---- */
+  window.initCoreMaps = window.initCoreMaps || function(){};
+  (function(){
+    var prev = window.initCoreMaps;
+    window.initCoreMaps = function(){
+      var el = document.getElementById('maps-leaflet');
+      if(el){
+        el.style.minHeight = 'min(55vh, 520px)';
+        el.style.height = 'min(55vh, 520px)';
+      }
+      if(typeof L === 'undefined'){
+        if(!window._leafletBoot){
+          window._leafletBoot = true;
+          var lcss=document.createElement('link'); lcss.rel='stylesheet';
+          lcss.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+          document.head.appendChild(lcss);
+          var s=document.createElement('script');
+          s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          s.onload=function(){ window._leafletBoot=false; try{ prev(); }catch(e){} setTimeout(function(){ try{window._coreMap&&window._coreMap.invalidateSize(true);}catch(e){} }, 200); };
+          document.head.appendChild(s);
+        }
+        return;
+      }
+      try{ prev(); }catch(e){ console.error(e); }
+      setTimeout(function(){ try{ window._coreMap && window._coreMap.invalidateSize(true); }catch(e){} }, 100);
+      setTimeout(function(){ try{ window._coreMap && window._coreMap.invalidateSize(true); }catch(e){} }, 400);
+    };
+  })();
+
+  /* ---- Sidebar: hide projects if empty (desktop) ---- */
+  window.setHideProjectsIfEmpty = function(on){
+    localStorage.setItem('oracle_hide_projects_empty', on ? '1' : '0');
+    document.body.classList.toggle('hide-empty-projects', !!on);
+    window.syncProjectsEmptyState && window.syncProjectsEmptyState();
+  };
+  window.syncProjectsEmptyState = function(){
+    var block = document.getElementById('sidebar-projects-block') || document.querySelector('[data-sidebar-projects], .sb-projects, #projects-list');
+    if(!block){
+      // try find by heading
+      document.querySelectorAll('#sidebar-archive .sb-section, #sidebar-archive .archive-group').forEach(function(el){
+        if(/проект/i.test(el.textContent||'')) block = el;
+      });
+    }
+    if(!block) return;
+    var has = false;
+    try{
+      var tree = JSON.parse(localStorage.getItem('oracle_project_tree_v2')||'{}')||{};
+      has = Array.isArray(tree.folders) && tree.folders.length>0;
+    }catch(e){}
+    block.classList.toggle('is-empty', !has);
+    block.id = block.id || 'sidebar-projects-block';
+  };
+  if(localStorage.getItem('oracle_hide_projects_empty')==='1'){
+    document.body.classList.add('hide-empty-projects');
+    var cb = document.getElementById('toggle-hide-projects-empty');
+    if(cb) cb.checked = true;
+  }
+
+  /* ---- Mobile spacious sidebar ---- */
+  if(window.matchMedia && window.matchMedia('(max-width:720px)').matches){
+    document.body.classList.add('mobile-spacious-sb');
+  }
+
+  // boot
+  function boot(){
+    try{
+      document.querySelectorAll('.cal-view-btn').forEach(function(b){
+        b.classList.toggle('active', b.getAttribute('data-view')===(localStorage.getItem('oracle_cal_view')||'week'));
+      });
+      window.syncProjectsEmptyState && window.syncProjectsEmptyState();
+      // rebind settings buttons
+      document.querySelectorAll('[id^="btn-sec-"]').forEach(function(btn){
+        btn.addEventListener('click', function(e){
+          e.preventDefault();
+          var id = btn.id.replace(/^btn-sec-/,'');
+          window.showSection(id);
+        }, { once:false });
+      });
+    }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(boot, 400);
+
+  console.log('[CN] ux hotfix active');
+})();
+
+/* ===== script block ===== */
+
+(function(){
+  function lockAfterFirstTempMsg() {
+    if (!window.CoreState || !CoreState.isTempChat) return;
+    if (CoreState.tempHasMessages) return;
+    CoreState.tempHasMessages = true;
+    CoreState.tempPersonaLocked = true;
+    var chooser = document.getElementById('temp-persona-chooser');
+    if (chooser) {
+      chooser.querySelectorAll('.temp-persona-card').forEach(function(c){ c.style.opacity = '0.55'; c.style.pointerEvents = 'none'; });
+      var hint = chooser.querySelector('.temp-persona-hint');
+      if (hint) hint.textContent = 'Выбор зафиксирован после первого сообщения.';
+    }
+  }
+  // wrap sendMsg once
+  function wrap() {
+    var prev = window.sendMsg;
+    if (typeof prev !== 'function' || prev._tempLock) return;
+    window.sendMsg = function() {
+      var wasTemp = !!(window.CoreState && CoreState.isTempChat);
+      var r = prev.apply(this, arguments);
+      if (wasTemp) setTimeout(lockAfterFirstTempMsg, 30);
+      setTimeout(function(){ if (typeof syncEmptyChatLayout==='function') syncEmptyChatLayout(); }, 50);
+      return r;
+    };
+    window.sendMsg._tempLock = true;
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(wrap, 0); });
+  else setTimeout(wrap, 0);
+  setTimeout(wrap, 1200);
+})();
+
+/* ===== script block ===== */
+
+(function(){
+  'use strict';
+
+  /* ---- Hide empty chrome in temp chat ---- */
+  var _sync = window.syncEmptyChatLayout;
+  window.syncEmptyChatLayout = function() {
+    if (typeof _sync === 'function') {
+      try { _sync.apply(this, arguments); } catch (e) {}
+    }
+    try {
+      var temp = !!(window.CoreState && CoreState.isTempChat) || document.body.classList.contains('temp-chat-mode');
+      var chrome = document.getElementById('empty-chat-chrome');
+      if (chrome && temp) {
+        chrome.hidden = true;
+        chrome.style.display = 'none';
+      }
+      if (temp) document.body.classList.remove('empty-chat');
+    } catch (e) {}
+  };
+
+  /* ---- Reliable screen switch (no stacked UI) ---- */
+  window.switchScreen = function(screenName) {
+    screenName = String(screenName || 'chat').replace(/^screen-/, '');
+
+    // close overlays that block other tabs
+    try {
+      document.getElementById('sidebar-archive')?.classList.remove('open');
+      document.body.classList.remove('sidebar-open');
+      document.getElementById('sb-more-menu')?.setAttribute('hidden', '');
+      document.getElementById('plus-menu')?.classList.remove('open');
+      document.getElementById('chat-options-menu')?.classList.remove('open');
+      document.getElementById('ecc-new-menu')?.setAttribute('hidden', '');
+    } catch (e) {}
+
+    // only one app-screen
+    document.querySelectorAll('.app-screen').forEach(function(s) {
+      s.classList.remove('active-screen');
+      s.style.removeProperty('display');
+    });
+    var target = document.getElementById('screen-' + screenName);
+    if (!target && screenName === 'addons') target = document.getElementById('screen-skills');
+    if (target) {
+      target.classList.add('active-screen');
+      target.style.setProperty('display', 'flex', 'important');
+    }
+
+    document.querySelectorAll('.glass-nav .nav-item, [id^="btn-tab-"]').forEach(function(b) {
+      b.classList.remove('active');
+    });
+    var tab = document.getElementById('btn-tab-' + screenName);
+    if (tab) tab.classList.add('active');
+
+    var onChat = screenName === 'chat';
+    document.body.classList.toggle('on-chat-screen', onChat);
+    document.body.classList.toggle('on-settings-screen', screenName === 'settings');
+    document.body.classList.toggle('on-reader-screen', screenName === 'reader');
+    document.body.classList.toggle('on-skills-screen', screenName === 'skills' || screenName === 'addons');
+
+    // input + chrome only on chat
+    var box = document.getElementById('main-input-box');
+    if (box) {
+      if (onChat) {
+        box.style.display = 'flex';
+        box.style.visibility = 'visible';
+        box.classList.remove('hidden');
+      } else {
+        box.style.display = 'none';
+      }
+    }
+    var sub = document.getElementById('sub-nav-chat');
+    if (sub) sub.style.display = onChat ? 'flex' : 'none';
+
+    var chrome = document.getElementById('empty-chat-chrome');
+    var bar = document.getElementById('chat-session-bar');
+    if (!onChat) {
+      if (chrome) { chrome.hidden = true; chrome.style.display = 'none'; }
+      if (bar) bar.style.display = 'none';
+      document.body.classList.remove('empty-chat');
+    } else {
+      if (typeof window.syncEmptyChatLayout === 'function') {
+        setTimeout(function() { window.syncEmptyChatLayout(); }, 20);
+      }
+    }
+
+    if (screenName === 'calendar' && typeof window.renderCalendar === 'function') {
+      try { window.renderCalendar(); } catch (e) {}
+    }
+    if (screenName === 'maps') {
+      setTimeout(function() { try { window.initCoreMaps && window.initCoreMaps(); } catch (e) {} }, 50);
+      setTimeout(function() { try { window._coreMap && window._coreMap.invalidateSize(true); } catch (e) {} }, 250);
+    }
+    if (screenName === 'settings') {
+      setTimeout(function() {
+        var vis = document.querySelector('#settings-content .setting-section.section-visible');
+        if (!vis && typeof showSection === 'function') showSection('general');
+      }, 20);
+    }
+    if (screenName === 'library' && typeof refreshLibraryUI === 'function') {
+      try { refreshLibraryUI(); } catch (e) {}
+    }
+  };
+  window.switchScreen._cnNavFix = true;
+
+  /* ---- Fullscreen download ---- */
+  window.openDownloadAppModal = function() {
+    var el = document.getElementById('download-app');
+    if (!el) return;
+    el.hidden = false;
+    el.removeAttribute('hidden');
+    el.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('download-app-open');
+  };
+  window.closeDownloadAppModal = function() {
+    var el = document.getElementById('download-app');
+    if (el) {
+      el.hidden = true;
+      el.setAttribute('hidden', '');
+      el.setAttribute('aria-hidden', 'true');
+    }
+    document.body.classList.remove('download-app-open');
+    document.getElementById('download-app-modal')?.classList.remove('active');
+  };
+  window.promptPwaInstall = function() {
+    window.openDownloadAppModal();
+  };
+  // Esc closes download
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && document.body.classList.contains('download-app-open')) {
+      window.closeDownloadAppModal();
+    }
+  });
+
+  console.log('[CN] nav+download fix');
+})();
+
+/* ===== script block ===== */
+
+(function(){
+  'use strict';
+  var exportFmt = 'md';
+  var canvaVisible = false;
+  var drawing = false;
+  var lastPt = null;
+  var canvaUndo = null;
+  var canvaStroke = '#000000';
+  var ALLOWED_CANVA_COLORS = ['#000000','#ffffff','#ff3b30','#ff9500','#ffcc00','#34c759','#007aff','#af52de','#ff2d55'];
+
+  window.readerCanvaSetColor = function(c, btn) {
+    c = String(c || '').toLowerCase();
+    if (ALLOWED_CANVA_COLORS.indexOf(c) === -1) c = '#000000';
+    canvaStroke = c;
+    document.querySelectorAll('#reader-canva-palette .rcp-swatch').forEach(function(b){
+      b.classList.toggle('active', (b.getAttribute('data-c')||'').toLowerCase() === c);
+    });
+    if (btn) btn.classList.add('active');
+  };
+
+  function story() {
+    try {
+      if (!window.storyBooks) window.storyBooks = {};
+      return window.currentStoryId ? storyBooks[currentStoryId] : null;
+    } catch(e) { return null; }
+  }
+
+  function setStatus(text, kind) {
+    ['reader-save-status','reader-save-status-tb'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = text;
+      el.classList.remove('is-dirty','is-ok');
+      if (kind) el.classList.add(kind);
+    });
+    var hint = document.getElementById('reader-close-hint');
+    if (hint) {
+      hint.textContent = (kind === 'is-dirty')
+        ? 'Не закрывайте вкладку, пока идёт сохранение / правки'
+        : 'Можно закрыть окно · при активной правке лучше не закрывать вкладку';
+    }
+  }
+
+  window.readerOnStoryOpened = function(id) {
+    var s = storyBooks[id];
+    if (!s) return;
+    var titleEl = document.getElementById('current-story-title-display');
+    if (titleEl) titleEl.textContent = s.title || 'Без названия';
+    var badge = document.getElementById('reader-ai-badge');
+    if (badge) {
+      var ai = !!(s.aiGenerated || s.fromAi || s.aiEnhanced);
+      badge.hidden = !ai;
+    }
+    setStatus('Сохранено', 'is-ok');
+    // restore canva
+    var block = document.getElementById('reader-canva-block');
+    if (s.canvaData) {
+      canvaVisible = true;
+      if (block) { block.hidden = false; }
+      setTimeout(function(){ loadCanvaFromStory(); }, 30);
+    } else {
+      canvaVisible = false;
+      if (block) block.hidden = true;
+    }
+    setupReaderEditor();
+    renderReaderRecent();
+  };
+
+  function setupReaderEditor() {
+    var editor = document.getElementById('editor');
+    if (!editor || editor._readerBound) return;
+    editor._readerBound = true;
+    var t = null;
+    editor.addEventListener('input', function() {
+      setStatus('Сохранение…', 'is-dirty');
+      clearTimeout(t);
+      t = setTimeout(function(){ readerManualSave(true); }, 450);
+    });
+    editor.addEventListener('blur', function(){ readerManualSave(true); });
+    editor.addEventListener('keydown', function(e) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      var k = e.key.toLowerCase();
+      if (k === 'b') { e.preventDefault(); readerFormat('bold'); }
+      if (k === 'i') { e.preventDefault(); readerFormat('italic'); }
+      if (k === 'u') { e.preventDefault(); readerFormat('underline'); }
+      if (k === 's') { e.preventDefault(); readerManualSave(); }
+    });
+  }
+
+  window.readerManualSave = function(silent) {
+    if (!window.currentStoryId || !storyBooks[currentStoryId]) {
+      if (!silent) showToast && showToast('Сначала откройте историю', 'warning');
+      return;
+    }
+    var editor = document.getElementById('editor');
+    storyBooks[currentStoryId].content = editor ? editor.innerHTML : (storyBooks[currentStoryId].content || '');
+    storyBooks[currentStoryId].updated = Date.now();
+    // canva
+    try {
+      var c = document.getElementById('reader-canva');
+      if (c && canvaVisible) storyBooks[currentStoryId].canvaData = c.toDataURL('image/png');
+    } catch(e){}
+    try { localStorage.setItem('oracle_story_books', JSON.stringify(storyBooks)); } catch(e){}
+    setStatus('Сохранено · только что', 'is-ok');
+    if (typeof renderSidebarStories === 'function') renderSidebarStories();
+    if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+    if (!silent) showToast && showToast('История сохранена', 'success');
+  };
+  window.saveCurrentStory = window.readerManualSave;
+
+  window.renameCurrentStory = function() {
+    if (!currentStoryId || !storyBooks[currentStoryId]) {
+      showToast && showToast('Нет открытой истории', 'warning');
+      return;
+    }
+    var cur = storyBooks[currentStoryId].title || 'Без названия';
+    function apply(name) {
+      if (!name || !String(name).trim()) return;
+      name = String(name).trim();
+      storyBooks[currentStoryId].title = name;
+      localStorage.setItem('oracle_story_books', JSON.stringify(storyBooks));
+      var titleEl = document.getElementById('current-story-title-display');
+      if (titleEl) titleEl.textContent = name;
+      if (typeof renderSidebarStories === 'function') renderSidebarStories();
+      if (typeof renderUnifiedArchive === 'function') renderUnifiedArchive();
+      showToast && showToast('Название обновлено', 'success');
+    }
+    if (typeof showCustomModal === 'function') {
+      showCustomModal('Переименовать историю', 'Новое название', true, cur, function(ok, val) {
+        if (ok === false) return;
+        apply(typeof ok === 'string' ? ok : val);
+      });
+    } else {
+      var n = prompt('Название', cur);
+      if (n) apply(n);
+    }
+  };
+
+  window.readerFormat = function(cmd, val) {
+    try { document.execCommand(cmd, false, val || null); } catch(e) {}
+    var editor = document.getElementById('editor');
+    if (editor) editor.focus();
+    setStatus('Несохранено', 'is-dirty');
+  };
+  // compat
+  window.format = window.readerFormat;
+
+  window.toggleReaderColorPicker = function(e) {
+    if (e) e.stopPropagation();
+    var p = document.getElementById('reader-color-picker');
+    if (!p) return;
+    p.hidden = !p.hidden;
+  };
+  window.readerPickColor = function(c) {
+    if (c) readerFormat('foreColor', c);
+    else readerFormat('removeFormat');
+    var p = document.getElementById('reader-color-picker');
+    if (p) p.hidden = true;
+  };
+  document.addEventListener('click', function(e) {
+    var p = document.getElementById('reader-color-picker');
+    if (p && !p.hidden && !e.target.closest('.reader-color-wrap')) p.hidden = true;
+    var m = document.getElementById('reader-canva-more-menu');
+    if (m && !m.hidden && !e.target.closest('#reader-canva-more') && !m.contains(e.target)) m.hidden = true;
+  });
+
+  window.readerAskCoreNode = function() {
+    var editor = document.getElementById('editor');
+    var sel = '';
+    try { sel = (window.getSelection && window.getSelection().toString()) || ''; } catch(e){}
+    if (!sel && editor) {
+      sel = (editor.innerText || '').trim().slice(0, 500);
+    }
+    var title = (story() && story().title) || 'история';
+    var q = sel
+      ? ('По истории «' + title + '»: ' + sel.slice(0, 400))
+      : ('Вопрос по истории «' + title + '»: ');
+    if (typeof switchScreen === 'function') switchScreen('chat');
+    setTimeout(function() {
+      var input = document.getElementById('user-input');
+      if (input) {
+        if (input.isContentEditable) input.innerText = q;
+        else input.value = q;
+        input.focus();
+      }
+      showToast && showToast('Фрагмент в поле чата — дополните вопрос и отправьте', 'info', 3500);
+    }, 80);
+  };
+
+  /* Export */
+  window.openReaderExportModal = function() {
+    exportFmt = 'md';
+    selectReaderExportFmt('md');
+    document.getElementById('reader-export-modal')?.classList.add('active');
+  };
+  window.closeReaderExportModal = function() {
+    document.getElementById('reader-export-modal')?.classList.remove('active');
+  };
+  window.selectReaderExportFmt = function(fmt) {
+    exportFmt = fmt;
+    document.querySelectorAll('.reader-export-opt').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-fmt') === fmt);
+    });
+    var go = document.getElementById('reader-export-go');
+    if (go) go.textContent = 'Скачать в виде .' + fmt;
+  };
+  window.confirmReaderExport = function() {
+    if (!currentStoryId || !storyBooks[currentStoryId]) {
+      showToast && showToast('Нет истории', 'warning');
+      return;
+    }
+    readerManualSave(true);
+    var s = storyBooks[currentStoryId];
+    var title = s.title || 'story';
+    var body = '';
+    var mime = 'text/plain';
+    var ext = exportFmt;
+    var editor = document.getElementById('editor');
+    var html = s.content || (editor && editor.innerHTML) || '';
+    var text = editor ? (editor.innerText || '') : html.replace(/<[^>]+>/g, ' ');
+    if (exportFmt === 'md') {
+      body = '# ' + title + '\n\n' + htmlToRoughMd(html);
+      mime = 'text/markdown';
+    } else if (exportFmt === 'json') {
+      body = JSON.stringify({
+        title: title,
+        content: html,
+        canvaData: s.canvaData || null,
+        aiGenerated: !!(s.aiGenerated || s.fromAi),
+        updated: s.updated || Date.now()
+      }, null, 2);
+      mime = 'application/json';
+    } else {
+      body = title + '\n\n' + text;
+    }
+    var blob = new Blob([body], { type: mime });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (title.replace(/[^\w\u0400-\u04FF\- ]+/g, '').trim() || 'story') + '.' + ext;
+    a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
+    closeReaderExportModal();
+    showToast && showToast('Скачивание .' + ext, 'success');
+  };
+  function htmlToRoughMd(html) {
+    var d = document.createElement('div');
+    d.innerHTML = html || '';
+    // very light conversion
+    d.querySelectorAll('b,strong').forEach(function(el){ el.replaceWith('**' + el.textContent + '**'); });
+    d.querySelectorAll('i,em').forEach(function(el){ el.replaceWith('*' + el.textContent + '*'); });
+    d.querySelectorAll('s,strike').forEach(function(el){ el.replaceWith('~~' + el.textContent + '~~'); });
+    d.querySelectorAll('br').forEach(function(el){ el.replaceWith('\n'); });
+    d.querySelectorAll('p,div').forEach(function(el){ el.appendChild(document.createTextNode('\n\n')); });
+    d.querySelectorAll('li').forEach(function(el){ el.prepend(document.createTextNode('- ')); el.appendChild(document.createTextNode('\n')); });
+    return (d.innerText || d.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+  }
+  window.exportStory = window.openReaderExportModal;
+
+  /* Canva */
+  function getCanva() {
+    return document.getElementById('reader-canva');
+  }
+  function ctx2d() {
+    var c = getCanva();
+    return c ? c.getContext('2d') : null;
+  }
+  function resizeCanva() {
+    var c = getCanva();
+    if (!c) return;
+    var parent = c.parentElement;
+    var w = Math.max(320, (parent && parent.clientWidth) ? parent.clientWidth - 8 : 600);
+    var ratio = c.height / (c.width || 900);
+    var data = null;
+    try { data = c.toDataURL(); } catch(e){}
+    c.width = w;
+    c.height = Math.round(w * (320/900));
+    if (data) {
+      var img = new Image();
+      img.onload = function(){ ctx2d().drawImage(img, 0, 0, c.width, c.height); };
+      img.src = data;
+    }
+  }
+  function loadCanvaFromStory() {
+    var s = story();
+    var c = getCanva();
+    if (!c || !s || !s.canvaData) return;
+    resizeCanva();
+    var img = new Image();
+    img.onload = function() {
+      var ctx = ctx2d();
+      ctx.clearRect(0,0,c.width,c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+    };
+    img.src = s.canvaData;
+  }
+  window.toggleReaderCanva = function() {
+    canvaVisible = !canvaVisible;
+    var block = document.getElementById('reader-canva-block');
+    if (block) block.hidden = !canvaVisible;
+    if (canvaVisible) {
+      setTimeout(function(){ resizeCanva(); bindCanvaDraw(); loadCanvaFromStory(); }, 20);
+    } else {
+      readerManualSave(true);
+    }
+  };
+  function bindCanvaDraw() {
+    var c = getCanva();
+    if (!c || c._bound) return;
+    c._bound = true;
+    function pos(e) {
+      var r = c.getBoundingClientRect();
+      var x, y;
+      if (e.touches && e.touches[0]) {
+        x = e.touches[0].clientX - r.left; y = e.touches[0].clientY - r.top;
+      } else {
+        x = e.clientX - r.left; y = e.clientY - r.top;
+      }
+      return { x: x * (c.width/r.width), y: y * (c.height/r.height) };
+    }
+    function start(e) {
+      e.preventDefault();
+      drawing = true;
+      try { canvaUndo = c.toDataURL(); } catch(err){}
+      lastPt = pos(e);
+    }
+    function move(e) {
+      if (!drawing) return;
+      e.preventDefault();
+      var p = pos(e);
+      var ctx = ctx2d();
+      var size = document.getElementById('reader-canva-size');
+      ctx.strokeStyle = canvaStroke || '#000000';
+      ctx.lineWidth = size ? +size.value : 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.moveTo(lastPt.x, lastPt.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      lastPt = p;
+      setStatus('Несохранено', 'is-dirty');
+    }
+    function end() {
+      if (!drawing) return;
+      drawing = false;
+      lastPt = null;
+      readerManualSave(true);
+    }
+    c.addEventListener('mousedown', start);
+    c.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', end);
+    c.addEventListener('touchstart', start, {passive:false});
+    c.addEventListener('touchmove', move, {passive:false});
+    c.addEventListener('touchend', end);
+  }
+  window.toggleCanvaMoreMenu = function(e) {
+    if (e) e.stopPropagation();
+    var m = document.getElementById('reader-canva-more-menu');
+    if (m) m.hidden = !m.hidden;
+  };
+  window.readerCanvaClear = function() {
+    document.getElementById('reader-canva-more-menu').hidden = true;
+    if (!confirm('Сбросить рисунок на чистый холст?\nОтменить можно только CTRL+Z в этой сессии (пока не перезагрузили страницу).')) return;
+    var c = getCanva();
+    if (!c) return;
+    try { canvaUndo = c.toDataURL(); } catch(e){}
+    ctx2d().clearRect(0,0,c.width,c.height);
+    setStatus('Несохранено', 'is-dirty');
+    readerManualSave(true);
+  };
+  window.readerCanvaUpload = function() {
+    document.getElementById('reader-canva-more-menu').hidden = true;
+    var f = document.getElementById('reader-canva-file');
+    if (!f) return;
+    f.onchange = function() {
+      var file = f.files && f.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function() {
+        var img = new Image();
+        img.onload = function() {
+          var c = getCanva();
+          var ctx = ctx2d();
+          try { canvaUndo = c.toDataURL(); } catch(e){}
+          ctx.clearRect(0,0,c.width,c.height);
+          var scale = Math.min(c.width/img.width, c.height/img.height);
+          var w = img.width * scale, h = img.height * scale;
+          ctx.drawImage(img, (c.width-w)/2, (c.height-h)/2, w, h);
+          readerManualSave(true);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+      f.value = '';
+    };
+    f.click();
+  };
+  window.readerCanvaDelete = function() {
+    document.getElementById('reader-canva-more-menu').hidden = true;
+    if (!confirm('Удалить холст и данные рисунка из этой истории?')) return;
+    var c = getCanva();
+    if (c) ctx2d().clearRect(0,0,c.width,c.height);
+    if (currentStoryId && storyBooks[currentStoryId]) {
+      delete storyBooks[currentStoryId].canvaData;
+      localStorage.setItem('oracle_story_books', JSON.stringify(storyBooks));
+    }
+    canvaVisible = false;
+    var block = document.getElementById('reader-canva-block');
+    if (block) block.hidden = true;
+    showToast && showToast('Холст удалён', 'success');
+  };
+  // session undo for canva
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && canvaVisible && canvaUndo) {
+      var c = getCanva();
+      if (!c) return;
+      var img = new Image();
+      img.onload = function(){ ctx2d().clearRect(0,0,c.width,c.height); ctx2d().drawImage(img,0,0,c.width,c.height); };
+      img.src = canvaUndo;
+      e.preventDefault();
+    }
+  });
+
+  /* AI mark helper for Core Node */
+  window.readerAppendAiFragment = function(text, meta) {
+    if (!currentStoryId || !storyBooks[currentStoryId]) {
+      showToast && showToast('Откройте историю в Reader', 'warning');
+      return;
+    }
+    var editor = document.getElementById('editor');
+    var html = '<p class="reader-ai-frag" data-ai="1" style="border-left:3px solid var(--primary);padding-left:10px;opacity:.95;">' +
+      String(text || '').replace(/</g,'&lt;').replace(/\n/g,'<br>') +
+      '<br><small style="color:var(--on-surface-variant)">ИИ улучшение / генерация</small></p>';
+    if (editor) editor.innerHTML = (editor.innerHTML || '') + html;
+    storyBooks[currentStoryId].aiEnhanced = true;
+    storyBooks[currentStoryId].fromAi = true;
+    readerManualSave(true);
+    var badge = document.getElementById('reader-ai-badge');
+    if (badge) badge.hidden = false;
+    if (typeof switchScreen === 'function') switchScreen('reader');
+    showToast && showToast('Фрагмент добавлен в Reader', 'success');
+  };
+
+  function renderReaderRecent() {
+    var box = document.getElementById('reader-recent-list');
+    if (!box) return;
+    var ids = Object.keys(storyBooks || {});
+    if (!ids.length) { box.innerHTML = ''; return; }
+    ids.sort(function(a,b){
+      return (storyBooks[b].updated||0) - (storyBooks[a].updated||0);
+    });
+    box.innerHTML = ids.slice(0,5).map(function(id){
+      var s = storyBooks[id];
+      var ai = (s.aiGenerated||s.fromAi||s.aiEnhanced) ? ' · ИИ' : '';
+      return '<button type="button" class="reader-recent-item" onclick="openStoryBook(\''+id.replace(/'/g,"\\'")+'\')">' +
+        '<b>'+String(s.title||'Без названия').replace(/</g,'&lt;')+'</b>' +
+        '<small>Открыть'+ai+'</small></button>';
+    }).join('');
+  }
+
+  // toast above download
+  try {
+    var st = document.getElementById('toast-container');
+    if (st) st.style.zIndex = '200000';
+  } catch(e){}
+
+  // PWA install
+  window._cnPwaPrompt = window._cnPwaPrompt || null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    window._cnPwaPrompt = e;
+    window._deferredPwaPrompt = e;
+    window.deferredPWAInstall = e;
+  });
+  window.tryInstallPWA = async function() {
+    var pe = window._cnPwaPrompt || window._deferredPwaPrompt || window.deferredPWAInstall;
+    if (pe && pe.prompt) {
+      try {
+        pe.prompt();
+        var choice = await pe.userChoice;
+        window._cnPwaPrompt = window._deferredPwaPrompt = window.deferredPWAInstall = null;
+        showToast && showToast(choice && choice.outcome === 'accepted' ? 'Установка PWA…' : 'Установка отменена', choice && choice.outcome==='accepted'?'success':'info');
+        return;
+      } catch(e) {}
+    }
+    showToast && showToast('В Chrome/Edge: меню → «Установить приложение». Нужен HTTPS и повторный визит.', 'info', 5000);
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    setupReaderEditor();
+    renderReaderRecent();
+  });
+  setTimeout(function(){ setupReaderEditor(); renderReaderRecent(); }, 400);
+  console.log('[CN] reader 2.6.1');
+})();
+
+/* ===== script block ===== */
+
+(function(){
+  function renderQuickHome() {
+    var host = document.getElementById('quick-settings-home');
+    if (!host) return;
+    var theme = localStorage.getItem('oracle_theme_mode') || 'system';
+    var animOn = localStorage.getItem('oracle_animations_fx');
+    if (animOn === null) animOn = '1';
+    animOn = animOn !== '0';
+    var ctxOn = localStorage.getItem('oracle_use_context');
+    if (ctxOn === null) ctxOn = '1';
+    ctxOn = ctxOn !== '0';
+    host.innerHTML =
+      '<div class="quick-card">' +
+        '<div class="quick-card-head"><span class="material-symbols-rounded">contrast</span><div class="quick-card-title">Тема</div></div>' +
+        '<div class="quick-card-sub">Сейчас: <b>' + (theme==='light'?'Светлая':theme==='dark'?'Тёмная':'Системная') + '</b></div>' +
+        '<div class="quick-card-actions">' +
+          '<button type="button" class="quick-chip'+(theme==='system'?' primary':'')+'" onclick="setThemeMode(\'system\');renderQuickHome()">Системная</button>' +
+          '<button type="button" class="quick-chip'+(theme==='light'?' primary':'')+'" onclick="setThemeMode(\'light\');renderQuickHome()">Светлая</button>' +
+          '<button type="button" class="quick-chip'+(theme==='dark'?' primary':'')+'" onclick="setThemeMode(\'dark\');renderQuickHome()">Тёмная</button>' +
+          '<button type="button" class="quick-chip" onclick="showSection(\'general\')">Все цвета →</button>' +
+        '</div></div>' +
+      '<div class="quick-card"><div class="quick-card-row">' +
+        '<div><div class="quick-card-title">Анимации и спецэффекты</div>' +
+        '<div class="quick-card-sub">Для слабых устройств лучше выключить</div></div>' +
+        '<label class="switch"><input type="checkbox" '+(animOn?'checked':'')+' onchange="toggleAnimationsFx(this.checked)"><span class="slider"></span></label>' +
+      '</div></div>' +
+      '<div class="quick-card"><div class="quick-card-row">' +
+        '<div><div class="quick-card-title">Контекст чата</div>' +
+        '<div class="quick-card-sub">ИИ помнит детали в рамках лимита памяти</div></div>' +
+        '<label class="switch"><input type="checkbox" '+(ctxOn?'checked':'')+' onchange="(window.setUseContext?setUseContext(this.checked):(localStorage.setItem(\'oracle_use_context\',this.checked?\'1\':\'0\')))"><span class="slider"></span></label>' +
+      '</div></div>' +
+      '<div class="quick-card">' +
+        '<div class="quick-card-head"><span class="material-symbols-rounded">tune</span><div class="quick-card-title">Боковое меню</div></div>' +
+        '<div class="quick-card-sub">Кнопки, поведение при входе, фильтры</div>' +
+        '<div class="quick-card-actions"><button type="button" class="quick-chip primary" onclick="showSection(\'sidebar-menu\')">Открыть настройку</button></div>' +
+      '</div>' +
+      '<div class="quick-card">' +
+        '<div class="quick-card-head"><span class="material-symbols-rounded">key</span><div class="quick-card-title">Сторонние API</div></div>' +
+        '<div class="quick-card-sub">Подключить Gemini / OpenAI / Claude / Grok</div>' +
+        '<div class="quick-card-actions"><button type="button" class="quick-chip" onclick="showSection(\'api-keys\')">API ключи</button>' +
+        '<button type="button" class="quick-chip" onclick="showSection(\'limits\')">Лимиты</button></div>' +
+      '</div>' +
+      '<div class="quick-card">' +
+        '<div class="quick-card-head"><span class="material-symbols-rounded">download</span><div class="quick-card-title">Установить приложение</div></div>' +
+        '<div class="quick-card-sub">PWA, Windows, Android, Side Core Node</div>' +
+        '<div class="quick-card-actions"><button type="button" class="quick-chip primary" onclick="openDownloadAppModal && openDownloadAppModal()">Скачать / установить</button></div>' +
+      '</div>';
+  }
+  window.renderQuickHome = renderQuickHome;
+
+  window.setSbMenuMode = function(v) {
+    v = (v === 'editor') ? 'editor' : 'compact';
+    localStorage.setItem('oracle_sb_menu_mode', v);
+    document.querySelectorAll('.sb-mode-btn').forEach(function(b){
+      b.classList.toggle('active', b.getAttribute('data-mode') === v);
+    });
+    var wrap = document.getElementById('sb-compact-size-wrap');
+    if (wrap) wrap.style.display = (v === 'compact') ? 'block' : 'none';
+    document.body.classList.toggle('sb-mode-compact', v === 'compact');
+    document.body.classList.toggle('sb-mode-editor', v === 'editor');
+    if (typeof showToast === 'function') showToast(v === 'compact' ? 'Компактные кнопки' : 'Просторные кнопки', 'success');
+  };
+  window.setSbBtnScale = function(v) {
+    v = Math.min(1, Math.max(0.5, parseFloat(v) || 0.7));
+    localStorage.setItem('oracle_sb_btn_scale', String(v));
+    var lab = document.getElementById('sb-size-label');
+    if (lab) lab.textContent = v.toFixed(2);
+    document.documentElement.style.setProperty('--sb-btn-scale', String(v));
+  };
+
+  // default showSection → quick
+  var _prevShow = window.showSection;
+  window.showSection = function(id) {
+    if (!id) id = 'quick';
+    if (typeof _prevShow === 'function') {
+      try { _prevShow(id); } catch(e) {}
+    }
+    // ensure only one visible
+    document.querySelectorAll('#settings-content .setting-section').forEach(function(s){
+      var on = s.id === 'section-' + id;
+      s.classList.toggle('section-visible', on);
+      s.style.display = on ? 'block' : 'none';
+    });
+    document.querySelectorAll('#settings-nav-items .nav-item').forEach(function(b){
+      b.classList.toggle('active', b.id === 'btn-sec-' + id);
+    });
+    if (id === 'quick') renderQuickHome();
+    if (id === 'sidebar-menu') {
+      var mode = localStorage.getItem('oracle_sb_menu_mode') || 'compact';
+      setSbMenuMode(mode);
+      var scale = localStorage.getItem('oracle_sb_btn_scale') || '0.7';
+      var range = document.getElementById('sb-btn-size');
+      if (range) range.value = scale;
+      setSbBtnScale(scale);
+      // restore boot radios
+      var boot = localStorage.getItem('oracle_sidebar_boot') || 'remember';
+      document.querySelectorAll('input[name="sidebar-boot"]').forEach(function(r){
+        r.checked = r.value === boot;
+      });
+    }
+  };
+
+  // boot
+  function boot() {
+    var mode = localStorage.getItem('oracle_sb_menu_mode') || 'compact';
+    document.body.classList.toggle('sb-mode-compact', mode === 'compact');
+    var scale = localStorage.getItem('oracle_sb_btn_scale') || '0.7';
+    document.documentElement.style.setProperty('--sb-btn-scale', scale);
+    // sync anim toggle if present
+    var anim = localStorage.getItem('oracle_animations_fx');
+    var cb = document.getElementById('toggle-animations-fx');
+    if (cb && anim !== null) cb.checked = anim !== '0';
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+  setTimeout(function(){ if (document.getElementById('section-quick')?.classList.contains('section-visible')) renderQuickHome(); }, 300);
+})();
+
+/* ===== script block ===== */
+
+(function(){
+  function mark(){
+    try {
+      var chat = document.getElementById('screen-chat');
+      var on = chat && chat.classList.contains('active-screen');
+      if (!document.querySelector('.app-screen.active-screen')) {
+        if (chat) chat.classList.add('active-screen');
+        on = true;
+      }
+      document.body.classList.toggle('on-chat-screen', !!on);
+      if (on && typeof syncEmptyChatLayout === 'function') syncEmptyChatLayout();
+      var welcome = document.getElementById('welcome-block');
+      var flow = document.getElementById('chat-flow');
+      if (welcome && flow && !flow.querySelector('.msg, .user-msg, .ai-msg')) {
+        welcome.classList.remove('hidden');
+        welcome.style.display = '';
+      }
+    } catch(e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(mark, 0); setTimeout(mark, 200); });
+  else { setTimeout(mark, 0); setTimeout(mark, 200); }
+})();
