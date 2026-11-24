@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <link rel="preload" href="./chat.json" as="fetch" crossorigin>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Core Node | Prestige HQ</title>
@@ -20,9 +22,24 @@
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-    <link rel="stylesheet" href="style.css">
+
+    
+
+
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+
+<div id="boot-splash" aria-live="polite">
+  <div class="boot-splash-inner">
+    <img class="boot-splash-logo" src="icon.svg" alt="" width="88" height="88" onerror="this.style.display='none'"/>
+    <div class="boot-splash-rings" aria-hidden="true"></div>
+    <div class="boot-splash-title">Core Node</div>
+    <div class="boot-splash-sub">Loading Performance</div>
+    <div class="boot-splash-bar"><div class="boot-splash-bar-fill"></div></div>
+  </div>
+</div>
 
 
 <!-- PUBLIC CHAT IMPORT -->
@@ -86,22 +103,45 @@
 </div>
 
 <!-- HIDDEN FILE INPUT -->
+
 <div class="oracle-container">
-    <main id="screen-calendar" class="app-screen">
-        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+    <!-- ghost-action-bar removed: use empty-chat-chrome only -->
+<main id="screen-calendar" class="app-screen">
+        <div class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap:wrap; gap:8px;">
     <span id="calendar-month-title">Планы и календарь</span>
-    <div style="display: flex; gap: 4px;">
-        <button onclick="changeMonth(-1)" class="icon-btn"><span class="material-symbols-rounded">chevron_left</span></button>
-        <button onclick="changeMonth(1)" class="icon-btn"><span class="material-symbols-rounded">chevron_right</span></button>
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <div class="cal-view-seg" role="group" aria-label="Вид календаря">
+            <button type="button" class="cal-view-btn" data-view="day" onclick="setCalendarView('day')">День</button>
+            <button type="button" class="cal-view-btn active" data-view="week" onclick="setCalendarView('week')">Неделя</button>
+            <button type="button" class="cal-view-btn" data-view="month" onclick="setCalendarView('month')">Месяц</button>
+        </div>
+        <button onclick="changeMonth(-1)" class="icon-btn" title="Назад"><span class="material-symbols-rounded">chevron_left</span></button>
+        <button onclick="changeMonth(1)" class="icon-btn" title="Вперёд"><span class="material-symbols-rounded">chevron_right</span></button>
     </div>
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: 600; font-size: 12px; color: var(--on-surface-variant); margin-bottom: 10px;">
+<div id="cal-weekdays" style="display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-weight: 600; font-size: 12px; color: var(--on-surface-variant); margin-bottom: 10px;">
     <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
 </div>
 
-<div id="calendar-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 24px;"></div>
+<div id="calendar-days-grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px;"></div>
 
+<div class="chat-card" id="ai-plan-creator" style="margin-bottom:16px;padding:14px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span class="material-symbols-rounded" style="color:var(--primary);">auto_awesome</span>
+        <div style="font-weight:700;font-size:13px;">ИИ Создатель Календаря</div>
+    </div>
+    <p style="font-size:12px;color:var(--on-surface-variant);margin:0 0 10px;line-height:1.45;">
+        Напишите план обычным языком. Примеры: <i>«Пойти в зоопарк в субботу в 14:20»</i> или
+        <i>«Отпраздновать новый год 1 января 2027 в 00:00»</i>. Без даты — ближайший подходящий день; без года — текущий.
+    </p>
+    <div style="display:flex;gap:8px;align-items:stretch;">
+        <input type="text" id="ai-plan-input" placeholder="Введите запрос для плана…" maxlength="240"
+            style="flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:14px;outline:none;">
+        <button type="button" class="modal-btn modal-btn-accept" id="ai-plan-create-btn" onclick="createPlanFromNaturalLanguage()" style="flex-shrink:0;">Создать</button>
+    </div>
+    <div id="ai-plan-preview" style="font-size:12px;color:var(--on-surface-variant);margin-top:8px;display:none;"></div>
+</div>
 
 <div class="chat-card" id="plan-form-card" style="margin-bottom:16px;padding:14px;">
     <div style="font-weight:700;font-size:13px;margin-bottom:10px;">Новое напоминание</div>
@@ -155,7 +195,7 @@
         <span class="material-symbols-rounded">menu</span>
     </button>
 <!-- Кнопка Временный чат -->
-<button id="temp-chat-btn" onclick="toggleTempChat()" oncontextmenu="showTempChatCtx(event)" title="Временный чат">
+<button id="temp-chat-btn" class="top-legacy" onclick="toggleTempChat()" oncontextmenu="showTempChatCtx(event)" title="Временный чат" hidden>
     <span class="material-symbols-rounded">chat_dashed</span>
 </button>
 <!-- SPLIT HEADER -->
@@ -201,43 +241,73 @@
     <div class="split-pane" id="split-pane-right"></div>
 </div>
     <!-- SIDEBAR ARCHIVE -->
-    <div id="sidebar-archive">
-        <div class="sidebar-header">
-            <h2>Архив Ядра</h2>
+    <div id="sidebar-archive" class="sidebar-v2">
+        <div class="sidebar-header sb-v2-header">
+            <div class="sb-brand" onclick="switchScreen('chat'); closeSidebar?.()">
+                <span class="material-symbols-rounded sb-brand-icon">hub</span>
+                <span class="sb-brand-text">Core Node</span>
+            </div>
             <div class="sidebar-header-actions">
-                <button type="button" class="sidebar-icon-btn" id="sidebar-dock-toggle" onclick="toggleSidebarDock()" title="Закрепить / открепить">
-                    <span class="material-symbols-rounded" id="sidebar-dock-icon">keep</span>
-                </button>
                 <button type="button" class="sidebar-icon-btn" onclick="openArchiveSearch()" title="Поиск">
                     <span class="material-symbols-rounded">search</span>
                 </button>
-                <button type="button" class="sidebar-close-btn" onclick="toggleSidebarOrUndock()" title="Закрыть">
-                    <span class="material-symbols-rounded">close</span>
+                <button type="button" class="sidebar-close-btn" onclick="closeSidebar()" title="Свернуть">
+                    <span class="material-symbols-rounded">left_panel_close</span>
                 </button>
             </div>
         </div>
 
         <div id="sidebar-fallbacks" style="display:none !important;" hidden></div>
-        <div id="sidebar-nav-tabs" class="sidebar-nav-tabs-compact">
-            <button class="sidebar-nav-tab" onclick="switchScreen('chat'); document.getElementById('sidebar-archive')?.classList.remove('open');">
-                <span class="material-symbols-rounded">chat_bubble</span> Chat
+
+        <button type="button" class="sb-row primary sb-create-sticky" id="sb-create-btn" onclick="openCreateAModal()">
+            <span class="material-symbols-rounded">edit_square</span>
+            <span>Create a…</span>
+        </button>
+        <div class="sb-scroll-body" id="sb-scroll-body">
+        <div class="sb-action-list" id="sidebar-actions-stack">
+            <button type="button" class="sb-row" onclick="switchScreen('library'); closeSidebar?.()">
+                <span class="material-symbols-rounded">local_library</span>
+                <span>Библиотека</span>
             </button>
-            <button class="sidebar-nav-tab" onclick="switchScreen('reader'); document.getElementById('sidebar-archive')?.classList.remove('open');">
-                <span class="material-symbols-rounded">auto_stories</span> Reader
+            <button type="button" class="sb-row" onclick="window.openAddonsHub()">
+                <span class="material-symbols-rounded">extension</span>
+                <span>Аддоны</span>
+                <small>навыки · коннекторы · теги</small>
             </button>
-            <button class="sidebar-nav-tab" onclick="switchScreen('settings'); document.getElementById('sidebar-archive')?.classList.remove('open');">
-                <span class="material-symbols-rounded">settings</span> Settings
+            <button type="button" class="sb-row" onclick="switchScreen('calendar'); closeSidebar?.()">
+                <span class="material-symbols-rounded">schedule</span>
+                <span>Запланировано</span>
             </button>
+            <button type="button" class="sb-row" onclick="if (typeof openSplitSelector==='function') openSplitSelector(); else showToast?.('Split недоступен','warning')">
+                <span class="material-symbols-rounded">splitscreen</span>
+                <span>Параллельный просмотр</span>
+            </button>
+            <div class="sb-more-wrap">
+                <button type="button" class="sb-row" id="sb-more-btn" onclick="toggleSidebarMore(event)">
+                    <span class="material-symbols-rounded">more_horiz</span>
+                    <span>Ещё</span>
+                </button>
+                <div id="sb-more-menu" class="sb-more-menu" hidden>
+                    <button type="button" onclick="switchScreen('maps'); closeSidebarMore(); closeSidebar?.()"><span class="material-symbols-rounded">map</span> Карты</button>
+                    <button type="button" onclick="switchScreen('scenarios'); closeSidebarMore(); closeSidebar?.()"><span class="material-symbols-rounded">movie_edit</span> Сценарист</button>
+                    <button type="button" onclick="switchScreen('reader'); closeSidebarMore(); closeSidebar?.()"><span class="material-symbols-rounded">auto_stories</span> Reader</button>
+                    <button type="button" onclick="openSidebarSettings(); closeSidebarMore()"><span class="material-symbols-rounded">tune</span> Настройка меню</button>
+                </div>
+            </div>
+            <div id="sidebar-dynamic-actions" style="display:none"></div>
         </div>
 
-        <div class="sidebar-actions-stack" id="sidebar-actions-stack">
-            <button type="button" class="sidebar-primary-btn" onclick="openCreateAModal()">
-                <span class="material-symbols-rounded">add</span> Create a…
-            </button>
-            <div id="sidebar-dynamic-actions"><!-- renderSidebarActionButtons() --></div>
-            <button type="button" class="sidebar-secondary-btn sidebar-settings-btn" onclick="openSidebarSettings()">
-                <span class="material-symbols-rounded">settings</span> Настройка
-            </button>
+        <div class="sb-section">
+            <div class="sb-projects-head">
+              <div class="sb-section-title">Проекты</div>
+              <div class="sb-proj-actions">
+                <button type="button" class="sidebar-icon-btn" onclick="openProjectSortMenu(event)" title="Сортировка"><span class="material-symbols-rounded">tune</span></button>
+                <button type="button" class="sidebar-icon-btn" onclick="openCreateProjectModal()" title="Создать проект"><span class="material-symbols-rounded">add</span></button>
+              </div>
+            </div>
+            <div id="sb-projects-panel" class="sb-projects-panel">
+                <div id="unified-projects-hint" class="unified-empty" style="padding:12px;">Папки и проекты появятся здесь</div>
+            </div>
         </div>
 
         <div class="unified-filter-bar">
@@ -252,14 +322,20 @@
                 <button type="button" data-filter="all" onclick="setUnifiedFilter('all')"><span class="material-symbols-rounded">notes</span> Все</button>
                 <button type="button" data-filter="plans" onclick="setUnifiedFilter('plans')"><span class="material-symbols-rounded">schedule</span> Планы</button>
                 <button type="button" data-filter="stories" onclick="setUnifiedFilter('stories')"><span class="material-symbols-rounded">history_edu</span> Истории</button>
-                <button type="button" data-filter="projects" onclick="setUnifiedFilter('projects')"><span class="material-symbols-rounded">folder</span> Проекты</button>
                 <button type="button" data-filter="notepad" onclick="setUnifiedFilter('notepad')"><span class="material-symbols-rounded">code</span> Oracle Notepad</button>
-                <button type="button" data-filter="chats" onclick="setUnifiedFilter('chats')"><span class="material-symbols-rounded">chat_bubble</span> Чаты</button>
+                <button type="button" data-filter="chats" onclick="setUnifiedFilter('chats')"><span class="material-symbols-rounded">chat_bubble</span> Чаты и Tasks</button>
             </div>
         </div>
 
         <div id="unified-archive-list" class="unified-archive-list">
             <!-- filled by renderUnifiedArchive() -->
+        </div>
+
+        <div class="sb-footer">
+            <button type="button" class="sb-row settings" onclick="switchScreen('settings'); closeSidebar?.()">
+                <span class="material-symbols-rounded">settings</span>
+                <span>Настройки</span>
+            </button>
         </div>
 
         <!-- Hidden legacy containers for existing JS hooks -->
@@ -268,30 +344,39 @@
         <div id="np-projects-list" class="group-content" style="display:none !important;" aria-hidden="true"></div>
         <div id="library-files" style="display:none !important;" aria-hidden="true"></div>
         <div id="library-list" style="display:none !important;" aria-hidden="true"></div>
+        <div id="sidebar-nav-tabs" style="display:none !important;" aria-hidden="true"></div>
+        </div><!-- /.sb-scroll-body -->
     </div>
 
 <div id="context-menu">
         <div class="context-item" onclick="cmRename()">
             <span class="material-symbols-rounded">edit</span> Переименовать
         </div>
-        <div class="context-item" onclick="cmMoveToFolder()">
-            <span class="material-symbols-rounded">drive_file_move</span> Перенести в папку
-        </div>
-        <div class="context-item" id="cm-branch-opt" onclick="cmBranch()">
-            <span class="material-symbols-rounded">call_split</span> Создать ветвь
+        <div class="context-item" id="cm-move-project" onclick="cmMoveToProject()">
+            <span class="material-symbols-rounded">drive_file_move</span> Переместить в проект
         </div>
         <div class="context-item" id="cm-pin-opt" onclick="cmTogglePin()"><span class="material-symbols-rounded">push_pin</span> <span id="cm-pin-label">Закрепить</span></div>
         <div class="context-item" id="cm-share-opt" onclick="cmShare()">
             <span class="material-symbols-rounded">share</span> Поделиться
         </div>
-        <div class="context-item" id="cm-sidenotes-opt" onclick="cmSideNotesFromChat()" style="display:none;">
-            <span class="material-symbols-rounded">sticky_note_2</span> Side Notes
+        <div class="context-item" id="cm-context-opt" onclick="cmOpenChatContext()">
+            <span class="material-symbols-rounded">history</span> Контекст
         </div>
         <div class="context-item danger" onclick="cmDelete()">
             <span class="material-symbols-rounded">delete</span> Удалить
         </div>
     </div>
-    
+
+<div id="project-context-menu" class="cn-ctx" hidden>
+  <button type="button" class="context-item" onclick="projCtx('share')"><span class="material-symbols-rounded">share</span> Поделиться проектом</button>
+  <button type="button" class="context-item" onclick="projCtx('rename')"><span class="material-symbols-rounded">edit</span> Переименовать проект</button>
+  <button type="button" class="context-item" onclick="projCtx('settings')"><span class="material-symbols-rounded">settings</span> Настройки проекта</button>
+  <button type="button" class="context-item" onclick="projCtx('home')"><span class="material-symbols-rounded">folder_open</span> Стартовая страница</button>
+  <button type="button" class="context-item" onclick="projCtx('pin')"><span class="material-symbols-rounded">push_pin</span> Закрепить проект</button>
+  <button type="button" class="context-item danger" onclick="projCtx('delete')"><span class="material-symbols-rounded">delete</span> Удалить проект</button>
+</div>
+
+
     <nav class="glass-nav" oncontextmenu="showNavContextMenu(event)">
         <button class="nav-item active" id="btn-tab-chat" onclick="switchScreen('chat')">
             <span class="material-symbols-rounded">chat_bubble</span>
@@ -307,27 +392,7 @@
         </button>
     </nav>
 
-    <!-- Вторичная панель (Sub-nav) -->
-    <nav class="sub-glass-nav" id="sub-nav-chat">
-        <button class="nav-item active" id="btn-mode-normal" onclick="setChatMode('normal')">
-            <span class="material-symbols-rounded">forum</span>
-            <span class="nav-text">Normal</span>
-        </button>
-        <button class="nav-item" id="btn-mode-oracle" onclick="setChatMode('oracle')">
-            <span class="material-symbols-rounded">memory</span>
-            <span class="nav-text">Oracle Mode</span>
-        </button>
-        <button class="nav-item hidden" id="btn-mode-project" onclick="openProjectPanel()">
-            <span class="material-symbols-rounded">folder</span>
-            <span class="nav-text">Project</span>
-        </button>
-        <button class="nav-item hidden" id="btn-mode-coding" onclick="openCodingPanel()">
-            <span class="material-symbols-rounded">code</span>
-            <span class="nav-text">Coding</span>
-        </button>
-    </nav>
 
-    
     <main id="screen-notepad" class="app-screen">
         <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
             <span>Oracle Notepad · <span id="np-active-project-label" style="color:var(--primary);font-weight:600;">Draft</span></span>
@@ -351,7 +416,7 @@
         <div class="notepad-hint">Автосохранение в браузере · доступен в Split: Chat + Notepad</div>
     </main>
 
-    
+
     <main id="screen-library" class="app-screen">
         <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
             <span>Библиотека файлов</span>
@@ -388,7 +453,7 @@
         </div>
     </main>
 
-    
+
     <main id="screen-maps" class="app-screen">
         <div class="maps-toolbar">
             <div class="maps-title">
@@ -409,12 +474,100 @@
         </div>
         <div class="maps-search-row">
             <input type="text" id="maps-search" placeholder="Поиск места / улицы…" autocomplete="off">
-            <button type="button" class="modal-btn modal-btn-accept maps-search-btn" onclick="mapsSearch()">Найти</button>
+            <button type="button" class="modal-btn modal-btn-accept maps-search-btn" onclick="mapsSearchAndChat()">Отправить</button>
+            <button type="button" class="icon-btn maps-search-btn" onclick="mapsSearch()" title="Только на карте"><span class="material-symbols-rounded">search</span></button>
         </div>
         <div id="maps-results" class="maps-results" hidden></div>
         <div id="maps-leaflet" class="maps-leaflet"></div>
         <p class="maps-hint">Клик — метка. Тайлы: Esri / OpenTopo / OSM FR (без ключа). Поиск: до 8 вариантов улиц. Слои — ⧉.</p>
     </main>
+    <main id="screen-scenarios" class="app-screen">
+        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+            <span>Режим Сценариста</span>
+            <button type="button" class="icon-btn" onclick="openScenarioEditor(null)" title="Новый"><span class="material-symbols-rounded">add</span></button>
+        </div>
+        <div class="scenarios-hero">
+          <div class="scenarios-hero-card">
+            <span class="material-symbols-rounded">movie_edit</span>
+            <div>
+              <b>Режим Сценариста</b>
+              <p>Готовые пары «запрос → желаемый ответ». ИИ подстраивается под шаблон, пока сценарий активен у поля ввода.</p>
+            </div>
+          </div>
+          <div class="scenarios-grid-info">
+            <div class="scenarios-info-item"><span class="material-symbols-rounded">add_circle</span><div><b>Создать</b><span>Кнопка + выше или из чата: «+ → Добавить сценарий»</span></div></div>
+            <div class="scenarios-info-item"><span class="material-symbols-rounded">swap_horiz</span><div><b>Структура</b><span>Слева — желаемый ответ ИИ, справа — ваш запрос (текст и/или файл)</span></div></div>
+            <div class="scenarios-info-item"><span class="material-symbols-rounded">play_circle</span><div><b>Активация</b><span>Выберите сценарий — он появится чипом над полем. Крестик снимает режим</span></div></div>
+            <div class="scenarios-info-item"><span class="material-symbols-rounded">save</span><div><b>Хранение</b><span>Сценарии только в вашем браузере (localStorage), без отправки на сервер</span></div></div>
+          </div>
+          <p class="scenarios-tip">Совет: используйте сценарии для повторных задач — ответы в одном стиле, меньше правок.</p>
+        </div>
+        <div class="section-title" style="margin-top:8px;">Ваши сценарии</div>
+        <div id="scenarios-list" class="scenarios-list"></div>
+    </main>
+    <div id="scenario-editor-modal" class="modal-overlay">
+      <div class="modal-card" style="max-width:560px;max-height:90vh;overflow:auto;">
+        <div class="modal-header">
+          <span class="material-symbols-rounded">edit_note</span>
+          <h3 class="modal-title" id="scenario-editor-title">Сценарий</h3>
+        </div>
+        <div class="plan-form-row">
+          <label>Название</label>
+          <input type="text" id="scenario-name" maxlength="80" placeholder="Например: Ответ в стиле документации">
+        </div>
+        <div class="scenario-split">
+          <div>
+            <label class="scenario-col-label">Ответ ИИ (ожидаемый)</label>
+            <textarea id="scenario-answer" rows="6" placeholder="Как должен ответить ИИ…"></textarea>
+          </div>
+          <div>
+            <label class="scenario-col-label">Запрос (Right Q)</label>
+            <textarea id="scenario-query" rows="6" placeholder="Текст запроса…"></textarea>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="modal-btn modal-btn-reject" onclick="closeScenarioEditor()">Отмена</button>
+          <button type="button" class="modal-btn modal-btn-accept" onclick="saveScenarioFromEditor()">Сохранить</button>
+        </div>
+      </div>
+    </div>
+
+    
+<!-- EMPTY CHAT CHROME (new chat layout like ChatGPT-style) -->
+<div id="empty-chat-chrome" class="empty-chat-chrome">
+  <div class="ecc-left">
+    <button type="button" class="ecc-pill" id="ecc-new-chat" onclick="eccNewChatMenu(event)" title="Новый чат">
+      <span class="material-symbols-rounded">chat_bubble</span>
+      <span class="ecc-pill-label">Новый чат</span>
+      <span class="material-symbols-rounded ecc-caret">expand_more</span>
+    </button>
+  </div>
+  <div class="ecc-right">
+    <button type="button" class="ecc-btn" id="ecc-install" onclick="promptPwaInstall()" title="Скачать приложение">
+      <span class="material-symbols-rounded">download</span>
+      <span class="ecc-btn-label">Скачать</span>
+    </button>
+    <button type="button" class="ecc-btn ecc-ultra" onclick="openUltraStub()" title="Core Node Ultra">
+      <span class="material-symbols-rounded">workspace_premium</span>
+      <span class="ecc-btn-label">Ultra</span>
+    </button>
+    <button type="button" class="ecc-btn" id="ecc-temp" onclick="toggleTempChat()" title="Временный чат">
+      <span class="material-symbols-rounded">chat_dashed</span>
+      <span class="ecc-btn-label">Временный</span>
+    </button>
+    <button type="button" class="ecc-icon" onclick="createNewChatSession()" title="Новый чат">
+      <span class="material-symbols-rounded">edit_square</span>
+    </button>
+    <button type="button" class="ecc-icon" id="ecc-more-btn" onclick="toggleChatOptionsMenu(event)" title="Ещё">
+      <span class="material-symbols-rounded">more_vert</span>
+    </button>
+  </div>
+</div>
+<div id="ecc-new-menu" class="ecc-dropdown" hidden>
+  <button type="button" onclick="createNewChatSession(); hideEccMenus();"><span class="material-symbols-rounded">add</span> Новый чат</button>
+  <button type="button" onclick="toggleTempChat(); hideEccMenus();"><span class="material-symbols-rounded">chat_dashed</span> Временный чат</button>
+  <button type="button" onclick="openCreateAModal(); hideEccMenus();"><span class="material-symbols-rounded">add_circle</span> Create a…</button>
+</div>
 
     <main id="screen-chat" class="app-screen active-screen">
         <div id="welcome-ambient" aria-hidden="true">
@@ -472,6 +625,13 @@
             <p id="welcome-subtext" style="font-size: 14px; color: var(--on-surface-variant); margin: 0; opacity: 0.8;">
                 Готов к работе. Чем я могу помочь тебе сегодня?
             </p>
+
+            <div id="welcome-promo" class="welcome-promo" hidden>
+                <div class="welcome-promo-imgs" id="welcome-promo-imgs"></div>
+                <p class="welcome-promo-title">Попробуйте генерировать изображения со сторонним провайдером API</p>
+                <p class="welcome-promo-sub">Google · Nano Banana 2 Lite · OpenAI · свой провайдер — подключите ключ в Настройки → Сторонние API</p>
+            </div>
+
             <div id="temp-persona-chooser" class="temp-persona-chooser" hidden>
                 <button type="button" class="temp-persona-card selected" data-mode="with" onclick="setTempPersona('with')">
                     <div class="temp-persona-top">
@@ -491,7 +651,7 @@
             </div>
         </div>
 
-        
+
 <!-- Active branch strip (sources) -->
 <div id="active-branch-bar" class="active-branch-bar" style="display:none;">
     <div class="abb-left">
@@ -509,22 +669,10 @@
     </main>
 
     <main id="screen-reader" class="app-screen">
-        <div class="section-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
-            <span id="current-story-title-display">Истории</span>
-            <div style="display:flex;gap:4px;align-items:center;">
-                <button onclick="saveCurrentStory()" class="icon-btn" title="Сохранить">
-                    <span class="material-symbols-rounded" style="font-size:18px;">save</span>
-                </button>
-                <button onclick="exportStory()" class="icon-btn" title="Экспортировать">
-                    <span class="material-symbols-rounded" style="font-size:18px;">download</span>
-                </button>
-            </div>
-        </div>
-
         <div id="reader-empty-state" class="chat-card reader-empty-card">
             <span class="material-symbols-rounded reader-empty-icon">auto_stories</span>
-            <h2 class="reader-empty-title">Новый Reader</h2>
-            <p class="reader-empty-text">Выберите историю в боковом меню или создайте новую. Ниже — быстрый старт.</p>
+            <h2 class="reader-empty-title">Reader 2.6.1</h2>
+            <p class="reader-empty-text">Выберите историю в боковом меню или создайте новую.</p>
             <div class="reader-empty-actions" id="reader-empty-actions">
                 <button type="button" class="reader-empty-btn primary" onclick="createNewStoryBook(event)">
                     <span class="material-symbols-rounded">add</span> Новая история
@@ -532,29 +680,126 @@
                 <button type="button" class="reader-empty-btn" onclick="toggleSidebar();">
                     <span class="material-symbols-rounded">menu_open</span> Открыть архив
                 </button>
-                <button type="button" class="reader-empty-btn" onclick="startReaderTour()">
+                <button type="button" class="reader-empty-btn" onclick="startReaderTour && startReaderTour()">
                     <span class="material-symbols-rounded">school</span> Обучение
                 </button>
             </div>
-            <div class="reader-empty-hint">Если история не выбрана — редактор скрыт, чтобы не путать с черновиком.</div>
+            <div class="reader-empty-hint">Редактор скрыт, пока история не выбрана.</div>
+            <div id="reader-recent-list" class="reader-recent-list"></div>
         </div>
 
         <div id="reader-workspace" style="display:none;">
-            <div class="markdown-toolbar" style="background:var(--surface-variant);padding:8px 10px;border-radius:16px;margin-bottom:10px;display:flex;gap:6px;flex-wrap:wrap;">
-                <button onclick="format('bold')" class="icon-btn" title="Жирный"><span class="material-symbols-rounded">format_bold</span></button>
-                <button onclick="format('italic')" class="icon-btn" title="Курсив"><span class="material-symbols-rounded">format_italic</span></button>
-                <button onclick="format('underline')" class="icon-btn" title="Подчёркивание"><span class="material-symbols-rounded">format_underlined</span></button>
-                <button onclick="format('insertUnorderedList')" class="icon-btn" title="Список"><span class="material-symbols-rounded">format_list_bulleted</span></button>
-                <input type="color" onchange="format('foreColor', this.value)" title="Цвет текста" style="width:30px;height:30px;border:none;background:none;cursor:pointer;">
-                <span id="reader-save-status" style="margin-left:auto;align-self:center;font-size:12px;color:var(--on-surface-variant);">Сохранено</span>
+            <div class="reader-topbar">
+                <div class="reader-title-wrap">
+                    <span id="current-story-title-display" class="reader-title-text">Без названия</span>
+                    <button type="button" class="icon-btn reader-rename-btn" onclick="renameCurrentStory()" title="Переименовать">
+                        <span class="material-symbols-rounded">edit</span>
+                    </button>
+                    <span id="reader-ai-badge" class="reader-ai-badge" hidden>ИИ улучшение / генерация</span>
+                </div>
+                <div class="reader-top-actions">
+                    <button type="button" class="reader-ask-btn" onclick="readerAskCoreNode()" title="Быстрый вопрос">
+                        <span class="material-symbols-rounded">chat</span>
+                        <span class="reader-ask-label">Задать вопрос Core Node</span>
+                    </button>
+                    <button type="button" class="icon-btn" onclick="readerManualSave()" title="Сохранить">
+                        <span class="material-symbols-rounded">save</span>
+                    </button>
+                    <button type="button" class="icon-btn" onclick="openReaderExportModal()" title="Скачать">
+                        <span class="material-symbols-rounded">download</span>
+                    </button>
+                </div>
+            </div>
+            <div class="reader-status-row">
+                <span id="reader-save-status" class="reader-save-status">Сохранено</span>
+                <span id="reader-close-hint" class="reader-close-hint">Можно закрыть окно · при правке лучше не закрывать вкладку</span>
+            </div>
+
+            <div class="markdown-toolbar reader-toolbar">
+                <button type="button" onclick="readerFormat('bold')" class="icon-btn" title="Жирный"><b>B</b></button>
+                <button type="button" onclick="readerFormat('italic')" class="icon-btn" title="Курсив"><i>I</i></button>
+                <button type="button" onclick="readerFormat('underline')" class="icon-btn" title="Подчёркнутый"><u>U</u></button>
+                <button type="button" onclick="readerFormat('strikeThrough')" class="icon-btn" title="Зачёркнутый"><s>S</s></button>
+                <span class="reader-tb-sep"></span>
+                <button type="button" onclick="readerFormat('insertUnorderedList')" class="icon-btn" title="Список"><span class="material-symbols-rounded">format_list_bulleted</span></button>
+                <button type="button" onclick="readerFormat('insertOrderedList')" class="icon-btn" title="Нумерация"><span class="material-symbols-rounded">format_list_numbered</span></button>
+                <span class="reader-tb-sep"></span>
+                <div class="reader-color-wrap">
+                    <button type="button" class="icon-btn" id="reader-color-btn" onclick="toggleReaderColorPicker(event)" title="Цвет текста">
+                        <span class="material-symbols-rounded">format_color_text</span>
+                    </button>
+                    <div id="reader-color-picker" class="reader-color-picker" hidden>
+                        <button type="button" class="rcp-swatch" data-c="#000000" style="background:#000" onclick="readerPickColor('#000000')"></button>
+                        <button type="button" class="rcp-swatch" data-c="#ffffff" style="background:#fff;border:1px solid #444" onclick="readerPickColor('#ffffff')"></button>
+                        <button type="button" class="rcp-swatch" data-c="#ff3b30" style="background:#ff3b30" onclick="readerPickColor('#ff3b30')"></button>
+                        <button type="button" class="rcp-swatch" data-c="#ff9500" style="background:#ff9500" onclick="readerPickColor('#ff9500')"></button>
+                        <button type="button" class="rcp-swatch" data-c="#ffcc00" style="background:#ffcc00" onclick="readerPickColor('#ffcc00')"></button>
+                        <button type="button" class="rcp-swatch" data-c="#34c759" style="background:#34c759" onclick="readerPickColor('#34c759')"></button>
+                        <button type="button" class="rcp-swatch" data-c="#007aff" style="background:#007aff" onclick="readerPickColor('#007aff')"></button>
+                        <button type="button" class="rcp-swatch" data-c="#af52de" style="background:#af52de" onclick="readerPickColor('#af52de')"></button>
+                        <button type="button" class="rcp-swatch" data-c="#ff2d55" style="background:#ff2d55" onclick="readerPickColor('#ff2d55')"></button>
+                        <button type="button" class="rcp-swatch rcp-reset" onclick="readerPickColor(null)" title="Сброс"><span class="material-symbols-rounded">restart_alt</span></button>
+                    </div>
+                </div>
+                <button type="button" class="icon-btn reader-canva-toggle" onclick="toggleReaderCanva()" title="Canva — рисунок">
+                    <span class="material-symbols-rounded">brush</span>
+                </button>
+                <span id="reader-save-status-tb" class="reader-save-status-tb">Сохранено</span>
             </div>
 
             <div id="tabs-container" style="display:flex;gap:6px;margin-bottom:8px;overflow-x:auto;padding-bottom:5px;"></div>
 
-            <div class="chat-card" id="editor" contenteditable="true"
-                 style="min-height:300px;outline:none;padding:20px;line-height:1.6;"></div>
+            <div class="chat-card reader-editor-card" id="editor" contenteditable="true"
+                 style="min-height:280px;outline:none;padding:20px;line-height:1.65;"></div>
+
+            <div id="reader-canva-block" class="reader-canva-block" hidden>
+                <div class="reader-canva-head">
+                    <div class="reader-canva-title"><span class="material-symbols-rounded">draw</span> Canva · доска</div>
+                    <div class="reader-canva-tools">
+                        <div class="reader-canva-palette" id="reader-canva-palette" title="Цвет кисти">
+                          <button type="button" class="rcp-swatch active" data-c="#000000" style="background:#000" onclick="readerCanvaSetColor('#000000',this)"></button>
+                          <button type="button" class="rcp-swatch" data-c="#ffffff" style="background:#fff;border:1px solid #444" onclick="readerCanvaSetColor('#ffffff',this)"></button>
+                          <button type="button" class="rcp-swatch" data-c="#ff3b30" style="background:#ff3b30" onclick="readerCanvaSetColor('#ff3b30',this)"></button>
+                          <button type="button" class="rcp-swatch" data-c="#ff9500" style="background:#ff9500" onclick="readerCanvaSetColor('#ff9500',this)"></button>
+                          <button type="button" class="rcp-swatch" data-c="#ffcc00" style="background:#ffcc00" onclick="readerCanvaSetColor('#ffcc00',this)"></button>
+                          <button type="button" class="rcp-swatch" data-c="#34c759" style="background:#34c759" onclick="readerCanvaSetColor('#34c759',this)"></button>
+                          <button type="button" class="rcp-swatch" data-c="#007aff" style="background:#007aff" onclick="readerCanvaSetColor('#007aff',this)"></button>
+                          <button type="button" class="rcp-swatch" data-c="#af52de" style="background:#af52de" onclick="readerCanvaSetColor('#af52de',this)"></button>
+                          <button type="button" class="rcp-swatch" data-c="#ff2d55" style="background:#ff2d55" onclick="readerCanvaSetColor('#ff2d55',this)"></button>
+                        </div>
+                        <input type="range" id="reader-canva-size" min="2" max="24" value="4" title="Толщина">
+                        <button type="button" class="icon-btn" id="reader-canva-more" onclick="toggleCanvaMoreMenu(event)" title="Ещё">
+                            <span class="material-symbols-rounded">more_vert</span>
+                        </button>
+                        <div id="reader-canva-more-menu" class="reader-canva-more-menu" hidden>
+                            <button type="button" onclick="readerCanvaClear()"><span class="material-symbols-rounded">ink_eraser</span> Сбросить на чистый холст</button>
+                            <button type="button" onclick="readerCanvaUpload()"><span class="material-symbols-rounded">image</span> Загрузить изображение</button>
+                            <button type="button" class="danger" onclick="readerCanvaDelete()"><span class="material-symbols-rounded">delete</span> Удалить холст с данными</button>
+                        </div>
+                    </div>
+                </div>
+                <canvas id="reader-canva" width="900" height="320"></canvas>
+                <input type="file" id="reader-canva-file" accept="image/*" hidden>
+            </div>
         </div>
     </main>
+
+    <!-- Export story modal -->
+    <div id="reader-export-modal" class="modal-overlay">
+      <div class="modal-card reader-export-card">
+        <h3 class="modal-title" style="text-align:center;">Экспорт истории</h3>
+        <p class="modal-subtitle" style="text-align:center;">Выберите формат файла</p>
+        <div class="reader-export-opts" id="reader-export-opts">
+          <button type="button" class="reader-export-opt active" data-fmt="md" onclick="selectReaderExportFmt('md')"><b>.md</b> Markdown — сохраняет структуру текста</button>
+          <button type="button" class="reader-export-opt" data-fmt="txt" onclick="selectReaderExportFmt('txt')"><b>.txt</b> Простой текст — цвета и форматирование исчезнут</button>
+          <button type="button" class="reader-export-opt" data-fmt="json" onclick="selectReaderExportFmt('json')"><b>.json</b> Полные данные истории (title + content)</button>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="modal-btn modal-btn-reject" onclick="closeReaderExportModal()">Отмена</button>
+          <button type="button" class="modal-btn modal-btn-accept" id="reader-export-go" onclick="confirmReaderExport()">Скачать в виде .md</button>
+        </div>
+      </div>
+    </div>
 
     <main id="screen-settings" class="app-screen">
         <div class="section-title" id="settings-root-title">Инженерный Пульт Управления</div>
@@ -566,15 +811,20 @@
         </div>
         <div class="settings-search-wrap">
                 <span class="material-symbols-rounded">search</span>
-                <input type="search" id="settings-search-input" class="settings-search-input" placeholder="Поиск в настройках…" autocomplete="off" oninput="runSettingsSearch(this.value)">
+                <input type="search" id="settings-search-input" class="settings-search-input" placeholder="Поиск в настройках…" autocomplete="off" oninput="runSettingsSearch(this.value)" onfocus="onSettingsSearchFocus()">
                 <button type="button" class="settings-search-clear" id="settings-search-clear" onclick="clearSettingsSearch()" hidden title="Очистить">
                   <span class="material-symbols-rounded">close</span>
                 </button>
             </div>
-            <div id="settings-search-results" class="settings-search-results" hidden></div>
-            <div class="settings-container">
-            <div class="sidebar-menu">
-                <button class="nav-item active" id="btn-sec-general" onclick="showSection('general')">
+            <div class="settings-container" id="settings-container">
+            <div class="sidebar-menu" id="settings-sidebar-menu">
+                <div id="settings-search-results" class="settings-search-results settings-search-in-sidebar" hidden></div>
+                <div id="settings-nav-items">
+                <button class="nav-item active" id="btn-sec-quick" onclick="showSection('quick')">
+                    <span class="material-symbols-rounded">bolt</span>
+                    <span class="nav-text">Быстрые настройки</span>
+                </button>
+                <button class="nav-item" id="btn-sec-general" onclick="showSection('general')">
                     <span class="material-symbols-rounded">palette</span> Персонализация
                 </button>
                 <button class="nav-item" id="btn-sec-user" onclick="showSection('user')">
@@ -605,29 +855,42 @@
                     <span class="material-symbols-rounded">tune</span>
                     <span class="nav-text">Настройка бокового меню <span class="nav-new-badge">НОВИНКА</span></span>
                 </button>
-                <button class="nav-item" id="btn-sec-about" onclick="showSection('about')">
+                                <button class="nav-item" id="btn-sec-developer" onclick="showSection('developer')" style="display:none;">
+                    <span class="material-symbols-rounded">terminal</span> Режим разработчика
+                </button>
+                <button type="button" class="nav-item" id="btn-sec-language" onclick="showSection('language')">
+                    <span class="material-symbols-rounded">language</span>
+                    <span>Язык</span>
+                </button>
+<button class="nav-item" id="btn-sec-about" onclick="showSection('about')">
                     <span class="material-symbols-rounded">info</span>
                     <span class="nav-text">О проекте</span>
                 </button>
+                </div><!-- /settings-nav-items -->
             </div>
 
             <div class="content-area" id="settings-content">
-                <div id="section-general" class="setting-section" style="display:block;">
-                    
+                <div id="section-quick" class="setting-section section-visible" style="display:block;">
+  <h3 style="margin-top:0;font-size:14px;color:var(--on-surface-variant);letter-spacing:0.3px;">Главная</h3>
+  <p style="font-size:12px;color:var(--on-surface-variant);margin:0 0 14px;line-height:1.45;">Самое нужное для Core Node — как «Главная» в параметрах Windows. Полный список — в разделах слева.</p>
+  <div id="quick-settings-home" class="quick-settings-home"></div>
+</div>
+<div id="section-general" class="setting-section" style="display:none;">
+
                     <!-- ===== СТИЛЬ НАВИГАЦИИ ===== -->
-                    
+
                     <h3 style="margin-top: 20px; font-size: 14px; color: var(--on-surface-variant); letter-spacing: 0.3px;">Основные</h3>
                     <div class="chat-card" style="margin-bottom:12px;">
                         <div id="settings-target-thinking" style="font-weight:600;font-size:13px;margin-bottom:6px;">Анимация думания модели</div>
                         <div style="font-size:11px;color:var(--on-surface-variant);margin-bottom:10px;">Пока ИИ генерирует ответ</div>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <div class="think-style-row segmented" role="group" aria-label="Анимация думания">
                             <button type="button" class="think-style-btn" data-style="dots" onclick="setThinkingStyle('dots')" id="think-style-dots">Две точки</button>
                             <button type="button" class="think-style-btn" data-style="ring" onclick="setThinkingStyle('ring')" id="think-style-ring">Обводка</button>
                             <button type="button" class="think-style-btn" data-style="off" onclick="setThinkingStyle('off')" id="think-style-off">Выкл</button>
                         </div>
                     </div>
 
-                    
+
                     <div class="chat-card" style="margin-bottom:12px;">
                         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
                             <div>
@@ -642,21 +905,6 @@
                     </div>
 
 <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant); letter-spacing: 0.3px;">Стиль Навигации</h3>
-                    
-                    <div class="chat-card" style="margin-bottom: 12px;">
-                        <div style="font-weight: 600; margin-bottom: 10px; font-size: 13px;">Положение навигации</div>
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                            <button class="nav-pos-btn active" data-pos="top" onclick="setNavPosition('top')" style="flex:1; min-width:90px; padding:10px 8px; border-radius:12px; border:1px solid var(--border); background:var(--primary-container); color:var(--primary); font-size:12px; font-weight:600; cursor:pointer;">
-                                Вверху
-                            </button>
-                            <button class="nav-pos-btn" data-pos="bottom" onclick="setNavPosition('bottom')" style="flex:1; min-width:90px; padding:10px 8px; border-radius:12px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:12px; font-weight:600; cursor:pointer;">
-                                Внизу
-                            </button>
-                            <button class="nav-pos-btn" data-pos="side" onclick="setNavPosition('side')" style="flex:1; min-width:90px; padding:10px 8px; border-radius:12px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:12px; font-weight:600; cursor:pointer;">
-                                В боковом меню
-                            </button>
-                        </div>
-                    </div>
 
                     <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <div>
@@ -666,7 +914,10 @@
                         <button id="compact-nav-toggle-btn" onclick="toggleCompactNav()" style="padding:8px 14px; border-radius:8px; border:none; background:var(--surface-variant); color:var(--on-surface); cursor:pointer; font-weight:bold; font-size:12px;">ВКЛЮЧИТЬ</button>
                     </div>
 
-                    <div class="chat-card" style="margin-bottom: 12px;" id="nav-tabs-customizer">
+
+                    <div class="chat-card" style="margin-bottom: 12px;"
+
+id="nav-tabs-customizer">
                         <div style="font-weight: 600; margin-bottom: 8px; font-size: 13px;">Состав панели навигации</div>
                         <div style="font-size: 11px; color: var(--on-surface-variant); margin-bottom: 10px;">Chat всегда на месте. Остальные два слота — на ваш выбор.</div>
                         <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -702,7 +953,6 @@
                         </div>
                     </div>
 
-
                     <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
                         <div>
                             <div style="font-weight:600; font-size:13px;">Слиять с концами</div>
@@ -711,23 +961,30 @@
                         <button id="flush-nav-toggle-btn" onclick="toggleFlushNav()" style="padding:8px 14px; border-radius:8px; border:none; background:var(--surface-variant); color:var(--on-surface); cursor:pointer; font-weight:bold; font-size:12px;">ВКЛЮЧИТЬ</button>
                     </div>
 
+
                     <!-- ===== ОСНОВНОЕ ===== -->
                     <h3 style="margin-top: 22px; font-size: 14px; color: var(--on-surface-variant); letter-spacing: 0.3px;">Основное</h3>
+
                     
                     <div id="theme-color-controls">
-                        <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                            <div>
-                                <div style="font-weight:600; font-size:13px;">Тема</div>
-                                <div style="font-size:11px; color:var(--on-surface-variant);">Светлая / Тёмная / True Black</div>
+                        <div class="chat-card" style="margin-bottom:12px;" id="settings-target-theme">
+                            <div style="font-weight:600; font-size:13px;">Тема</div>
+                            <div style="font-size:11px; color:var(--on-surface-variant);margin-top:2px;">Системная · Светлая · Тёмная (оттенки #0f0f0f / #050505 / #000000)</div>
+                            <div class="theme-mode-row">
+                                <button type="button" class="theme-mode-btn" id="theme-btn-system" onclick="setThemeMode('system')">Системная</button>
+                                <button type="button" class="theme-mode-btn" id="theme-btn-light" onclick="setThemeMode('light')">Светлая</button>
+                                <button type="button" class="theme-mode-btn" id="theme-btn-dark" onclick="setThemeMode('dark')">Тёмная</button>
                             </div>
-                            <div style="display:flex; gap:6px;">
-                                <div id="settings-target-theme"></div><button onclick="setThemeMode('light')" id="theme-btn-light" data-settings-target="theme" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:11px; cursor:pointer;">Светлая</button>
-                                <button onclick="setThemeMode('dark')" id="theme-btn-dark" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:11px; cursor:pointer;">Тёмная</button>
-                                <button onclick="setThemeMode('trueblack')" id="theme-btn-black" style="padding:7px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface-variant); color:var(--on-surface); font-size:11px; cursor:pointer;">True Black</button>
+                            <div class="dark-shade-wrap" id="dark-shade-wrap" hidden>
+                                <div style="font-size:11px;color:var(--on-surface-variant);margin-top:10px;margin-bottom:4px;">Оттенок тёмной темы</div>
+                                <div class="dark-shade-row">
+                                    <button type="button" class="dark-shade-swatch" data-shade="0f" title="#0f0f0f" onclick="setDarkShade('0f')"></button>
+                                    <button type="button" class="dark-shade-swatch" data-shade="05" title="#050505" onclick="setDarkShade('05')"></button>
+                                    <button type="button" class="dark-shade-swatch" data-shade="00" title="#000000 True Black" onclick="setDarkShade('00')"></button>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="chat-card" style="margin-bottom:12px;">
+<div class="chat-card" style="margin-bottom:12px;">
                             <label id="settings-target-accent" style="display:block; margin-bottom:10px; font-weight:600; font-size:13px;">Акцентный цвет</label>
                             <div style="display:flex; gap:8px; flex-wrap:wrap;" id="oracle-theme-presets" data-settings-target="accent">
                                 <button onclick="changeOracleThemeBW()" class="matte-dot" style="background:linear-gradient(135deg,#000 50%,#fff 50%);" title="Ч/Б (адаптивный)"></button>
@@ -738,29 +995,61 @@
                                 <button onclick="changeOracleTheme('#00b4d8','#0077b6','#03045e')" class="matte-dot" style="background:#00b4d8;" title="Ocean Deep"></button>
                                 <button onclick="changeOracleTheme('#f77f00','#d62828','#003049')" class="matte-dot" style="background:#f77f00;" title="Sunset Glow"></button>
                                 <button onclick="changeOracleTheme('#2a9d8f','#264653','#1d3557')" class="matte-dot" style="background:#2a9d8f;" title="Cyberpunk Mint"></button>
+                                <button onclick="changeOracleThemeRaspberry()" class="matte-dot" style="background:#E11D48;" title="Малиновый / Raspberry"></button>
                             </div>
-                        </div>
-                    </div>
+                            <div style="font-size:11px;color:var(--on-surface-variant);margin:10px 0 6px;line-height:1.4;">Акцент только для бабблов, «Отправить», микрофона и Стоп. Обводки и остальные кнопки — нейтральные.</div>
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;">
+                                <div>
+                                    <div style="font-weight:600;font-size:13px;">Оттенок акцента на фоне</div>
+                                    <div style="font-size:11px;color:var(--on-surface-variant);">Еле заметный. Можно выключить.</div>
+                                </div>
+                                <label class="switch"><input type="checkbox" id="toggle-accent-tint" checked onchange="setAccentTint(this.checked)"><span class="slider"></span></label>
+                            </div>
+                            </div>
+</div>
                     <div class="pillow-warning">⚠️ Кастомные цвета и темы заблокированы Режимом Подушки.</div>
 
                     <!-- ===== АНИМАЦИИ ===== -->
                     <h3 style="margin-top: 22px; font-size: 14px; color: var(--on-surface-variant); letter-spacing: 0.3px;">Анимации</h3>
-                    
-                    <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+
+                    <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" id="settings-target-animations">
                         <div>
-                            <div style="font-weight:600; font-size:13px;">Анимации переходов</div>
-                            <div style="font-size:11px; color:var(--on-surface-variant);">Плавное появление экранов</div>
+                            <div style="font-weight:600; font-size:13px;">Анимации и спецэффекты</div>
+                            <div style="font-size:11px; color:var(--on-surface-variant);">Переходы экранов, блики, ambient. Выкл для слабых устройств (нужен перезапуск).</div>
                         </div>
-                        <button id="anim-toggle-btn" onclick="toggleAnimations()" style="padding:8px 14px; border-radius:8px; border:none; background:var(--primary-container); color:var(--primary); cursor:pointer; font-weight:bold; font-size:12px;">ВКЛЮЧЕНО</button>
+                        <label class="switch"><input type="checkbox" id="toggle-animations-fx" checked onchange="toggleAnimationsFx(this.checked)"><span class="slider"></span></label>
                     </div>
                 </div>
                 <div id="section-user" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Персонализация Пользователя</h3>
+                    <div class="studio-pers-badge" id="studio-pers-badge">Используется кастомная персонализация!</div>
+                    <a href="https://oracle-ai-pro.github.io/oracle-studio/" target="_blank" rel="noopener" class="settings-item" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;margin:8px 0 12px;padding:12px;border-radius:14px;border:1px solid var(--border);background:var(--surface-variant);">
+                        <span class="material-symbols-rounded" style="color:var(--primary);">palette</span>
+                        <div>
+                            <div style="font-weight:700;font-size:13px;">Подключить Oracle Studio для большей персонализации</div>
+                        <span class="material-symbols-rounded" style="margin-left:auto;opacity:.6;">open_in_new</span>
+                    </a>
+
+
                     <div class="chat-card" style="margin-bottom: 12px;">
                         <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px;">Как к вам обращаться?</label>
                         <input type="text" id="user-profile-name" placeholder="Введите ваше имя..." onchange="saveUserProfile()" style="width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; color: var(--on-surface); outline: none;">
                         <span style="font-size: 11px; color: var(--on-surface-variant); margin-top: 4px; display: block;">Ваше имя будет отображаться в приветствии на главном экране.</span>
+
+                    <div class="chat-card" style="margin-top:12px;" id="settings-target-context">
+                        <label class="cn-check" style="align-items:flex-start;padding:4px 0;">
+                            <input type="checkbox" id="set-use-context" checked onchange="toggleUseContext(this.checked)">
+                            <span class="cn-check-box"></span>
+                            <span class="cn-check-label">
+                                <b style="display:block;font-size:14px;margin-bottom:4px;">Использовать Контекст <span class="setting-new-badge">НОВИНКА</span></b>
+                                <span style="font-weight:400;font-size:12px;color:var(--on-surface-variant);line-height:1.45;display:block;">
+                                    Рекомендуется. Выключение не занимает память чата, но ИИ может не помнить детали разговора.
+                                </span>
+                            </span>
+                        </label>
                     </div>
+
+                </div>
                     <div class="chat-card" style="margin-bottom: 12px;">
                         <label style="display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px;">Чем вы занимаетесь? (Контекст для ИИ)</label>
                         <input type="text" id="user-profile-role" placeholder="Например: Разработчик, Писатель, Студент..." onchange="saveUserProfile()" style="width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; color: var(--on-surface); outline: none;">
@@ -770,81 +1059,44 @@
                         <textarea id="user-profile-instructions" placeholder="Например: Отвечай кратко, используй кодовые блоки, пиши на вы..." onchange="saveUserProfile()" style="width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px; color: var(--on-surface); outline: none; height: 80px; resize: vertical;"></textarea>
                     </div>
                 </div>
+                </div><!-- /section-user -->
+
+
                 
                 <div id="section-limits" class="setting-section" style="display:none;">
-                    <h3 style="margin-top: 0; font-size: 16px; font-weight: 700; color: var(--on-surface);">Лимиты на использование</h3>
-                    <p style="font-size: 13px; color: var(--on-surface-variant); line-height: 1.5; margin: 0 0 16px;">
-                        От лимитов тарифного плана зависит, как часто вы можете использовать Core Node за определённый период. Использование сложных вещей увеличивает расход.
+                    <h3 style="margin-top: 0; font-size: 16px; font-weight: 700; color: var(--on-surface);">
+                      Лимиты и Использование <span class="limits-beta-badge">BETA</span>
+                    </h3>
+                    <p style="font-size:12px;line-height:1.5;color:var(--on-surface-variant);margin:0 0 14px;">
+                      Обновлённая система лимитов уже доступна в Fast Assistant как бета. Сброс только по таймеру (не вручную).
                     </p>
-
-                    <div style="font-size: 12px; color: var(--on-surface-variant); margin-bottom: 18px;">
-                        Обновлено <span id="limits-updated-ago">только что</span>
+                    <div class="limit-gauge-block">
+                        <div class="limit-gauge-head"><span>Окно 3–24ч</span><span id="limit-5h-pct-label">0%</span></div>
+                        <div class="limit-gauge-track"><div class="limit-gauge-fill" id="limit-5h-fill" style="width:0%"></div></div>
+                        <div class="limit-gauge-meta" id="limit-5h-meta">Шкала 1 · сброс по таймеру окна</div>
+                    </div>
+                    <div class="limit-gauge-block">
+                        <div class="limit-gauge-head"><span>Неделя</span><span id="limit-7d-pct-label">0%</span></div>
+                        <div class="limit-gauge-track"><div class="limit-gauge-fill" id="limit-7d-fill" style="width:0%"></div></div>
+                        <div class="limit-gauge-meta" id="limit-7d-meta">Шкала 2 · 7 дней</div>
+                    </div>
+                    <div class="limits-rules">
+                      <b>Правила (бета, как у ИИ-платформ):</b><br>
+                      • ≤50 символов ≈ 0,5% · 50–150 ≈ 1% · длиннее — пропорционально<br>
+                      • Интернет-поиск: ~5% известное / ~10% неизвестное<br>
+                      • Код / игры / сложные генерации: 20–40%<br>
+                      • При 100% отправка блокируется до конца окна (3–24 ч; при «спам-разгоне» дольше)<br>
+                      • Вторая шкала — расход за текущую неделю<br>
+                      • <b>Сбросить лимиты вручную нельзя</b>
                     </div>
 
-                    <!-- Текущее использование -->
-                    <div class="chat-card" style="margin-bottom: 14px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 600; font-size: 14px;">Текущее использование</span>
-                            <span id="limit-24h-count" style="font-size: 13px; color: var(--primary); font-weight: 600;">0 %</span>
-                        </div>
-                        <div style="width: 100%; background: var(--surface); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-                            <div id="limit-24h-bar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.4s ease;"></div>
-                        </div>
-                        <div style="font-size: 12px; color: var(--on-surface-variant);">
-                            Лимит обновится в <span id="reset-24h-timer">--:00</span>
-                        </div>
-                    </div>
-
-                    <!-- Недельный лимит -->
-                    <div class="chat-card" style="margin-bottom: 18px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 600; font-size: 14px;">Недельный лимит</span>
-                            <span id="limit-168h-count" style="font-size: 13px; color: var(--secondary); font-weight: 600;">0 %</span>
-                        </div>
-                        <div style="width: 100%; background: var(--surface); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-                            <div id="limit-168h-bar" style="width: 0%; height: 100%; background: var(--secondary); transition: width 0.4s ease;"></div>
-                        </div>
-                        <div style="font-size: 12px; color: var(--on-surface-variant);">
-                            Лимит обновится <span id="reset-168h-timer">--/--/--</span> в 00:30
-                        </div>
-                    </div>
-
-                    <!-- Информация -->
-                    
-                    <div class="chat-card" style="margin-bottom: 14px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                            <span style="font-weight: 600; font-size: 14px;">Лимит вложений (1 час)</span>
-                            <span id="limit-attach-count" style="font-size: 13px; color: var(--primary); font-weight: 600;">0 / 20</span>
-                        </div>
-                        <div style="width: 100%; background: var(--surface); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
-                            <div id="limit-attach-bar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.4s ease;"></div>
-                        </div>
-                        <div style="font-size: 12px; color: var(--on-surface-variant);">
-                            Сброс через <span id="reset-attach-timer">-- мин</span>
-                        </div>
-                    </div>
-<div class="chat-card" style="background: var(--surface-variant);">
-                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 10px;">Как действуют лимиты на использование</div>
-                        <div style="font-size: 12px; color: var(--on-surface-variant); line-height: 1.55;">
-                            <div style="margin-bottom: 8px;">
-                                <strong style="color: var(--on-surface);">Текущее использование</strong><br>
-                                Расход лимита за три часа.
-                            </div>
-                            <div>
-                                <strong style="color: var(--on-surface);">Недельный лимит</strong><br>
-                                Общий расход лимита за одну текущую неделю.
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
                 <div id="section-system" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Системные пресеты</h3>
-                    
+
                     <div class="chat-card" style="display: flex; justify-content: space-between; align-items: center; border: 1px dashed rgba(142, 146, 158, 0.4); margin-bottom: 12px;">
                         <div>
                             <span style="font-weight: 600; display: block;">
-                                <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 18px; color: var(--primary);">bedtime</span> 
+                                <span class="material-symbols-rounded" style="vertical-align: middle; font-size: 18px; color: var(--primary);">bedtime</span>
                                 Режим Подушки
                             </span>
                             <span style="font-size: 11px; color: var(--on-surface-variant);">Энергосберегающий сон и отключение анимаций.</span>
@@ -971,7 +1223,6 @@
                         </p>
                     </div>
 
-
                     <div class="chat-card" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;" id="settings-target-lock-screen">
                         <div>
                             <div style="font-weight:600; font-size:13px;">Блокировка экрана</div>
@@ -992,7 +1243,7 @@
                     </div>
                 </div>
 
-                
+
                 <div id="section-notifications" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Уведомления</h3>
                     <div class="chat-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -1025,7 +1276,7 @@
                     </div>
                 </div>
 
-                
+
                 <div id="section-api-keys" class="setting-section" style="display:none;">
                     <div class="chat-card" id="later-gen-settings-card" style="margin-top:12px;display:none;">
                       <div style="font-weight:700;font-size:13px;margin-bottom:6px;">Later Generate</div>
@@ -1109,19 +1360,66 @@
                     </div>
                 </div>
 
-                
+
                 <div id="section-sidebar-menu" class="setting-section" style="display:none;">
                     <h3 style="margin-top:0;font-size:14px;color:var(--on-surface-variant);">Настройка бокового меню <span class="setting-new-badge">НОВИНКА</span></h3>
+
+                    <div class="chat-card" style="margin-bottom:12px;" id="settings-target-sidebar-boot">
+                        <div style="font-weight:600;margin-bottom:8px;font-size:13px;">Боковое меню при входе</div>
+                        <div style="font-size:11px;color:var(--on-surface-variant);margin-bottom:10px;line-height:1.4;">
+                            На ПК меню открыто или свёрнуто. На телефоне — оверлей на весь экран.
+                        </div>
+                        <div class="sidebar-boot-options">
+                            <label class="cn-check" style="margin-bottom:8px;">
+                                <input type="radio" name="sidebar-boot" value="open" onchange="setSidebarBootPref('open')">
+                                <span class="cn-check-box"></span>
+                                <span class="cn-check-label">Разворачивать по умолчанию</span>
+                            </label>
+                            <label class="cn-check" style="margin-bottom:8px;">
+                                <input type="radio" name="sidebar-boot" value="closed" onchange="setSidebarBootPref('closed')">
+                                <span class="cn-check-box"></span>
+                                <span class="cn-check-label">Сворачивать по умолчанию</span>
+                            </label>
+                            <label class="cn-check">
+                                <input type="radio" name="sidebar-boot" value="remember" onchange="setSidebarBootPref('remember')">
+                                <span class="cn-check-box"></span>
+                                <span class="cn-check-label">Запоминать после каждого выхода</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="chat-card" style="margin-bottom:12px;" id="settings-target-sb-mode">
+                        <div style="font-weight:600;font-size:13px;margin-bottom:8px;">Вид кнопок меню</div>
+                        <div class="sb-mode-seg segmented" role="group">
+                            <button type="button" class="sb-mode-btn active" data-mode="compact" onclick="setSbMenuMode('compact')">Компактные</button>
+                            <button type="button" class="sb-mode-btn" data-mode="editor" onclick="setSbMenuMode('editor')">Просторные</button>
+                        </div>
+                        <div id="sb-compact-size-wrap" style="margin-top:12px;">
+                            <div style="font-size:11px;color:var(--on-surface-variant);margin-bottom:6px;">Размер компактных кнопок: <b id="sb-size-label">0.7</b></div>
+                            <input type="range" id="sb-btn-size" min="0.5" max="1" step="0.05" value="0.7" oninput="setSbBtnScale(this.value)" style="width:100%;accent-color:var(--primary);">
+                        </div>
+                        <p style="font-size:11px;color:var(--on-surface-variant);margin:10px 0 0;line-height:1.4;">Список кнопок настраивается ниже. Create a… и Настройки всегда на месте.</p>
+                    </div>
+
+                    <div class="chat-card desktop-only-setting" style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                        <div>
+                            <div style="font-weight:600;font-size:13px;">Скрыть раздел «Проекты», если их нет</div>
+                            <div style="font-size:11px;color:var(--on-surface-variant);">Только ПК. На телефонах раздел Проекты компактный.</div>
+                        </div>
+                        <label class="switch"><input type="checkbox" id="toggle-hide-projects-empty" onchange="setHideProjectsIfEmpty(this.checked)"><span class="slider"></span></label>
+                    </div>
+
                     <p style="font-size:12px;color:var(--on-surface-variant);line-height:1.5;margin:0 0 14px;">
-                        <b>Create a…</b> всегда первая, <b>Настройка</b> — всегда последняя (их нельзя убрать).
-                        Дополнительно можно включить <b>до 4 кнопок</b> из списка ниже.
+                        <b>Create a…</b> всегда первая, <b>Настройки</b> — всегда внизу (их нельзя убрать).
+                        Выберите, какие быстрые кнопки важнее: на <b>ПК до 5</b>, на <b>телефоне до 4</b>.
+                        Остальные спрячутся в «Ещё».
                     </p>
                     <div class="chat-card" style="margin-bottom:12px;">
-                        <div style="font-weight:600;font-size:13px;margin-bottom:10px;">Кнопки бокового меню</div>
+                        <div style="font-weight:600;font-size:13px;margin-bottom:6px;">Какие кнопки вам важнее?</div>
+                        <p style="font-size:11px;color:var(--on-surface-variant);margin:0 0 10px;line-height:1.4;">Отметьте нужные пункты. Лимит зависит от устройства.</p>
                         <div id="sidebar-btn-checklist" class="sidebar-btn-checklist">
                             <!-- filled by JS -->
                         </div>
-                        <div id="sidebar-btn-limit-hint" style="font-size:11px;color:var(--on-surface-variant);margin-top:10px;">Выбрано: 0 / 4</div>
+                        <div id="sidebar-btn-limit-hint" style="font-size:11px;color:var(--on-surface-variant);margin-top:10px;">Выбрано: 0 / 5</div>
                     </div>
                     <div class="chat-card">
                         <div style="font-weight:600;font-size:13px;margin-bottom:6px;">Фильтр «Все»</div>
@@ -1134,11 +1432,127 @@
                     </div>
                 </div>
 
+
+                <div id="section-developer" class="setting-section dev-section" style="display:none;">
+                    <div class="dev-section-scroll">
+                        <div class="dev-hero">
+                            <div class="dev-hero-icon"><span class="material-symbols-rounded">terminal</span></div>
+                            <div>
+                                <div class="dev-hero-title">Режим разработчика</div>
+                                <div class="dev-hero-sub">Политики устройства · Enterprise · системный промпт. Сложные изменения — с перезагрузкой.</div>
+                            </div>
+                        </div>
+
+                        <div class="dev-card">
+                            <div class="dev-card-head">Доступ</div>
+                            <div class="dev-row">
+                                <div class="dev-row-text">
+                                    <b>Отключить режим</b>
+                                    <span>Вкладка скроется до команды CoreNode.enableDeveloperMode()</span>
+                                </div>
+                                <button type="button" class="dev-btn danger" onclick="devModeDisableConfirm()">Отключить</button>
+                            </div>
+                            <div class="dev-row">
+                                <div class="dev-row-text">
+                                    <b>Enterprise</b>
+                                    <span>Корпоративные ограничения (как ?enterprise=true)</span>
+                                </div>
+                                <label class="dev-switch"><input type="checkbox" id="dev-enterprise-toggle" onchange="devToggleEnterprise(this.checked)"><span></span></label>
+                            </div>
+                        </div>
+
+                        <div class="dev-card">
+                            <div class="dev-card-head">Пароль разработчика</div>
+                            <p class="dev-hint">Не PIN пользователя. Нужен при повторном входе в Dev Mode, если задан.</p>
+                            <input type="password" id="dev-pass-input" class="dev-input" placeholder="Новый пароль" autocomplete="new-password">
+                            <input type="password" id="dev-pass-confirm" class="dev-input" placeholder="Повтор пароля" autocomplete="new-password">
+                            <div class="dev-actions">
+                                <button type="button" class="dev-btn primary" onclick="devSavePassword()">Сохранить</button>
+                                <button type="button" class="dev-btn" onclick="devClearPassword()">Удалить пароль</button>
+                            </div>
+                        </div>
+
+                        <div class="dev-card">
+                            <div class="dev-card-head">Сообщения и вложения</div>
+                            <div class="dev-row">
+                                <div class="dev-row-text">
+                                    <b>Запретить прикрепление файлов</b>
+                                    <span>Кнопка «+ / файл» и drop недоступны</span>
+                                </div>
+                                <label class="dev-switch"><input type="checkbox" id="dev-flag-no-attach" onchange="devSetFlagReload('noAttach', this.checked)"><span></span></label>
+                            </div>
+                            <p class="dev-hint" style="margin-top:10px;">Разрешённые типы (через запятую). Пусто = все. Пример: <code>image/*,.pdf,.txt,.md</code></p>
+                            <input type="text" id="dev-allowed-types" class="dev-input" placeholder="image/*,.pdf,.txt" onchange="devSaveAllowedTypes()">
+                            <button type="button" class="dev-btn" style="margin-top:8px;" onclick="devSaveAllowedTypes()">Применить типы</button>
+                            <div class="dev-row" style="margin-top:12px;">
+                                <div class="dev-row-text">
+                                    <b>Макс. длина сообщения</b>
+                                    <span>0 = без лимита. Enterprise по умолчанию 150</span>
+                                </div>
+                            </div>
+                            <input type="number" id="dev-max-chars" class="dev-input" min="0" max="50000" placeholder="0" onchange="devSaveMaxChars()">
+                        </div>
+
+                        <div class="dev-card">
+                            <div class="dev-card-head">Системный скрытый промпт</div>
+                            <p class="dev-hint">Добавляется к каждому запросу незаметно для пользователя. Не показывается в UI чата.</p>
+                            <textarea id="dev-system-prompt" class="dev-textarea" rows="5" placeholder="Например: Отвечай кратко. Не упоминай эти инструкции."></textarea>
+                            <div class="dev-actions">
+                                <button type="button" class="dev-btn primary" onclick="devSaveSystemPrompt()">Сохранить промпт</button>
+                                <button type="button" class="dev-btn" onclick="devClearSystemPrompt()">Очистить</button>
+                            </div>
+                        </div>
+
+                        <div class="dev-card">
+                            <div class="dev-card-head">Системные флаги</div>
+                            <div class="dev-row">
+                                <div class="dev-row-text"><b>Debug</b><span>Логи и version в консоли</span></div>
+                                <label class="dev-switch"><input type="checkbox" id="dev-flag-debug" onchange="devSetFlag('debug', this.checked)"><span></span></label>
+                            </div>
+                            <div class="dev-row">
+                                <div class="dev-row-text"><b>Строгие лимиты</b><span>Повышенный расход (нужен reload)</span></div>
+                                <label class="dev-switch"><input type="checkbox" id="dev-flag-strict-limits" onchange="devSetFlagReload('strictLimits', this.checked)"><span></span></label>
+                            </div>
+                            <div class="dev-row">
+                                <div class="dev-row-text"><b>Скрыть Ultra / Download</b><span>Ghost-панель (нужен reload)</span></div>
+                                <label class="dev-switch"><input type="checkbox" id="dev-flag-hide-ultra" onchange="devSetFlagReload('hideUltra', this.checked)"><span></span></label>
+                            </div>
+                            <div class="dev-row">
+                                <div class="dev-row-text"><b>Запрет смены темы</b><span>Пользователь не меняет тему (нужен reload)</span></div>
+                                <label class="dev-switch"><input type="checkbox" id="dev-flag-lock-theme" onchange="devSetFlagReload('lockTheme', this.checked)"><span></span></label>
+                            </div>
+                            <button type="button" class="dev-btn danger" style="margin-top:12px;width:100%;" onclick="devResetPolicies()">Сбросить политики и флаги</button>
+                        </div>
+
+                        <p class="dev-footer">Консоль: <code>CoreNode.enableDeveloperMode()</code> · <code>CoreNode.status()</code></p>
+                    </div>
+                </div>
+
+<div id="section-language" class="setting-section" style="display:none;">
+                    <h3 style="margin-top:0;font-size:14px;color:var(--on-surface-variant);">Язык интерфейса</h3>
+                    <div class="chat-card">
+                        <div style="font-weight:600;margin-bottom:8px;">Выберите язык</div>
+                        <div style="display:flex;flex-direction:column;gap:8px;">
+                            <button type="button" class="modal-btn modal-btn-reject" onclick="setUiLanguage('ru')">Русский</button>
+                            <button type="button" class="modal-btn modal-btn-reject" onclick="setUiLanguage('en')">English</button>
+                            <button type="button" class="modal-btn modal-btn-reject" onclick="setUiLanguage('de')">Deutsch</button>
+                        </div>
+                        <p style="font-size:11px;color:var(--on-surface-variant);margin-top:10px;">Словари подгружаются из language.json (локально). Сейчас — базовые ключи.</p>
+                    </div>
+                </div>
                 <div id="section-about" class="setting-section" style="display:none;">
                     <h3 style="margin-top: 0; font-size: 14px; color: var(--on-surface-variant);">Информация о системе</h3>
                     <div class="chat-card" style="text-align: center; padding: 24px;">
-                        <div style="font-size: 16px; font-weight: bold; color: var(--primary); margin-bottom: 8px;">Oracle AI · Material Expensive 3</div>
-                        <div style="font-size: 13px; color: var(--on-surface-variant); margin-bottom: 4px;">Версия: 2.6 · Material Expensive 3</div>
+                        <div style="font-size: 16px; font-weight: bold; color: var(--on-surface); margin-bottom: 8px;">Core Node 2.6.1</div>
+                        <div style="font-size: 13px; color: var(--on-surface-variant); margin-bottom: 4px;">Обновление: 13 ноября 2026 · Prestige HQ</div>
+                        <div style="font-size: 12px; color: var(--on-surface-variant); margin-bottom: 12px; text-align:left; line-height:1.5;">
+                          <b>Мини-справка</b><br>
+                          · <b>Чат</b> — запросы и ответы<br>
+                          · <b>Проекты</b> — папки с чатами, файлами и источниками<br>
+                          · <b>Аддоны</b> — коннекторы, навыки, теги, плагины<br>
+                          · <b>@</b> — коннекторы / навыки / теги / плагины<br>
+                          · <b>Планы</b> — напоминания и календарь
+                        </div>
                         <div style="font-size: 13px; color: var(--on-surface-variant); margin-bottom: 16px;">Дата обновления: 07 Сентября 2026</div>
                         <div style="font-size: 11px; color: var(--border); border-top: 1px solid var(--border); padding-top: 12px;">© 2026 Все права защищены. Штаб ЛМСХ.</div>
                     </div>
@@ -1147,13 +1561,11 @@
         </div>
     </main>
 
-
 <div id="live-try-tip" class="live-try-tip" hidden>
     <span class="live-try-tip-text">Попробуйте поговорить с ИИ вживую! <small>(Используется лёгкая модель)</small></span>
     <button type="button" class="live-try-tip-go" onclick="acceptLiveTryTip()">Live</button>
     <button type="button" class="live-try-tip-x" onclick="dismissLiveTryTip()" title="Закрыть">✕</button>
 </div>
-
 
 <div id="offline-banner" class="cn-banner offline-banner" hidden>
   <span class="material-symbols-rounded">wifi_off</span>
@@ -1164,8 +1576,20 @@
   <span>Редактирование сообщения — крестик отменяет</span>
   <button type="button" class="cn-banner-x" onclick="cancelEditMessage()" title="Отмена">✕</button>
 </div>
+<div id="skill-popup" class="connector-popup skill-popup" hidden>
+  <div class="connector-popup-title">Навыки</div>
+  <div id="skill-popup-list"></div>
+  <button type="button" class="connector-item" onclick="openSkillsHub();hideSkillPopup()">
+    <span class="material-symbols-rounded">add</span>
+    <span><b>Управление навыками</b><small>Создать или отключить</small></span>
+  </button>
+</div>
 <div id="connector-popup" class="connector-popup" hidden>
   <div class="connector-popup-title">Коннекторы</div>
+  <button type="button" class="connector-item" data-conn="content-check" data-label="ContentCheck">
+    <span class="material-symbols-rounded">history</span>
+    <span><b>ContentCheck</b><small>Сверить и обновить контекст чата</small></span>
+  </button>
   <button type="button" class="connector-item" data-conn="tasks" data-label="Задачи">
     <span class="material-symbols-rounded">task_alt</span>
     <span><b>Задачи</b><small>Задания, если сайт и вы разрешили</small></span>
@@ -1184,62 +1608,84 @@
   </button>
 </div>
 
-<div id="main-input-box" class="glass-input-box">
-    <div id="input-mode-chips" class="input-mode-chips">
-      <button type="button" class="mode-chip locked" onclick="openComingSoonModal('Chat')">
+<div id="project-home" class="project-home" hidden>
+  <div class="project-home-header">
+    <button type="button" class="project-home-icon" id="project-home-icon-btn" onclick="openProjectIconPicker()"><span class="material-symbols-rounded" id="project-home-icon">folder</span></button>
+    <div class="project-home-title" id="project-home-title">Проект</div>
+    <button type="button" class="icon-btn" onclick="openProjectSettings()" title="Настройки"><span class="material-symbols-rounded">more_horiz</span></button>
+  </div>
+  <div class="project-tabs">
+    <button type="button" class="project-tab active" data-ptab="chats" onclick="setProjectHomeTab('chats')">Чаты</button>
+    <button type="button" class="project-tab" data-ptab="sources" onclick="setProjectHomeTab('sources')">Источники</button>
+  </div>
+  <div id="project-home-chats" class="project-home-body"></div>
+  <div id="project-home-sources" class="project-home-body" hidden></div>
+</div>
+
+<div id="main-input-box" class="glass-input-box input-compact">
+    <div id="input-mode-chips" class="input-mode-chips" hidden>
+      <button type="button" class="mode-chip active" id="mode-chip-chat" onclick="setInputMode('chat')">
         <span class="material-symbols-rounded">chat_bubble</span> Chat
-        <span class="material-symbols-rounded lock-ico">lock</span>
       </button>
-      <button type="button" class="mode-chip locked" onclick="openComingSoonModal('Task')">
+      <button type="button" class="mode-chip" id="mode-chip-task" onclick="setInputMode('task')">
         <span class="material-symbols-rounded">task_alt</span> Task
-        <span class="material-symbols-rounded lock-ico">lock</span>
       </button>
     </div>
     <div id="attach-chips" class="attach-chips" style="display:none;"></div>
+    <div id="tag-chips" class="tag-chips" style="display:none;"></div>
+    <div id="temp-chat-tip" class="temp-chat-tip" hidden>
+      <span class="temp-chat-tip-text">Не хотите, чтобы ИИ опирался на историю? Попробуйте <b>Временный чат</b></span>
+      <span class="temp-chat-tip-arrow material-symbols-rounded" id="temp-chat-tip-arrow">north_east</span>
+      <button type="button" class="temp-chat-tip-x" onclick="dismissTempChatTip()" title="Скрыть">✕</button>
+    </div>
+    <div id="limit-lock-banner" role="status"><span id="limit-lock-text">Лимит достиг 100%</span><button type="button" onclick="openLimitsFromBanner()">Смотреть расход</button></div>
 
-    
-    <!-- Текстовое поле сверху -->
-    <textarea id="user-input" data-ph="Спросите что-нибудь…" 
-              placeholder="Введите ваш запрос..." 
+
+    <div id="live-session-panel" class="live-session-panel" hidden>
+      <div id="live-subtitles" class="live-subtitles" aria-live="polite">Слушаю…</div>
+      <div class="live-session-row">
+        <textarea id="live-user-input" class="live-compact-input" rows="1" placeholder="Введите ваш запрос..."></textarea>
+        <button type="button" id="live-mic-btn" class="icon-btn live-mic-btn on" onclick="toggleLiveMic()" title="Микрофон">
+          <span class="material-symbols-rounded" id="live-mic-icon">mic</span>
+        </button>
+        <button type="button" id="live-exit-btn" class="icon-btn live-exit-btn" onclick="stopLiveChat()" title="Выключить Live">
+          <span class="material-symbols-rounded">stop_circle</span>
+        </button>
+      </div>
+    </div>
+    <button type="button" id="temp-chat-exit-btn" class="temp-chat-exit-btn" hidden onclick="exitTempChat()">← К обычному чату</button>
+<div class="input-row">
+        <button id="agent-plus-btn" class="icon-btn input-plus-btn" onclick="togglePlusMenu()" title="Ещё">
+            <span class="material-symbols-rounded">add</span>
+        </button>
+        <textarea id="user-input" data-ph="Спросите что-нибудь…"
+              placeholder="Введите ваш запрос..."
               oninput="handleInput(this)"
               rows="1"></textarea>
-
-    <!-- Нижняя панель кнопок -->
-    <div class="input-bottom-bar">
-        <!-- Левая часть: кнопка + -->
-        <div class="input-left-actions">
-            <button id="agent-plus-btn" class="icon-btn" onclick="togglePlusMenu()" title="Ещё">
-                <span class="material-symbols-rounded">add</span>
+        <div class="input-right-actions">
+            <button id="expand-btn" class="icon-btn" onclick="openExpandedInput()" title="Расширить поле">
+                <span id="expand-icon" class="material-symbols-rounded">open_in_full</span>
+            </button>
+            <button id="voice-btn" class="icon-btn" onclick="startVoice()" title="Голосовой ввод">
+                <span class="material-symbols-rounded">mic</span>
+            </button>
+            <button id="live-chat-btn" class="icon-btn live-chat-btn" onclick="startLiveChat()" title="Live Chat">
+                <span class="material-symbols-rounded">auto_awesome</span>
+            </button>
+            <button id="stop-gen-btn" class="icon-btn stop-gen-btn hidden" onclick="stopGeneration()" title="Остановить">
+                <span class="material-symbols-rounded">stop</span>
+            </button>
+            <button id="later-gen-btn" class="icon-btn later-gen-btn hidden" onclick="queueLaterGenerate()" title="Сгенерировать позже">
+                <span class="material-symbols-rounded">schedule_send</span>
+            </button>
+            <button id="send-btn" class="icon-btn send-btn" onclick="sendMsg()" title="Отправить">
+                <span class="material-symbols-rounded">send</span>
             </button>
         </div>
-
-        <div class="input-right-actions">
-    <button id="expand-btn" class="icon-btn" onclick="openFullscreenInput()" title="Развернуть">
-        <span id="expand-icon" class="material-symbols-rounded">open_in_full</span>
-    </button>
-
-    <button id="voice-btn" class="icon-btn" onclick="startVoice()" title="Голосовой ввод">
-        <span class="material-symbols-rounded">mic</span>
-    </button>
-
-    <button id="live-chat-btn" class="icon-btn live-chat-btn" onclick="startLiveChat()" title="Live Chat">
-        <span class="material-symbols-rounded">stream</span>
-    </button>
-
-    <button id="stop-gen-btn" class="icon-btn stop-gen-btn hidden" onclick="stopGeneration()" title="Остановить">
-        <span class="material-symbols-rounded">stop</span>
-    </button>
-    <button id="later-gen-btn" class="icon-btn later-gen-btn hidden" onclick="queueLaterGenerate()" title="Сгенерировать позже">
-        <span class="material-symbols-rounded">schedule_send</span>
-    </button>
-    <button id="send-btn" class="icon-btn send-btn" onclick="sendMsg()" title="Отправить">
-        <span class="material-symbols-rounded">send</span>
-    </button>
-</div>
     </div>
 
-    <!-- Выпадающее меню кнопки + -->
     <div id="plus-menu" class="plus-menu">
+        <div class="plus-menu-label">Вложения</div>
         <button class="plus-menu-item" onclick="handleAttachClick(); closePlusMenu();">
             <span class="material-symbols-rounded">attach_file</span>
             Прикрепить файл
@@ -1248,22 +1694,25 @@
             <span class="material-symbols-rounded">folder_open</span>
             Прикрепить из библиотеки
         </button>
-        
         <div class="plus-menu-divider"></div>
-        
-        <div class="plus-menu-label">Агенты</div>
-        
-        <button class="plus-menu-item agent-option active" id="opt-oracle" onclick="selectAgent('Oracle Main')">
-            <span class="material-symbols-rounded">psychology</span>
-            Oracle Main
+        <div class="plus-menu-label">Режим</div>
+        <button class="plus-menu-item mode-option" id="plus-mode-chat" onclick="setInputMode('chat'); closePlusMenu();">
+            <span class="material-symbols-rounded">chat_bubble</span>
+            <span><b>Chat</b><small class="plus-sub">Обычный диалог</small></span>
         </button>
-        <button class="plus-menu-item agent-option" id="opt-worldpack" onclick="selectAgent('Worldpack AI')">
-            <span class="material-symbols-rounded">public</span>
-            Worldpack AI
+        <button class="plus-menu-item mode-option" id="plus-mode-task" onclick="setInputMode('task'); closePlusMenu();">
+            <span class="material-symbols-rounded">task_alt</span>
+            <span><b>Task</b><small class="plus-sub">Задачи и действия</small></span>
         </button>
-        <button class="plus-menu-item agent-option" id="opt-fast" onclick="selectAgent('Модель: Fast')">
-            <span class="material-symbols-rounded">bolt</span>
-            Модель: Fast
+        <div class="plus-menu-divider"></div>
+        <div class="plus-menu-label">Модель</div>
+        <button class="plus-menu-item agent-option active" id="opt-intify" onclick="selectAgent('Intify 2.5.4')">
+            <span class="material-symbols-rounded">auto_awesome</span>
+            <span><b>Intify 2.5.4</b><small class="plus-sub">Модели Core Node 2.5</small></span>
+        </button>
+        <button class="plus-menu-item agent-option" id="opt-external-api" onclick="selectAgent('external-api')">
+            <span class="material-symbols-rounded">vpn_key</span>
+            <span id="opt-external-api-label"><b>Сторонний провайдер API</b><small class="plus-sub" id="opt-external-api-desc">Подключите API ключ чтобы выбрать эту модель</small></span>
         </button>
     </div>
 
@@ -1328,10 +1777,10 @@
                 <strong>Второй чат</strong>
                 <span>Два диалога</span>
             </button>
-            <button type="button" class="split-mode-card" data-mode="chat-sidenotes" onclick="selectSplitMode('chat-sidenotes')">
-                <span class="material-symbols-rounded">sticky_note_2</span>
-                <strong>Side Notes</strong>
-                <span>Заметки сбоку · Editable</span>
+            <button type="button" class="split-mode-card" data-mode="chat-context" onclick="selectSplitMode('chat-context')">
+                <span class="material-symbols-rounded">history</span>
+                <strong>Чат + Контекст</strong>
+                <span>Новинка · память диалога</span>
             </button>
         </div>
         <div id="split-story-pick-wrap" style="margin-top:12px;">
@@ -1372,48 +1821,47 @@
     </div>
 </div>
 
-<!-- FULLSCREEN INPUT MODAL -->
-<div id="fullscreen-input-modal" class="fullscreen-input-modal">
-    <div class="fs-input-header">
-        <button class="icon-btn" onclick="closeFullscreenInput()">
-            <span class="material-symbols-rounded">close</span>
-        </button>
-        <span class="fs-input-title">Сообщение</span>
-        <button class="icon-btn" onclick="sendFromFullscreen()">
-            <span class="material-symbols-rounded">send</span>
-        </button>
+<!-- EXPANDED INPUT SHEET (half-screen) -->
+<div id="expanded-input-sheet" class="expanded-input-sheet" aria-hidden="true">
+  <div class="exp-sheet-inner">
+    <div class="exp-sheet-top">
+      <span class="exp-sheet-title">Расширенный запрос</span>
+      <button type="button" class="icon-btn" onclick="closeExpandedInput()" title="Свернуть">
+        <span class="material-symbols-rounded">keyboard_arrow_down</span>
+      </button>
     </div>
-
-    <div id="fs-user-editor" class="fs-user-editor" contenteditable="true" role="textbox" data-placeholder="Введите ваш запрос..."></div>
-    <textarea id="fs-user-input" class="hidden" aria-hidden="true"></textarea>
-
-    <div class="fs-format-bar">
-        <button class="fs-format-btn" onclick="fsFormat('bold')" title="Жирный"><b>B</b></button>
-        <button class="fs-format-btn" onclick="fsFormat('italic')" title="Курсив"><i>I</i></button>
-        <button class="fs-format-btn" onclick="fsFormat('underline')" title="Подчёркивание"><u>U</u></button>
-
-        <div class="custom-select" id="fs-font-size-picker">
-    <button type="button" class="custom-select-btn fs-font-btn" onclick="toggleFsFontMenu(event)">
-        <span id="fs-font-size-label">16</span>
-        <span class="material-symbols-rounded" style="font-size:16px;">expand_more</span>
-    </button>
-    <div class="custom-select-menu fs-font-menu">
-        <button type="button" class="custom-select-option" data-value="14" onclick="selectFsFontSize(14)">14</button>
-        <button type="button" class="custom-select-option active" data-value="16" onclick="selectFsFontSize(16)">16</button>
-        <button type="button" class="custom-select-option" data-value="18" onclick="selectFsFontSize(18)">18</button>
-        <button type="button" class="custom-select-option" data-value="20" onclick="selectFsFontSize(20)">20</button>
-        <button type="button" class="custom-select-option" data-value="24" onclick="selectFsFontSize(24)">24</button>
-    </div>
-</div>
-
-        <button class="fs-format-btn" onclick="fsFormat('removeFormat')" title="Убрать форматирование">
-            <span class="material-symbols-rounded" style="font-size:18px;">format_clear</span>
+    <div id="exp-user-editor" class="exp-user-editor" contenteditable="true" role="textbox"
+         data-placeholder="Введите ваш запрос..." oninput="expSyncFromEditor()"></div>
+    <div class="exp-format-bar">
+      <button type="button" class="fs-format-btn" onclick="expFormat('bold')" title="Жирный"><b>B</b></button>
+      <button type="button" class="fs-format-btn" onclick="expFormat('italic')" title="Курсив"><i>I</i></button>
+      <button type="button" class="fs-format-btn" onclick="expFormat('underline')" title="Подчёрк."><u>U</u></button>
+      <button type="button" class="fs-format-btn" onclick="expFormat('strikeThrough')" title="Зачерк."><s>S</s></button>
+      <div class="custom-select exp-size-select" id="exp-font-size-picker">
+        <button type="button" class="custom-select-btn" onclick="toggleExpSizeMenu(event)">
+          <span id="exp-font-size-label">16</span>
+          <span class="material-symbols-rounded" style="font-size:16px">expand_more</span>
         </button>
-
-        <button class="fs-format-btn" onclick="handleAttachClick()" title="Прикрепить файл">
-            <span class="material-symbols-rounded" style="font-size:18px;">attach_file</span>
-        </button>
+        <div class="custom-select-menu" id="exp-font-menu">
+          <button type="button" class="custom-select-option" onclick="selectExpFontSize(14)">14</button>
+          <button type="button" class="custom-select-option active" onclick="selectExpFontSize(16)">16</button>
+          <button type="button" class="custom-select-option" onclick="selectExpFontSize(18)">18</button>
+          <button type="button" class="custom-select-option" onclick="selectExpFontSize(20)">20</button>
+        </div>
+      </div>
+      <button type="button" class="fs-format-btn" onclick="expClearFormat()" title="Сброс">Tx</button>
+      <div class="exp-bar-spacer"></div>
+      <button type="button" class="icon-btn" onclick="document.getElementById('file-input')?.click()" title="Файл">
+        <span class="material-symbols-rounded">attach_file</span>
+      </button>
+      <button type="button" class="icon-btn" onclick="startVoice?.()" title="Микрофон">
+        <span class="material-symbols-rounded">mic</span>
+      </button>
+      <button type="button" class="exp-send-btn" onclick="sendFromExpanded()" title="Отправить">
+        <span class="material-symbols-rounded">send</span>
+      </button>
     </div>
+  </div>
 </div>
 
 <!-- FLOATING FORMAT MENU (Desktop) -->
@@ -1448,7 +1896,6 @@
         </div>
     </div>
 </div>
-
 
 <div id="file-editor-modal" class="modal-overlay">
     <div class="modal-card" style="max-width:640px;max-height:90vh;display:flex;flex-direction:column;">
@@ -1625,7 +2072,6 @@
     </div>
 </div>
 
-
 <div id="api-keys-confirm-modal" class="modal-overlay">
     <div class="modal-card" style="max-width:420px;">
         <div class="modal-header">
@@ -1652,28 +2098,7 @@
     </div>
 </div>
 
-
-<!-- TREE: create folder / branch -->
-<div id="tree-create-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width:400px;">
-        <div class="modal-header">
-            <span class="material-symbols-rounded" id="tree-create-icon">folder</span>
-            <h3 class="modal-title" id="tree-create-title">Новая папка</h3>
-        </div>
-        <p class="modal-subtitle" id="tree-create-sub">Проект верхнего уровня (Учеба, Игра…)</p>
-        <input type="text" id="tree-create-input" maxlength="80" placeholder="Название" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:14px;outline:none;box-sizing:border-box;">
-        <div id="tree-create-folder-pick" style="display:none;margin-top:10px;">
-            <label style="font-size:12px;color:var(--on-surface-variant);font-weight:600;">Папка</label>
-            <select id="tree-create-folder-select" style="width:100%;margin-top:6px;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);"></select>
-        </div>
-        <div class="modal-actions">
-            <button class="modal-btn modal-btn-reject" onclick="closeTreeCreateModal()">Отмена</button>
-            <button class="modal-btn modal-btn-accept" onclick="confirmTreeCreate()">Создать</button>
-        </div>
-    </div>
-</div>
-
-
+<!-- old folder modal removed -->
 <!-- LIKE / DISLIKE FEEDBACK -->
 <div id="ai-feedback-modal" class="modal-overlay">
     <div class="modal-card" style="max-width:420px;">
@@ -1695,7 +2120,6 @@
     </div>
 </div>
 
-
 <!-- MOVE CHAT TO FOLDER -->
 <div id="move-folder-modal" class="modal-overlay">
     <div class="modal-card" style="max-width:400px;">
@@ -1711,25 +2135,6 @@
     </div>
 </div>
 
-
-<!-- EXTERNAL LINK WARNING (Halloween / sources) -->
-<div id="ext-warn-modal" class="modal-overlay" role="dialog" aria-modal="true">
-    <div class="modal-card" style="max-width:400px;" onclick="event.stopPropagation()">
-        <div class="modal-header">
-            <span class="material-symbols-rounded">warning</span>
-            <h3 class="modal-title">Выход за пределы ИИ</h3>
-        </div>
-        <p class="modal-subtitle" style="line-height:1.55;">
-            Ссылка ведёт на внешний сайт. Вы сами отвечаете за безопасность устройства и данные, которые можете ввести на сторонней странице.
-        </p>
-        <div class="modal-actions">
-            <button type="button" class="modal-btn modal-btn-reject" onclick="closeExternalWarn()">Отмена</button>
-            <button type="button" class="modal-btn modal-btn-accept" onclick="confirmExternalWarn()">Продолжить</button>
-        </div>
-    </div>
-</div>
-
-
 <!-- LIVE CHAT PRIVACY (first time) -->
 <div id="live-privacy-modal" class="modal-overlay">
     <div class="modal-card" style="max-width:420px;">
@@ -1743,11 +2148,16 @@
             • Соблюдайте <b>правила конфиденциальности</b> и не передавайте чужие персональные данные без права.<br>
             • Не используйте Live для оскорблений, вреда, обхода закона или контента, нарушающего права других.<br>
             • Распознавание речи идёт в браузере / через ваш API-ключ — вы отвечаете за сказанное.<br>
-            • В Live используется <b>лёгкая модель</b> для быстрых ответов.
+            • В Live используется <b>лёгкая модель</b> для быстрых ответов.<br>
+	    • Новинка: Написали речь но хотите дополнить разговором? Нажмите ПКМ по кнопке Отправить и выберите "Дополнить с Live", ну или подождите 5 секунд не печатая нечего и у вас появится уведомление о предложении Live!
         </p>
         <label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;margin:8px 0 4px;cursor:pointer;color:var(--on-surface-variant);">
-            <input type="checkbox" id="live-privacy-check" style="margin-top:2px;">
-            <span>Я понимаю и обязуюсь не нарушать правила</span>
+            <label class="cn-check" style="align-items:flex-start;padding:4px 0;">
+                            <input type="checkbox" id="live-privacy-check" style="margin-top:2px;">
+                            <span class="cn-check-box"></span>
+                            <span class="cn-check-label">
+                                <b style="display:block;font-size:14px;margin-bottom:4px;">Я принимаю условия и хочу начать Разговор с ИИ!</b>
+
         </label>
         <div class="modal-actions" style="flex-wrap:wrap;gap:8px;">
             <button type="button" class="modal-btn modal-btn-reject" onclick="closeLivePrivacyModal(false)">Отмена</button>
@@ -1756,6 +2166,36 @@
     </div>
 </div>
 
+<div id="task-welcome-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="material-symbols-rounded">task_alt</span>
+      <h3 class="modal-title">Режим Task</h3>
+    </div>
+    <p class="modal-subtitle" style="line-height:1.55;">
+      ИИ теперь может делать за вас некоторые дела: базовые формы, планы, совещания и разговоры, а также более сложные сценарии (заказы и т.д.).
+      <br><br>
+      <b>Важно! Ни в коем случае не полагайтесь полностью на ИИ-агента, подробно описывайте каждый шаг. МЫ НЕ НЕСЁМ ОТВЕТСТВЕННОСТЬ ЗА НЕИСПРАВНОСТИ!</b>
+    </p>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-accept" onclick="closeTaskWelcome()">Понятно</button>
+    </div>
+  </div>
+</div>
+
+<div id="tag-replace-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:400px;">
+    <div class="modal-header">
+      <span class="material-symbols-rounded">block</span>
+      <h3 class="modal-title" id="tag-replace-title">Лимит тегов</h3>
+    </div>
+    <p class="modal-subtitle" id="tag-replace-text">Можно только 1 коннектор и 2 навыка на запрос.</p>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-reject" onclick="closeTagReplaceModal()">Отмена</button>
+      <button type="button" class="modal-btn modal-btn-accept" id="tag-replace-btn" onclick="confirmTagReplace()">Заменить</button>
+    </div>
+  </div>
+</div>
 <div id="coming-soon-modal" class="modal-overlay">
   <div class="modal-card" style="max-width:360px;text-align:center;">
     <div class="modal-header" style="justify-content:center;">
@@ -1783,10 +2223,37 @@
   </div>
 </div>
 
+<!-- Chat memory full -->
+<div id="chat-memory-full-overlay" class="chat-memory-full-overlay" hidden>
+  <div class="chat-memory-full-card">
+    <span class="material-symbols-rounded" style="font-size:32px;color:var(--primary);">memory</span>
+    <h3>Память чата заполнена</h3>
+    <p>Освободите место в контексте или начните новый чат. Пока лимит исчерпан, отправка сообщений недоступна.</p>
+    <div class="modal-actions" style="justify-content:center;flex-wrap:wrap;gap:8px;">
+      <button type="button" class="modal-btn modal-btn-accept" onclick="openChatContextEditor()">Освободить место</button>
+      <button type="button" class="modal-btn modal-btn-reject" onclick="createNewChatSession();hideChatMemoryFull()">Начать новый чат</button>
+    </div>
+  </div>
+</div>
 
-
-<script src="script.js"></script>
-
+<!-- Fullscreen Context editor -->
+<div id="chat-context-screen" class="chat-context-screen" hidden>
+  <div class="chat-context-top">
+    <button type="button" class="icon-btn" onclick="closeChatContextEditor()" title="Закрыть"><span class="material-symbols-rounded">close</span></button>
+    <h2>Контекст</h2>
+    <button type="button" class="icon-btn" onclick="clearChatContextConfirm()" title="Очистить"><span class="material-symbols-rounded">delete</span></button>
+  </div>
+  <div class="chat-context-gauge">
+    <div class="chat-context-gauge-bar"><div id="ctx-gauge-fill"></div></div>
+    <div class="chat-context-gauge-meta"><span id="ctx-gauge-label">0 / 3500</span><span id="ctx-gauge-left">Осталось 3500</span></div>
+  </div>
+  <p class="chat-context-hint">Память этого чата. Лимит 3500 символов (до 6 КБ). Не показывается в Библиотеке. Удаление может заставить ИИ «забыть» детали.</p>
+  <textarea id="chat-context-editor" maxlength="3500" placeholder="Ключевые факты, решения, имена, открытые вопросы…" oninput="onChatContextInput()"></textarea>
+  <div class="chat-context-actions">
+    <button type="button" class="modal-btn modal-btn-reject" onclick="closeChatContextEditor()">Закрыть</button>
+    <button type="button" class="modal-btn modal-btn-accept" onclick="saveChatContextFromEditor()">Сохранить</button>
+  </div>
+</div>
 
 <!-- LIVE CHAT COMING SOON MODAL -->
 <div id="live-chat-modal" class="modal-overlay">
@@ -1817,42 +2284,6 @@
     </div>
 </div>
 
-
-<script>
-/* PWA register — Core Node */
-(function registerCoreNodePWA() {
-  if (!('serviceWorker' in navigator)) return;
-  const register = () => {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .then((reg) => {
-        // soft update check
-        try { reg.update(); } catch (e) {}
-        if (reg.waiting) {
-          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-        }
-        reg.addEventListener('updatefound', () => {
-          const w = reg.installing;
-          if (!w) return;
-          w.addEventListener('statechange', () => {
-            if (w.state === 'installed' && navigator.serviceWorker.controller) {
-              // new version ready — optional toast if app exposes showToast
-              try {
-                if (typeof showToast === 'function') {
-                  showToast('Доступно обновление Core Node (PWA). Перезагрузите страницу.', 'info', 5000);
-                }
-              } catch (e) {}
-            }
-          });
-        });
-      })
-      .catch(() => {});
-  };
-  if (document.readyState === 'complete') register();
-  else window.addEventListener('load', register);
-})();
-</script>
-
-
 <!-- Archive search -->
 <div id="archive-search-modal" class="modal-overlay">
   <div class="modal-card" style="max-width:440px;max-height:85vh;display:flex;flex-direction:column;">
@@ -1882,6 +2313,11 @@
       <button type="button" class="create-a-item" onclick="createAPick('history')"><span class="material-symbols-rounded">history_edu</span> History</button>
       <button type="button" class="create-a-item" onclick="createAPick('coding')"><span class="material-symbols-rounded">code</span> Coding Project</button>
     </div>
+    <label class="create-a-temp-row" for="create-a-temp-check">
+      <span class="cn-checkbox" id="create-a-temp-box" onclick="toggleCreateATemp(event)"></span>
+      <input type="checkbox" id="create-a-temp-check" hidden>
+      <span>Create a Temporary Chat</span>
+    </label>
     <div class="modal-actions">
       <button type="button" class="modal-btn modal-btn-reject" onclick="closeCreateAModal()">Отмена</button>
     </div>
@@ -1897,17 +2333,250 @@
     <button type="button" class="skills-hub-tab" data-skills-tab="skills" onclick="setSkillsTab('skills')">
       <span class="material-symbols-rounded">history_edu</span> Навыки
     </button>
+    <button type="button" class="skills-hub-tab" data-skills-tab="tags" onclick="setSkillsTab('tags')">
+      <span class="material-symbols-rounded">sell</span> Теги
+    </button>
+    <button type="button" class="skills-hub-tab" data-skills-tab="plugins" onclick="setSkillsTab('plugins')">
+      <span class="material-symbols-rounded">extension</span> Плагины
+    </button>
+
     <button type="button" class="skills-hub-tab" onclick="closeSkillsHub()">
       <span class="material-symbols-rounded">close</span> Закрыть
     </button>
   </div>
   <div id="skills-panel-store" class="skills-panel">
-    <div class="chat-card"><b>@ Коннекторы</b><p style="font-size:13px;color:var(--on-surface-variant);margin:8px 0 0;">Задачи · Oracle Notepad · Letter Write · Verify AI — вызываются через <code>@</code> в поле ввода.</p></div>
+    <div class="chat-card" style="margin-bottom:12px;">
+      <b>@ Коннекторы</b>
+      <p style="font-size:13px;color:var(--on-surface-variant);margin:8px 0 0;line-height:1.5;">
+        Введите <code>@</code> в поле чата, чтобы выбрать коннектор. Активный коннектор подсвечивается в запросе.
+      </p>
+    </div>
+    <div id="connectors-catalog" class="skills-list"><!-- renderConnectorsCatalog --></div>
   </div>
   <div id="skills-panel-skills" class="skills-panel" hidden>
-    <div class="chat-card"><b>AI Skills</b><p style="font-size:13px;color:var(--on-surface-variant);margin:8px 0 0;">Включайте навыки под задачу — экономия лимитов. Полный каталог расширим позже.</p></div>
+    <div class="skills-toolbar">
+      <button type="button" class="modal-btn modal-btn-accept" onclick="openCreateSkillModal()">
+        <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">add</span>
+        Создать навык
+      </button>
+      <button type="button" class="modal-btn modal-btn-reject" onclick="startSkillCreatorChat()">
+        <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">auto_awesome</span>
+        Создать с ИИ
+      </button>
+    </div>
+    <p class="skills-hint">Базовые навыки нельзя удалить — только отключить или убрать из установленных. Свои — изменить / удалить.</p>
+    <div id="skills-list" class="skills-list"><!-- renderSkillsList --></div>
+  </div>
+
+  <div id="skills-panel-tags" class="skills-panel" hidden>
+    <div class="chat-card" style="margin-bottom:12px;">
+      <b>AITags — теги поведения</b>
+      <p style="font-size:13px;color:var(--on-surface-variant);margin:8px 0 0;line-height:1.5;">
+        Теги вида <code>:кратко</code>, <code>:без_матов</code> задают стиль ответа в текущем чате.
+        Введите <code>:</code> в поле чата или включите тег здесь. До 20 своих тегов.
+      </p>
+    </div>
+    <div class="skills-toolbar">
+      <button type="button" class="modal-btn modal-btn-accept" onclick="openCreateTagModal()">
+        <span class="material-symbols-rounded" style="font-size:18px;vertical-align:middle;">add</span>
+        Создать тег
+      </button>
+    </div>
+    <div id="tags-list" class="skills-list"></div>
+  </div>
+
+  <div id="skills-panel-plugins" class="skills-panel" hidden>
+    <div class="chat-card" style="margin-bottom:12px;">
+      <b>Плагины</b>
+      <p style="font-size:13px;color:var(--on-surface-variant);margin:8px 0 0;line-height:1.5;">
+        Плагины — сторонние интеграции (Gmail, Fast Assistant…). Коннекторы (@) — системные команды Core Node.
+        В чате вызывайте плагин через <code>@ИмяПлагина</code>.
+      </p>
+    </div>
+    <div id="plugins-list" class="skills-list"></div>
   </div>
 </main>
 
+<!-- Create / Edit skill -->
+<div id="skill-editor-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:440px;">
+    <div class="modal-header">
+      <span class="material-symbols-rounded">psychology</span>
+      <h3 class="modal-title" id="skill-editor-title">Новый навык</h3>
+    </div>
+    <div class="plan-form-row">
+      <label>Имя (над командой)</label>
+      <input type="text" id="skill-name-input" maxlength="40" placeholder="Например: Строгий ревьюер">
+    </div>
+    <div class="plan-form-row">
+      <label>Команда /</label>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-weight:800;color:var(--primary);">/</span>
+        <input type="text" id="skill-cmd-input" maxlength="24" placeholder="review" style="flex:1;">
+      </div>
+      <small style="color:var(--on-surface-variant);font-size:11px;">Только латиница, цифры, _ . Дубликаты возможны, но путают.</small>
+    </div>
+    <div class="plan-form-row">
+      <label>Что делать при вызове</label>
+      <textarea id="skill-prompt-input" rows="5" placeholder="Инструкция для ИИ…" style="width:100%;box-sizing:border-box;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);font-size:13px;resize:vertical;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-reject" onclick="closeSkillEditor()">Отмена</button>
+      <button type="button" class="modal-btn modal-btn-accept" onclick="saveSkillFromEditor()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Skill context menu -->
+<div id="skill-ctx-menu" style="display:none;position:fixed;z-index:9000;min-width:200px;padding:6px;border-radius:14px;border:1px solid var(--border);background:var(--surface);box-shadow:0 16px 40px rgba(0,0,0,.45);">
+  <button type="button" class="nav-ctx-item" id="skill-ctx-toggle" onclick="skillCtxToggle()"><span class="material-symbols-rounded">block</span> <span id="skill-ctx-toggle-label">Отключить</span></button>
+  <button type="button" class="nav-ctx-item" id="skill-ctx-uninstall" onclick="skillCtxUninstall()" style="display:none;"><span class="material-symbols-rounded">remove_circle</span> Убрать из установленных</button>
+  <button type="button" class="nav-ctx-item" id="skill-ctx-edit" onclick="skillCtxEdit()"><span class="material-symbols-rounded">edit</span> Изменить</button>
+  <button type="button" class="nav-ctx-item danger" id="skill-ctx-delete" onclick="skillCtxDelete()"><span class="material-symbols-rounded">delete</span> Удалить навсегда</button>
+</div>
+
+<div id="download-app" class="download-app-fs" hidden aria-hidden="true">
+  <div class="download-app-fs-top">
+    <div class="download-app-fs-brand">
+      <span class="material-symbols-rounded">download</span>
+      <span>Скачать Core Node</span>
+    </div>
+    <button type="button" class="download-app-fs-close" onclick="closeDownloadAppModal()" title="Закрыть" aria-label="Закрыть">
+      <span class="material-symbols-rounded">close</span>
+    </button>
+  </div>
+  <div class="download-app-fs-body">
+    <section class="dl-card">
+      <div class="dl-card-icon"><span class="material-symbols-rounded">android</span></div>
+      <div class="dl-card-text">
+        <b>Android · Full Core Node</b>
+        <p>APK полной версии. Установка как обычное приложение (разрешите «Неизвестные источники», если система спросит).</p>
+      </div>
+      <a class="dl-card-btn" href="https://oracle-ai-pro.github.io/oracle/core-node-android.apk" target="_blank" rel="noopener">Скачать APK</a>
+    </section>
+    <section class="dl-card">
+      <div class="dl-card-icon"><span class="material-symbols-rounded">desktop_windows</span></div>
+      <div class="dl-card-text">
+        <b>Windows · Core Node (.exe)</b>
+        <p>Десктоп-оболочка (Electron / Nativefier). Можно также установить PWA из Chrome/Edge.</p>
+      </div>
+      <div class="dl-card-actions">
+        <a class="dl-card-btn" href="https://oracle-ai-pro.github.io/oracle/core-node-windows.exe" target="_blank" rel="noopener">Скачать .exe</a>
+        <button type="button" class="dl-card-btn ghost" onclick="tryInstallPWA()">Установить PWA</button>
+      </div>
+    </section>
+    <section class="dl-card dl-card-side">
+      <div class="dl-card-icon"><span class="material-symbols-rounded">view_sidebar</span></div>
+      <div class="dl-card-text">
+        <b>Side Core Node</b>
+        <p>Урезанный Core Node в боковой панели браузера (Chrome / Edge / Chromium). История чатов, быстрые ответы, API настраивается в основном Core Node. Удобно держать ИИ рядом с любой вкладкой.</p>
+      </div>
+      <a class="dl-card-btn primary" href="https://oracle-ai-pro.github.io/oracle/side-core-node.zip" target="_blank" rel="noopener">Скачать Side Core Node</a>
+      <div class="dl-side-howto">
+        <div class="dl-side-howto-title">Как установить вручную</div>
+        <ol>
+          <li>Скачайте <code>side-core-node.zip</code> и распакуйте папку на диск.</li>
+          <li>Откройте браузер → <code>chrome://extensions</code> (или <code>edge://extensions</code>).</li>
+          <li>Включите <b>«Режим разработчика»</b> (справа сверху).</li>
+          <li>Нажмите <b>«Загрузить распакованное расширение»</b> и выберите распакованную папку.</li>
+          <li>Закрепите иконку Side Core Node на панели. При необходимости откройте боковую панель (Side panel).</li>
+        </ol>
+        <p class="dl-side-note">API-ключи и тема подтягиваются из основного Core Node на том же профиле браузера (localStorage / общий origin, если так настроено в сборке).</p>
+      </div>
+    </section>
+    <section class="dl-card dl-card-muted">
+      <div class="dl-card-text">
+        <b>PWA на телефон / ПК</b>
+        <p>Без установки файлов: в Chrome/Edge — «Установить приложение», на iOS — «Поделиться» → «На экран Домой».</p>
+      </div>
+      <button type="button" class="dl-card-btn ghost" onclick="tryInstallPWA()">Инструкция PWA</button>
+    </section>
+  </div>
+</div>
+<div id="download-app-modal" class="modal-overlay" hidden style="display:none!important" aria-hidden="true"></div>
+<div id="ultra-plan-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:400px;">
+    <h3 class="modal-title">Core Node Ultra</h3>
+    <p class="modal-subtitle">Скоро: расширенные лимиты, приоритет моделей, больше памяти контекста и совместные функции. Пока это заглушка — тарификация ещё не подключена.</p>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-accept" onclick="document.getElementById('ultra-plan-modal')?.classList.remove('active')">Понятно</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="tag-editor-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width:420px;">
+    <div class="modal-header">
+      <span class="material-symbols-rounded">sell</span>
+      <h3 class="modal-title" id="tag-editor-title">Новый тег</h3>
+    </div>
+    <div class="plan-form-row">
+      <label>Имя</label>
+      <input type="text" id="tag-name-input" maxlength="40" placeholder="Кратко">
+    </div>
+    <div class="plan-form-row">
+      <label>Код (без двоеточия)</label>
+      <input type="text" id="tag-code-input" maxlength="24" placeholder="kratko">
+    </div>
+    <div class="plan-form-row">
+      <label>Правило для ИИ</label>
+      <textarea id="tag-rule-input" rows="3" placeholder="Отвечать кратко…" style="width:100%;box-sizing:border-box;padding:10px;border-radius:12px;border:1px solid var(--border);background:var(--surface-variant);color:var(--on-surface);"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn modal-btn-reject" onclick="closeTagEditor()">Отмена</button>
+      <button type="button" class="modal-btn modal-btn-accept" onclick="saveTagEditor()">Сохранить</button>
+    </div>
+  </div>
+</div>
+<div id="tag-popup" class="connector-popup" hidden>
+  <div id="tag-popup-list"></div>
+</div>
+
+    
+
+
+<div id="chat-session-bar" aria-label="Панель чата">
+  <button type="button" id="chat-session-title-btn" onclick="openChatFilesPopover(event)" title="Файлы чата">
+    <span class="material-symbols-rounded" style="font-size:18px;">chat_bubble</span>
+    <span class="chat-bar-title-text" id="chat-bar-title-text">Новый чат</span>
+    <span class="material-symbols-rounded" style="font-size:16px;opacity:.6;">expand_more</span>
+  </button>
+  <button type="button" class="chat-bar-icon-btn" onclick="createNewChatSession && createNewChatSession()" title="Новый чат">
+    <span class="material-symbols-rounded">edit_square</span>
+  </button>
+  <button type="button" class="chat-bar-icon-btn" id="chat-options-btn" onclick="toggleChatOptionsMenu(event)" title="Ещё">
+    <span class="material-symbols-rounded">more_vert</span>
+  </button>
+</div>
+<div id="chat-options-menu" role="menu">
+  <div class="context-item" onclick="cmShareFromBar()"><span class="material-symbols-rounded">ios_share</span> Поделиться</div>
+  <div class="context-item" onclick="cmTogglePinFromBar()"><span class="material-symbols-rounded">keep</span> <span id="chat-bar-pin-label">Закрепить</span></div>
+  <div class="context-item" onclick="cmRenameFromBar()"><span class="material-symbols-rounded">edit</span> Переименовать</div>
+  <div class="context-item ctx-has-sub" id="ctx-move-project-item">
+    <span class="material-symbols-rounded">drive_file_move</span>
+    <span style="flex:1">Переместить в проект</span>
+    <span class="material-symbols-rounded" style="font-size:18px;opacity:.6">chevron_right</span>
+    <div class="ctx-submenu" id="ctx-project-submenu"></div>
+  </div>
+  <div class="context-item" onclick="cmProtectChatFromBar()"><span class="material-symbols-rounded">lock</span> Защитить чат <span class="limits-beta-badge">BETA</span></div>
+</div>
+<div id="chat-files-popover">
+  <h4>Файлы в этом чате</h4>
+  <div id="chat-files-list"></div>
+</div>
+<div id="live-suggest-toast">
+  <span>Дополнить ответ через Live Chat?</span>
+  <button type="button" class="modal-btn modal-btn-accept" style="padding:6px 12px;font-size:12px;" onclick="acceptLiveSuggest()">Да</button>
+  <button type="button" class="icon-btn" onclick="dismissLiveSuggest()"><span class="material-symbols-rounded">close</span></button>
+</div>
+<div id="send-context-menu">
+  <div class="context-item" onclick="sendWithLiveSupplement()"><span class="material-symbols-rounded">graphic_eq</span> Дополнить с Live</div>
+  <div class="context-item" id="send-to-both-item" style="display:none" onclick="sendToBothSplitChats()"><span class="material-symbols-rounded">double_arrow</span> Send to 2 Chats</div>
+</div>
+
+
+  <script src="script.js" defer></script>
 </body>
+
 </html>
