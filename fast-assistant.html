@@ -426,9 +426,24 @@ body.auto-ok-running .fa-modal-ov{transition:opacity .6s ease, transform .6s eas
 }#ai-head .model-lock{font-size:14px;vertical-align:middle;
 }#haunted-timer-btn,#haunted-timer-modal,#wardrobe-btn,#wardrobe-panel,#htm-lure,
 body.halloween-mode .fa-pack-notice{display:none!important}body.halloween-mode{ }:root, [data-theme=light], [data-theme=dark]{--accent-user:var(--user);--accent-send:var(--text);--accent-toggle:var(--text);
-}body[data-accent="blue"]{--accent-user:#007aff;--accent-send:#007aff;--accent-toggle:#007aff;--accent:#007aff; }body[data-accent="green"]{--accent-user:#34c759;--accent-send:#34c759;--accent-toggle:#34c759;--accent:#34c759; }body[data-accent="yellow"]{--accent-user:#ffcc00;--accent-send:#ffcc00;--accent-toggle:#ffcc00;--accent:#e6a800; }body[data-accent="pink"]{--accent-user:#ff2d55;--accent-send:#ff2d55;--accent-toggle:#ff2d55;--accent:#ff2d55; }body[data-accent="orange"]{--accent-user:#ff9500;--accent-send:#ff9500;--accent-toggle:#ff9500;--accent:#ff9500; }body[data-accent="purple"]{--accent-user:#af52de;--accent-send:#af52de;--accent-toggle:#af52de;--accent:#af52de; }.bubble.user{background:var(--accent-user)!important;color:#fff!important;
-}body[data-accent="yellow"] .bubble.user{color:#1a1a1a!important; }.send-btn.active{background:var(--accent-send)!important;color:#fff!important;
-}body[data-accent="yellow"] .send-btn.active{color:#1a1a1a!important; }.fa-toggle, .htm-check .box, #auto-ok-switch, .accent-swatch.active{accent-color:var(--accent-toggle);
+}body[data-accent="blue"]{--accent-user:#007aff;--accent-send:#007aff;--accent-toggle:#007aff;--accent:#007aff; }body[data-accent="green"]{--accent-user:#34c759;--accent-send:#34c759;--accent-toggle:#34c759;--accent:#34c759; }body[data-accent="yellow"]{--accent-user:#ffcc00;--accent-send:#ffcc00;--accent-toggle:#ffcc00;--accent:#e6a800; }body[data-accent="pink"]{--accent-user:#ff2d55;--accent-send:#ff2d55;--accent-toggle:#ff2d55;--accent:#ff2d55; }body[data-accent="orange"]{--accent-user:#ff9500;--accent-send:#ff9500;--accent-toggle:#ff9500;--accent:#ff9500; }body[data-accent="purple"]{--accent-user:#af52de;--accent-send:#af52de;--accent-toggle:#af52de;--accent:#af52de; }.bubble.user{background:var(--accent-user)!important;color:var(--userText)!important;
+}
+/* colored accents: light text on saturated bg (except yellow) */
+body[data-accent="blue"] .bubble.user,
+body[data-accent="green"] .bubble.user,
+body[data-accent="pink"] .bubble.user,
+body[data-accent="orange"] .bubble.user,
+body[data-accent="purple"] .bubble.user{color:#fff!important;}
+body[data-accent="yellow"] .bubble.user{color:#1a1a1a!important;}
+.send-btn.active{background:var(--accent-send)!important;color:var(--card)!important;}
+body[data-theme="dark"] .send-btn.active{color:#000!important;}
+body[data-accent="blue"] .send-btn.active,
+body[data-accent="green"] .send-btn.active,
+body[data-accent="pink"] .send-btn.active,
+body[data-accent="orange"] .send-btn.active,
+body[data-accent="purple"] .send-btn.active{color:#fff!important;}
+body[data-accent="yellow"] .send-btn.active{color:#1a1a1a!important;}
+.fa-toggle, .htm-check .box, #auto-ok-switch, .accent-swatch.active{accent-color:var(--accent-toggle);
 }.fa-toggle.on, #auto-ok-switch.on{background:var(--accent-toggle)!important;
 }#selected-agent-box, #selected-agent-box.fm-hidden{display:none!important; }.fm-ent-toast{display:none;margin:0 2px 8px;padding:8px 12px;border-radius:12px;border:1px solid #007aff40;background:color-mix(in srgb,#007aff 12%,var(--ai));font-size:11px;font-weight:700;color:var(--text);animation:up .25s ease;
 }body.enterprise-mode .fm-ent-toast.show{display:block; }.composer-strip{display:none;flex-wrap:wrap;gap:6px;margin:0 2px 8px;align-items:center;
@@ -466,7 +481,34 @@ body.halloween-mode .fa-pack-notice{display:none!important}body.halloween-mode{ 
 }.bubble.ai:hover .ai-actions, .ai-actions:focus-within{opacity:1; }.ai-actions button{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--sub);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;
 }.ai-actions button:hover{background:var(--ai);color:var(--text); }.ai-actions button.active-up{color:var(--success); }.ai-actions button.active-down{color:var(--danger); }.ai-actions .material-symbols-rounded{font-size:18px; }.plus-item .plus-chevron{margin-left:auto;font-size:18px;transition:transform .2s;color:var(--sub); }#plus-priority.open .plus-chevron{transform:rotate(90deg); }.plus-prio-sub{display:flex;flex-direction:column;gap:2px;padding:0 0 4px 8px; }.plus-prio-sub[hidden]{display:none!important; }.plus-prio-sub .plus-item{font-size:12px;padding:9px 12px; }.plus-prio-sub .plus-item.priority-opt.active{background:color-mix(in srgb, var(--accent-send, var(--text)) 12%, var(--ai));
 }.plus-sub{margin-left:auto;font-size:10px;color:var(--sub);font-weight:600; }body.live-mode #input-wrapper{box-shadow:0 0 0 1px color-mix(in srgb, var(--accent-send, #000) 35%, transparent);border-radius:18px; }body.live-mode #ai-q{placeholder-color:var(--sub); }body.live-mode .stream-btn{display:none!important; }.composer-chip.live{border-color:color-mix(in srgb, var(--accent-send, #000) 45%, var(--border));background:color-mix(in srgb, var(--accent-send, #000) 8%, var(--ai));
-}</style>
+}
+#top-chat-action-btn{ overflow:hidden; }
+#top-chat-action-btn .temp-chat-ico{
+  width:22px; height:22px; object-fit:contain; display:block; pointer-events:none;
+}
+#top-chat-action-btn[data-mode="new"] .temp-chat-ico{ display:none; }
+#top-chat-action-btn[data-mode="new"] .top-chat-fallback{ display:inline-flex!important; }
+#top-chat-action-btn[data-mode="temp"] .top-chat-fallback{ display:none!important; }
+#top-chat-action-btn[data-mode="exit-temp"] .temp-chat-ico{ display:none; }
+#top-chat-action-btn[data-mode="exit-temp"] .top-chat-fallback{ display:inline-flex!important; color:var(--danger); }
+#top-chat-action-btn[data-mode="exit-temp"]:hover{ background:color-mix(in srgb,var(--danger) 18%, var(--ai)); }
+.temp-chat-badge{
+  display:none; align-items:center; justify-content:center; gap:6px;
+  margin:0 4px 8px; padding:6px 12px; border-radius:999px;
+  border:1px dashed var(--border); background:var(--ai);
+  font-size:11px; font-weight:800; color:var(--sub);
+}
+.temp-chat-badge:not([hidden]){ display:flex; }
+body.temp-chat-mode .temp-chat-badge{ display:flex; }
+body.temp-chat-mode #ai-head::after{ content:" · TEMP"; color:var(--warning); font-weight:900; }
+.fa-modal-x{
+  position:absolute; top:8px; right:10px; border:0; background:transparent;
+  color:var(--sub); font-size:22px; cursor:pointer; line-height:1; padding:4px 8px;
+}
+.fa-modal-ov.open{ display:flex!important; }
+.menu-item .temp-chat-ico{ flex-shrink:0; }
+/* theme swap for icons */
+</style>
 </head>
 
 <body data-theme="light">
@@ -538,6 +580,18 @@ body.halloween-mode .fa-pack-notice{display:none!important}body.halloween-mode{ 
  </div>
 </div>
 
+
+<div class="fa-modal-ov" id="fa-modal-temp-exit">
+ <div class="fa-modal" style="position:relative">
+  <button type="button" class="fa-modal-x" id="temp-exit-x" title="Закрыть" aria-label="Закрыть">×</button>
+  <h3>Выйти из временного чата?</h3>
+  <p>Данные этого чата не сохранены в списке. Что сделать?</p>
+  <div class="fa-modal-actions" style="flex-direction:column;gap:8px">
+   <button type="button" class="danger" id="temp-exit-delete" style="width:100%">Удалить и выйти</button>
+   <button type="button" class="ok" id="temp-exit-save" style="width:100%">Сохранить</button>
+  </div>
+ </div>
+</div>
 <div class="fa-modal-ov" id="fa-modal-share">
  <div class="fa-modal">
   <h3>Поделиться чатом</h3>
@@ -788,8 +842,9 @@ body.halloween-mode .fa-pack-notice{display:none!important}body.halloween-mode{ 
 </div>
 
 <div class="controls" style="display:flex;gap:8px;align-items:center">
- <button type="button" class="icon-btn" id="top-new-chat-btn" title="Новый чат">
-  <span class="material-symbols-rounded">edit_square</span>
+ <button type="button" class="icon-btn" id="top-chat-action-btn" title="Временный чат" data-mode="temp">
+  <img class="temp-chat-ico" src="privat-chat_light_theme.png" alt="" width="22" height="22" draggable="false">
+  <span class="material-symbols-rounded top-chat-fallback" style="display:none">edit_square</span>
  </button>
  <button class="icon-btn" id="menu-btn" title="Меню">
   <span class="material-symbols-rounded">more_vert</span>
@@ -836,62 +891,23 @@ body.halloween-mode .fa-pack-notice{display:none!important}body.halloween-mode{ 
   </div>
  </div>
 
- <div class="feature" data-wn="model">
-  <span class="material-symbols-rounded">auto_awesome</span>
+ 
+ <div class="feature open" data-wn="temp-chat">
+  <span class="material-symbols-rounded">chat_bubble</span>
   <div style="flex:1;min-width:0">
-   <b>Fast Model 4.4</b>
-   <small>Агент по умолчанию</small>
-   <div class="wn-more">Умнее базовая модель: больше типов запросов без обязательного узкого агента. С декабря 2026 отдельные агенты уйдут в Enterprise (и там будут урезаны).</div>
+   <b>Временный чат</b>
+   <small>Новинка</small>
+   <div class="wn-more">Теперь можно использовать временный чат, если не нужен постоянный. При выходе можно сохранить его в список или удалить без следа. Умная кнопка в шапке: на пустом чате — «Временный», после сообщения — «Новый чат», во временном — ✕.</div>
   </div>
   <span class="material-symbols-rounded wn-chevron">expand_more</span>
  </div>
 
- <div class="feature" data-wn="agents">
-  <span class="material-symbols-rounded">smart_toy</span>
+ <div class="feature" data-wn="bugs">
+  <span class="material-symbols-rounded">bug_report</span>
   <div style="flex:1;min-width:0">
-   <b>Экраны агентов</b>
-   <small>Свой стартовый экран у каждого</small>
-   <div class="wn-more">У Reader, Packs, Builder, Overlay, Core и других — отдельные home-экраны с быстрыми действиями и подсказками.</div>
-  </div>
-  <span class="material-symbols-rounded wn-chevron">expand_more</span>
- </div>
-
- <div class="feature" data-wn="chats">
-  <span class="material-symbols-rounded">menu</span>
-  <div style="flex:1;min-width:0">
-   <b>Чаты</b>
-   <small>Список, ПКМ, метки</small>
-   <div class="wn-more">Боковое меню: переименовать, поделиться, удалить. Наряды и заметки с особыми иконками. Текущий чат восстанавливается после перезапуска.</div>
-  </div>
-  <span class="material-symbols-rounded wn-chevron">expand_more</span>
- </div>
-
- <div class="feature" data-wn="halloween">
-  <span class="material-symbols-rounded">timer</span>
-  <div style="flex:1;min-width:0">
-   <b>Halloween Peak</b>
-   <small>Таймер · Амстердам 20:00</small>
-   <div class="wn-more">Таймер до 31.10.2026 20:00 Europe/Amsterdam. «Сломанный» ход, факты, цвет. Доступен в обычном и Enterprise. Рядом — гардеробная Жидкой Кошки.</div>
-  </div>
-  <span class="material-symbols-rounded wn-chevron">expand_more</span>
- </div>
-
- <div class="feature" data-wn="enterprise">
-  <span class="material-symbols-rounded">business</span>
-  <div style="flex:1;min-width:0">
-   <b>Enterprise</b>
-   <small>?enterprise=true</small>
-   <div class="wn-more">Режим для организаций: лимит 150 символов, урезанные агенты, без гардероба. Включается только ссылкой, не из настроек.</div>
-  </div>
-  <span class="material-symbols-rounded wn-chevron">expand_more</span>
- </div>
-
- <div class="feature" data-wn="reader">
-  <span class="material-symbols-rounded">menu_book</span>
-  <div style="flex:1;min-width:0">
-   <b>Reader и Packs</b>
-   <small>Истории · база паков</small>
-   <div class="wn-more">Вкладка Reader для историй. AI Search Packs — поиск по Kosmo Level. // команды и Core Node Bridge без изменений.</div>
+   <b>Исправлены баги ИИ</b>
+   <small>Стабильность</small>
+   <div class="wn-more">Поправлены сбои ответов, отображения и работы интерфейса ассистента.</div>
   </div>
   <span class="material-symbols-rounded wn-chevron">expand_more</span>
  </div>
@@ -938,6 +954,10 @@ body.halloween-mode .fa-pack-notice{display:none!important}body.halloween-mode{ 
  <div class="menu-item" id="menu-new-chat">
   <span class="material-symbols-rounded">edit_square</span>
   Новый чат
+ </div>
+ <div class="menu-item" id="menu-temp-chat">
+  <img class="temp-chat-ico" src="privat-chat_light_theme.png" alt="" width="18" height="18" style="border-radius:4px">
+  Временный чат
  </div>
 
  <div class="menu-item" id="commands-action">
@@ -1031,6 +1051,10 @@ body.halloween-mode .fa-pack-notice{display:none!important}body.halloween-mode{ 
  <p class="rz-hint">Для шрифтов/кнопок нужен перезапуск FA</p>
 </div>
 
+<div class="temp-chat-badge" id="temp-chat-badge" hidden>
+ <img class="temp-chat-ico" src="privat-chat_light_theme.png" alt="" width="16" height="16">
+ Временный чат · не сохраняется
+</div>
 <div id="chat">
  <div class="agent-home" id="default-home"></div>
 </div>
@@ -1261,7 +1285,7 @@ const CONFIG={
  coreUrl:"https://oracle-ai-pro.github.io/oracle/",
  channel:"fast-assistant-core-node",
  maxLocal:150,
- whatsNew:"4.4-adaptive-1",
+ whatsNew:"4.4-temp-chat-1",
  keys:{
   sessions:"oracle_chat_sessions",
   current:"oracle_current_session",
@@ -6505,7 +6529,7 @@ document.addEventListener("DOMContentLoaded", ()=>{
     applyThemeMode(tm);
   }catch(e){}
   setCoreBridgeEnabled(isCoreBridgeEnabled());
-  document.getElementById("top-new-chat-btn")?.addEventListener("click", ()=>{ try{ newFaChat(); }catch(e){} });
+  /* top-chat-action-btn → onTopChatActionClick */
   document.getElementById("accent-row")?.querySelectorAll(".accent-swatch").forEach(b=>{
     b.addEventListener("click", ()=> applyAccent(b.dataset.accent));
   });
@@ -6850,6 +6874,214 @@ window.closeLiveChat = function(){
     }
   };
 })();
+
+/* ===== Smart top button · Временный чат ===== */
+window._faTempMode=false;
+const TEMP_ICO_LIGHT="privat-chat_light_theme.png";
+const TEMP_ICO_DARK="privat-chat_dark_theme.png";
+
+function syncTempChatIcons(){
+  const dark = (document.body.dataset.theme==="dark") || document.body.getAttribute("data-theme")==="dark";
+  const src = dark ? TEMP_ICO_DARK : TEMP_ICO_LIGHT;
+  document.querySelectorAll(".temp-chat-ico").forEach(img=>{
+    if(img && img.getAttribute("src")!==src) img.setAttribute("src", src);
+  });
+}
+function chatHasUserMessages(){
+  try{ return !!(chat && chat.querySelector(".bubble.user")); }catch(e){ return false; }
+}
+function isEmptyChat(){
+  try{
+    if(state && state.home) return true;
+    if(!chat) return true;
+    return !chat.querySelector(".bubble.user");
+  }catch(e){ return true; }
+}
+function isTempMode(){ return !!window._faTempMode; }
+
+function updateTopChatAction(){
+  const btn=document.getElementById("top-chat-action-btn");
+  const fb=btn && btn.querySelector(".top-chat-fallback");
+  const badge=document.getElementById("temp-chat-badge");
+  if(!btn) return;
+  let mode="new";
+  if(isTempMode()) mode="exit-temp";
+  else if(isEmptyChat()) mode="temp";
+  else mode="new";
+  btn.dataset.mode=mode;
+  if(mode==="new"){
+    btn.title="Новый чат";
+    if(fb) fb.textContent="edit_square";
+  }else if(mode==="temp"){
+    btn.title="Временный чат";
+  }else{
+    btn.title="Выйти из временного чата";
+    if(fb) fb.textContent="close";
+  }
+  document.body.classList.toggle("temp-chat-mode", isTempMode());
+  if(badge){
+    if(isTempMode()) badge.removeAttribute("hidden");
+    else badge.setAttribute("hidden","");
+  }
+  syncTempChatIcons();
+}
+
+function startTempChat(){
+  try{
+    const cur=typeof getCurrentChatId==="function"?getCurrentChatId():null;
+    const map=typeof loadFaChats==="function"?loadFaChats():{};
+    if(cur && map[cur] && !chatHasUserMessages()){
+      try{ delete map[cur]; saveFaChats(map); }catch(e){}
+    }
+  }catch(e){}
+  window._faTempMode=true;
+  try{ setCurrentChatId("fa_temp_"+Date.now().toString(36)); }catch(e){}
+  if(chat) chat.innerHTML="";
+  try{ localStorage.setItem("fastAssistant.chat",""); }catch(e){}
+  state.home=true;
+  state.agent=null;
+  try{ updateAgentUI(); }catch(e){}
+  try{ setInputCentered(true); }catch(e){}
+  try{ renderHome(); }catch(e){}
+  try{ renderFaChatsList(); }catch(e){}
+  try{ closeSidebar(); }catch(e){}
+  updateTopChatAction();
+  try{ showAlert("Временный чат · не сохраняется в списке"); }catch(e){}
+}
+function openTempExitModal(){ document.getElementById("fa-modal-temp-exit")?.classList.add("open"); }
+function closeTempExitModal(){ document.getElementById("fa-modal-temp-exit")?.classList.remove("open"); }
+
+function exitTempDelete(){
+  window._faTempMode=false;
+  closeTempExitModal();
+  if(chat) chat.innerHTML="";
+  try{ localStorage.setItem("fastAssistant.chat",""); }catch(e){}
+  try{
+    // create normal empty chat without re-triggering temp guard
+    const prev=window._faTempMode;
+    window._faTempMode=false;
+    if(typeof newFaChat==="function"){
+      const _g=window._faTempGuard; window._faTempGuard=true;
+      newFaChat();
+      window._faTempGuard=_g;
+    }
+  }catch(e){}
+  window._faTempMode=false;
+  updateTopChatAction();
+  try{ showAlert("Временный чат удалён"); }catch(e){}
+}
+function exitTempSave(){
+  window._faTempMode=false;
+  closeTempExitModal();
+  const id="fa_"+Date.now().toString(36);
+  try{
+    const map=loadFaChats();
+    const html=(chat&&chat.innerHTML)||"";
+    let title="Сохранённый чат";
+    const first=chat?.querySelector(".bubble.user .text-content, .bubble.user");
+    if(first){ const tx=(first.textContent||"").trim(); if(tx) title=tx.slice(0,40)+(tx.length>40?"…":""); }
+    map[id]={title,html,updated:Date.now()};
+    saveFaChats(map);
+    setCurrentChatId(id);
+    try{ localStorage.setItem("fastAssistant.chat",html); }catch(e){}
+    renderFaChatsList();
+  }catch(e){}
+  updateTopChatAction();
+  try{ showAlert("Чат сохранён в списке"); }catch(e){}
+}
+function onTopChatActionClick(){
+  const mode=document.getElementById("top-chat-action-btn")?.dataset.mode||"new";
+  if(mode==="temp") startTempChat();
+  else if(mode==="exit-temp") openTempExitModal();
+  else {
+    if(isTempMode()){ openTempExitModal(); return; }
+    try{ newFaChat(); }catch(e){}
+    updateTopChatAction();
+  }
+}
+
+(function patchSaveChatTemp(){
+  const prev=typeof saveChat==="function"?saveChat:null;
+  if(!prev||window._faSaveTempPatched) return;
+  window._faSaveTempPatched=true;
+  window.saveChat=function(){
+    if(isTempMode()){
+      try{ localStorage.setItem("fastAssistant.chat",chat?.innerHTML||""); }catch(e){}
+      return;
+    }
+    return prev.apply(this,arguments);
+  };
+})();
+(function patchAddUserTemp(){
+  const prev=typeof addUser==="function"?addUser:null;
+  if(!prev||window._faAddUserTempPatched) return;
+  window._faAddUserTempPatched=true;
+  window.addUser=function(){
+    const r=prev.apply(this,arguments);
+    try{ updateTopChatAction(); }catch(e){}
+    return r;
+  };
+})();
+(function patchNewFaChatTemp(){
+  const prev=typeof newFaChat==="function"?newFaChat:null;
+  if(!prev||window._faNewTempPatched) return;
+  window._faNewTempPatched=true;
+  window.newFaChat=function(){
+    if(isTempMode() && !window._faTempGuard){ openTempExitModal(); return; }
+    const r=prev.apply(this,arguments);
+    window._faTempMode=false;
+    try{ updateTopChatAction(); }catch(e){}
+    return r;
+  };
+})();
+(function patchOpenFaChatTemp(){
+  const prev=typeof openFaChat==="function"?openFaChat:null;
+  if(!prev||window._faOpenTempPatched) return;
+  window._faOpenTempPatched=true;
+  window.openFaChat=function(id,opts){
+    opts=opts||{};
+    if(isTempMode() && !opts.force){
+      openTempExitModal();
+      window._faPendingOpenChat=id;
+      return;
+    }
+    window._faTempMode=false;
+    const r=prev.apply(this,arguments);
+    try{ updateTopChatAction(); }catch(e){}
+    return r;
+  };
+})();
+
+document.addEventListener("DOMContentLoaded",()=>{
+  document.getElementById("top-chat-action-btn")?.addEventListener("click", onTopChatActionClick);
+  document.getElementById("menu-temp-chat")?.addEventListener("click",()=>{
+    try{ menu.style.display="none"; }catch(e){}
+    if(isTempMode()){ openTempExitModal(); return; }
+    startTempChat();
+  });
+  document.getElementById("temp-exit-x")?.addEventListener("click", closeTempExitModal);
+  document.getElementById("temp-exit-delete")?.addEventListener("click",()=>{
+    const pending=window._faPendingOpenChat; window._faPendingOpenChat=null;
+    exitTempDelete();
+    if(pending) try{ openFaChat(pending,{force:true}); }catch(e){}
+  });
+  document.getElementById("temp-exit-save")?.addEventListener("click",()=>{
+    const pending=window._faPendingOpenChat; window._faPendingOpenChat=null;
+    exitTempSave();
+    if(pending) try{ openFaChat(pending,{force:true}); }catch(e){}
+  });
+  document.getElementById("fa-modal-temp-exit")?.addEventListener("click",(e)=>{
+    if(e.target&&e.target.id==="fa-modal-temp-exit") closeTempExitModal();
+  });
+  // theme changes → icon swap
+  const obs=new MutationObserver(()=>syncTempChatIcons());
+  try{ obs.observe(document.body,{attributes:true,attributeFilter:["data-theme"]}); }catch(e){}
+  syncTempChatIcons();
+  updateTopChatAction();
+  setTimeout(updateTopChatAction,300);
+});
+window.addEventListener("load",()=>setTimeout(updateTopChatAction,200));
+
 window.FastAssistant={
  status:()=>({
   version:CONFIG.version,
